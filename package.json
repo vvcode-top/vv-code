@@ -1,22 +1,22 @@
 {
-	"name": "claude-dev",
-	"displayName": "Cline",
-	"description": "Autonomous coding agent right in your IDE, capable of creating/editing files, running commands, using the browser, and more with your permission every step of the way.",
-	"version": "3.45.0",
+	"name": "vvcode",
+	"displayName": "VVCode",
+	"description": "AI-powered coding assistant based on Cline. Autonomous agent capable of creating/editing files, running commands, using the browser, and more with your permission every step of the way.",
+	"version": "1.0.0",
 	"icon": "assets/icons/icon.png",
 	"engines": {
 		"vscode": "^1.84.0"
 	},
 	"author": {
-		"name": "Cline Bot Inc."
+		"name": "PiuQiuPiaQia"
 	},
 	"license": "Apache-2.0",
-	"publisher": "saoudrizwan",
+	"publisher": "PiuQiuPiaQia",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/cline/cline"
+		"url": "https://github.com/PiuQiuPiaQia/vv-code.git"
 	},
-	"homepage": "https://cline.bot",
+	"homepage": "https://github.com/PiuQiuPiaQia/vv-code",
 	"categories": [
 		"AI",
 		"Chat",
@@ -26,18 +26,18 @@
 		"Testing"
 	],
 	"keywords": [
-		"cline",
-		"claude",
-		"dev",
-		"mcp",
-		"openrouter",
+		"vvcode",
+		"ai",
 		"coding",
+		"assistant",
 		"agent",
 		"autonomous",
+		"mcp",
+		"openrouter",
+		"claude",
 		"chatgpt",
-		"sonnet",
-		"ai",
-		"llama"
+		"llama",
+		"based-on-cline"
 	],
 	"activationEvents": [
 		"onLanguage",
@@ -46,15 +46,6 @@
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
-		"icons": {
-			"cline-icon": {
-				"description": "cline",
-				"default": {
-					"fontPath": "assets/icons/cline-bot.woff",
-					"fontCharacter": "\\e900"
-				}
-			}
-		},
 		"walkthroughs": [
 			{
 				"id": "ClineWalkthrough",
@@ -110,17 +101,17 @@
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"id": "claude-dev-ActivityBar",
-					"title": "Cline",
+					"id": "vvcode",
+					"title": "VVCode",
 					"icon": "assets/icons/icon.svg"
 				}
 			]
 		},
 		"views": {
-			"claude-dev-ActivityBar": [
+			"vvcode": [
 				{
 					"type": "webview",
-					"id": "claude-dev.SidebarProvider",
+					"id": "vvcode.SidebarProvider",
 					"name": "",
 					"icon": "assets/icons/icon.svg"
 				}
@@ -128,99 +119,99 @@
 		},
 		"commands": [
 			{
-				"command": "cline.plusButtonClicked",
+				"command": "vvcode.plusButtonClicked",
 				"title": "New Task",
 				"icon": "$(add)"
 			},
 			{
-				"command": "cline.mcpButtonClicked",
+				"command": "vvcode.mcpButtonClicked",
 				"title": "MCP Servers",
 				"icon": "$(server)"
 			},
 			{
-				"command": "cline.historyButtonClicked",
+				"command": "vvcode.historyButtonClicked",
 				"title": "History",
 				"icon": "$(history)"
 			},
 			{
-				"command": "cline.accountButtonClicked",
+				"command": "vvcode.accountButtonClicked",
 				"title": "Account",
 				"icon": "$(account)"
 			},
 			{
-				"command": "cline.settingsButtonClicked",
+				"command": "vvcode.settingsButtonClicked",
 				"title": "Settings",
 				"icon": "$(settings-gear)"
 			},
 			{
-				"command": "cline.dev.createTestTasks",
+				"command": "vvcode.dev.createTestTasks",
 				"title": "Create Test Tasks",
-				"category": "Cline",
-				"when": "cline.isDevMode"
+				"category": "VVCode",
+				"when": "vvcode.isDevMode"
 			},
 			{
-				"command": "cline.dev.expireMcpOAuthTokens",
+				"command": "vvcode.dev.expireMcpOAuthTokens",
 				"title": "Expire MCP OAuth Tokens (for testing)",
-				"category": "Cline",
-				"when": "cline.isDevMode"
+				"category": "VVCode",
+				"when": "vvcode.isDevMode"
 			},
 			{
-				"command": "cline.addToChat",
-				"title": "Add to Cline",
-				"category": "Cline"
+				"command": "vvcode.addToChat",
+				"title": "Add to VVCode",
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.addTerminalOutputToChat",
-				"title": "Add to Cline",
-				"category": "Cline"
+				"command": "vvcode.addTerminalOutputToChat",
+				"title": "Add to VVCode",
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.focusChatInput",
+				"command": "vvcode.focusChatInput",
 				"title": "Jump to Chat Input",
-				"category": "Cline"
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.generateGitCommitMessage",
-				"title": "Generate Commit Message with Cline",
-				"category": "Cline",
-				"icon": "$(cline-icon)"
+				"command": "vvcode.generateGitCommitMessage",
+				"title": "Generate Commit Message with VVCode",
+				"category": "VVCode",
+				"icon": "$(sparkle)"
 			},
 			{
-				"command": "cline.abortGitCommitMessage",
-				"title": "Generate Commit Message with Cline - Stop",
-				"category": "Cline",
+				"command": "vvcode.abortGitCommitMessage",
+				"title": "Generate Commit Message with VVCode - Stop",
+				"category": "VVCode",
 				"icon": "$(debug-stop)"
 			},
 			{
-				"command": "cline.explainCode",
-				"title": "Explain with Cline",
-				"category": "Cline"
+				"command": "vvcode.explainCode",
+				"title": "Explain with VVCode",
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.improveCode",
-				"title": "Improve with Cline",
-				"category": "Cline"
+				"command": "vvcode.improveCode",
+				"title": "Improve with VVCode",
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.openWalkthrough",
+				"command": "vvcode.openWalkthrough",
 				"title": "Open Walkthrough",
-				"category": "Cline"
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.reconstructTaskHistory",
+				"command": "vvcode.reconstructTaskHistory",
 				"title": "Reconstruct Task History",
-				"category": "Cline"
+				"category": "VVCode"
 			},
 			{
-				"command": "cline.reviewComment.reply",
+				"command": "vvcode.reviewComment.reply",
 				"title": "Reply",
-				"category": "Cline",
+				"category": "VVCode",
 				"enablement": "!commentIsEmpty"
 			},
 			{
-				"command": "cline.reviewComment.addToChat",
-				"title": "Add to Cline Chat",
-				"category": "Cline",
+				"command": "vvcode.reviewComment.addToChat",
+				"title": "Add to VVCode Chat",
+				"category": "VVCode",
 				"icon": "$(link-external)"
 			}
 		],
@@ -228,10 +219,10 @@
 			{
 				"command": "editor.action.submitComment",
 				"key": "enter",
-				"when": "commentEditorFocused && commentController == cline-ai-review && !commentIsEmpty"
+				"when": "commentEditorFocused && commentController == vvcode-ai-review && !commentIsEmpty"
 			},
 			{
-				"command": "cline.addToChat",
+				"command": "vvcode.addToChat",
 				"key": "cmd+'",
 				"mac": "cmd+'",
 				"win": "ctrl+'",
@@ -239,11 +230,11 @@
 				"when": "editorHasSelection"
 			},
 			{
-				"command": "cline.generateGitCommitMessage",
+				"command": "vvcode.generateGitCommitMessage",
 				"when": "config.git.enabled && scmProvider == git"
 			},
 			{
-				"command": "cline.focusChatInput",
+				"command": "vvcode.focusChatInput",
 				"key": "cmd+'",
 				"mac": "cmd+'",
 				"win": "ctrl+'",
@@ -254,87 +245,87 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "cline.plusButtonClicked",
+					"command": "vvcode.plusButtonClicked",
 					"group": "navigation@1",
-					"when": "view == claude-dev.SidebarProvider"
+					"when": "view == vvcode.SidebarProvider"
 				},
 				{
-					"command": "cline.mcpButtonClicked",
+					"command": "vvcode.mcpButtonClicked",
 					"group": "navigation@2",
-					"when": "view == claude-dev.SidebarProvider"
+					"when": "view == vvcode.SidebarProvider"
 				},
 				{
-					"command": "cline.historyButtonClicked",
+					"command": "vvcode.historyButtonClicked",
 					"group": "navigation@3",
-					"when": "view == claude-dev.SidebarProvider"
+					"when": "view == vvcode.SidebarProvider"
 				},
 				{
-					"command": "cline.accountButtonClicked",
+					"command": "vvcode.accountButtonClicked",
 					"group": "navigation@5",
-					"when": "view == claude-dev.SidebarProvider"
+					"when": "view == vvcode.SidebarProvider"
 				},
 				{
-					"command": "cline.settingsButtonClicked",
+					"command": "vvcode.settingsButtonClicked",
 					"group": "navigation@6",
-					"when": "view == claude-dev.SidebarProvider"
+					"when": "view == vvcode.SidebarProvider"
 				}
 			],
 			"editor/context": [
 				{
-					"command": "cline.addToChat",
+					"command": "vvcode.addToChat",
 					"group": "navigation",
 					"when": "editorHasSelection"
 				}
 			],
 			"terminal/context": [
 				{
-					"command": "cline.addTerminalOutputToChat",
+					"command": "vvcode.addTerminalOutputToChat",
 					"group": "navigation"
 				}
 			],
 			"scm/title": [
 				{
-					"command": "cline.generateGitCommitMessage",
+					"command": "vvcode.generateGitCommitMessage",
 					"group": "navigation",
-					"when": "config.git.enabled && scmProvider == git && !cline.isGeneratingCommit"
+					"when": "config.git.enabled && scmProvider == git && !vvcode.isGeneratingCommit"
 				},
 				{
-					"command": "cline.abortGitCommitMessage",
+					"command": "vvcode.abortGitCommitMessage",
 					"group": "navigation",
-					"when": "config.git.enabled && scmProvider == git && cline.isGeneratingCommit"
+					"when": "config.git.enabled && scmProvider == git && vvcode.isGeneratingCommit"
 				}
 			],
 			"commandPalette": [
 				{
-					"command": "cline.generateGitCommitMessage",
-					"when": "config.git.enabled && !cline.isGeneratingCommit"
+					"command": "vvcode.generateGitCommitMessage",
+					"when": "config.git.enabled && !vvcode.isGeneratingCommit"
 				},
 				{
-					"command": "cline.abortGitCommitMessage",
-					"when": "config.git.enabled && cline.isGeneratingCommit"
+					"command": "vvcode.abortGitCommitMessage",
+					"when": "config.git.enabled && vvcode.isGeneratingCommit"
 				},
 				{
-					"command": "cline.reviewComment.reply",
+					"command": "vvcode.reviewComment.reply",
 					"when": "false"
 				}
 			],
 			"comments/commentThread/context": [
 				{
-					"command": "cline.reviewComment.reply",
+					"command": "vvcode.reviewComment.reply",
 					"group": "inline",
-					"when": "commentController == cline-ai-review"
+					"when": "commentController == vvcode-ai-review"
 				}
 			],
 			"comments/commentThread/title": [
 				{
-					"command": "cline.reviewComment.addToChat",
+					"command": "vvcode.reviewComment.addToChat",
 					"group": "inline",
-					"when": "commentController == cline-ai-review"
+					"when": "commentController == vvcode-ai-review"
 				}
 			]
 		},
 		"configuration": {
-			"title": "Cline",
+			"title": "VVCode",
 			"properties": {}
 		}
 	},
