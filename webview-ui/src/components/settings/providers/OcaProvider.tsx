@@ -334,7 +334,6 @@ export const OcaProvider = ({ isPopup, currentMode }: OcaProviderProps) => {
 
 					<div className="mt-0">
 						<BaseUrlField
-							defaultValue={undefined}
 							initialValue={ocaBaseUrl}
 							label="Custom Base URL (optional)"
 							onChange={(value) => handleFieldChange("ocaBaseUrl", value)}
