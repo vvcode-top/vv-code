@@ -1,4 +1,8 @@
-import { HistoryIcon, PlusIcon, SettingsIcon, UserCircleIcon } from "lucide-react"
+// VVCode Customization: 修改导航栏，屏蔽 account 和 settings 入口，添加 VV 设置入口
+// Original: Navbar.tsx
+// Modified: 2025-12-20
+
+import { HistoryIcon, PlusIcon, SettingsIcon } from "lucide-react"
 import { useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -14,7 +18,7 @@ const McpServerIcon = ({ className, size }: { className?: string; size?: number 
 )
 
 export const Navbar = () => {
-	const { navigateToHistory, navigateToSettings, navigateToAccount, navigateToMcp, navigateToChat } = useExtensionState()
+	const { navigateToHistory, navigateToVVSettings, navigateToMcp, navigateToChat } = useExtensionState()
 
 	const SETTINGS_TABS = useMemo(
 		() => [
@@ -46,22 +50,31 @@ export const Navbar = () => {
 				icon: HistoryIcon,
 				navigate: navigateToHistory,
 			},
+			// VVCode Customization: 屏蔽原有的 account 和 settings 入口
+			// {
+			// 	id: "account",
+			// 	name: "Account",
+			// 	tooltip: "Account",
+			// 	icon: UserCircleIcon,
+			// 	navigate: navigateToAccount,
+			// },
+			// {
+			// 	id: "settings",
+			// 	name: "Settings",
+			// 	tooltip: "Settings",
+			// 	icon: SettingsIcon,
+			// 	navigate: navigateToSettings,
+			// },
+			// VVCode Customization: 添加新的 VV 设置入口
 			{
-				id: "account",
-				name: "Account",
-				tooltip: "Account",
-				icon: UserCircleIcon,
-				navigate: navigateToAccount,
-			},
-			{
-				id: "settings",
+				id: "vv-settings",
 				name: "Settings",
-				tooltip: "Settings",
+				tooltip: "设置",
 				icon: SettingsIcon,
-				navigate: navigateToSettings,
+				navigate: navigateToVVSettings,
 			},
 		],
-		[navigateToAccount, navigateToChat, navigateToHistory, navigateToMcp, navigateToSettings],
+		[navigateToChat, navigateToHistory, navigateToMcp, navigateToVVSettings],
 	)
 
 	return (

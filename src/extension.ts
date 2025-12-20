@@ -4,11 +4,10 @@
 import assert from "node:assert"
 import { DIFF_VIEW_URI_SCHEME } from "@hosts/vscode/VscodeDiffViewProvider"
 import * as vscode from "vscode"
-import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
 import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChatButtonClicked"
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
-import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
+import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVVSettingsButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
 import { Logger } from "./services/logging/Logger"
@@ -120,9 +119,17 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	// VVCode Customization: Replaced original Settings and Account buttons with VV Settings
+	// Commented out original buttons:
+	// context.subscriptions.push(
+	// 	vscode.commands.registerCommand(commands.SettingsButton, () => {
+	// 		sendSettingsButtonClickedEvent()
+	// 	}),
+	// )
+
 	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.SettingsButton, () => {
-			sendSettingsButtonClickedEvent()
+		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
+			sendVVSettingsButtonClickedEvent()
 		}),
 	)
 
@@ -133,12 +140,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.AccountButton, () => {
-			// Send event to all subscribers using the gRPC streaming method
-			sendAccountButtonClickedEvent()
-		}),
-	)
+	// context.subscriptions.push(
+	// 	vscode.commands.registerCommand(commands.AccountButton, () => {
+	// 		// Send event to all subscribers using the gRPC streaming method
+	// 		sendAccountButtonClickedEvent()
+	// 	}),
+	// )
 
 	/*
 	We use the text document content provider API to show the left side for diff view by creating a

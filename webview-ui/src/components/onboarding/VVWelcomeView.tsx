@@ -1,9 +1,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import VVApiConfigView from "./VVApiConfigView"
 import VVUsageGuideView from "./VVUsageGuideView"
 
-type OnboardingStep = "welcome" | "apiConfig" | "usageGuide"
+type OnboardingStep = "welcome" | "usageGuide"
 
 const VVWelcomeView = () => {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome")
@@ -29,18 +28,13 @@ const VVWelcomeView = () => {
 					{/* 开始按钮 - 简洁设计 */}
 					<Button
 						className="px-12 py-6 text-base font-normal rounded-full"
-						onClick={() => setCurrentStep("apiConfig")}
+						onClick={() => setCurrentStep("usageGuide")}
 						variant="default">
 						开始体验
 					</Button>
 				</div>
 			</div>
 		)
-	}
-
-	// API 配置页
-	if (currentStep === "apiConfig") {
-		return <VVApiConfigView onComplete={() => setCurrentStep("usageGuide")} />
 	}
 
 	// 使用指南页

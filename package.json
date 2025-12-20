@@ -134,13 +134,8 @@
 				"icon": "$(history)"
 			},
 			{
-				"command": "vvcode.accountButtonClicked",
-				"title": "Account",
-				"icon": "$(account)"
-			},
-			{
-				"command": "vvcode.settingsButtonClicked",
-				"title": "Settings",
+				"command": "vvcode.vvSettingsButtonClicked",
+				"title": "VV Settings",
 				"icon": "$(settings-gear)"
 			},
 			{
@@ -260,13 +255,8 @@
 					"when": "view == vvcode.SidebarProvider"
 				},
 				{
-					"command": "vvcode.accountButtonClicked",
-					"group": "navigation@5",
-					"when": "view == vvcode.SidebarProvider"
-				},
-				{
-					"command": "vvcode.settingsButtonClicked",
-					"group": "navigation@6",
+					"command": "vvcode.vvSettingsButtonClicked",
+					"group": "navigation@4",
 					"when": "view == vvcode.SidebarProvider"
 				}
 			],

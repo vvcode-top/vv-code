@@ -63,7 +63,7 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 
 	const borderColor = `color-mix(in srgb, ${getAsVar(VSC_TITLEBAR_INACTIVE_FOREGROUND)} 20%, transparent)`
 	const borderGradient = `linear-gradient(to bottom, ${borderColor} 0%, transparent 50%)`
-	const bgGradient = `linear-gradient(to bottom, color-mix(in srgb, var(--vscode-sideBar-background) 96%, white) 0%, transparent 80%)`
+	const bgColor = `color-mix(in srgb, var(--vscode-sideBar-background) 98%, white)`
 
 	// If YOLO mode is enabled, show disabled message
 	if (yoloModeToggled) {
@@ -73,7 +73,7 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 				style={{
 					borderTop: `0.5px solid ${borderColor}`,
 					borderRadius: "4px 4px 0 0",
-					background: bgGradient,
+					background: bgColor,
 					opacity: 0.5,
 					...style,
 				}}>
@@ -118,7 +118,7 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 			style={{
 				borderTop: `0.5px solid ${borderColor}`,
 				borderRadius: "4px 4px 0 0",
-				background: bgGradient,
+				background: bgColor,
 				...style,
 			}}>
 			{/* Left border gradient */}
