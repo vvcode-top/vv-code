@@ -12,7 +12,7 @@ export const SYSTEM_PROMPT_GPT_5 = async (
 	browserSettings: BrowserSettings,
 	focusChainSettings: FocusChainSettings,
 ) => {
-	return `You are Cline, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+	return `You are vvcode, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices. You MUST respond and think in Simplified Chinese (简体中文) at all times.
 
 
 TOOL USE

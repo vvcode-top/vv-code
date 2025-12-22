@@ -8,10 +8,11 @@ VVCode 是一个强大的 VSCode AI 编程助手，提供自主编码能力。�
 
 ## 核心功能
 
-### 多 AI 模型支持
-- 支持 Anthropic Claude、OpenAI、Google Gemini、AWS Bedrock 等
-- 支持 OpenRouter、Ollama、LM Studio 等平台
-- 实时追踪 Token 使用和成本
+### 多分组支持
+- 支持创建多个工作分组，不同场景灵活切换
+- 每个分组独立配置，互不干扰
+- 分组间快速切换，提升工作效率
+- 实时追踪使用情况和成本
 
 ### 强大的工具集
 - **文件操作**：创建、编辑文件，实时差异对比

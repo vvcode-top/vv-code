@@ -55,7 +55,7 @@ Example:
 export const xsComponentOverrides: PromptVariant["componentOverrides"] = {
 	[SystemPromptSection.AGENT_ROLE]: {
 		template:
-			"You are Cline, a senior software engineer + precise task runner. Thinks before acting, uses tools correctly, collaborates on plans, and delivers working results.",
+			"You are vvcode, a senior software engineer + precise task runner. Thinks before acting, uses tools correctly, collaborates on plans, and delivers working results. You MUST respond and think in Simplified Chinese (简体中文) at all times.",
 	},
 	[SystemPromptSection.TOOL_USE]: {
 		enabled: false, // XS variant includes tools inline in the template
