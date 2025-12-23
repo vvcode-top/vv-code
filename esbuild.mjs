@@ -133,9 +133,13 @@ if (production) {
 	buildEnvVars["process.env.IS_DEV"] = "false"
 	// VVCode: 生产环境不使用开发地址
 	buildEnvVars["process.env.DEV_BASE_URL"] = "undefined"
-} else if (process.env.DEV_BASE_URL) {
-	// VVCode: 开发环境 base URL
-	buildEnvVars["process.env.DEV_BASE_URL"] = JSON.stringify(process.env.DEV_BASE_URL)
+} else {
+	// VVCode: 开发环境启用 IS_DEV
+	buildEnvVars["process.env.IS_DEV"] = JSON.stringify("true")
+	if (process.env.DEV_BASE_URL) {
+		// VVCode: 开发环境 base URL
+		buildEnvVars["process.env.DEV_BASE_URL"] = JSON.stringify(process.env.DEV_BASE_URL)
+	}
 }
 // Set the environment and telemetry env vars. The API key env vars need to be populated in the GitHub
 // workflows from the secrets.

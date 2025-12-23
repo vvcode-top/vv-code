@@ -12,57 +12,50 @@ const VVUsageGuideView = () => {
 
 	return (
 		<div className="fixed inset-0 p-0 flex flex-col w-full bg-background">
-			<div className="h-full flex flex-col items-center justify-center px-8">
+			<div className="h-full flex flex-col items-center justify-center px-6">
 				{/* 标题 */}
-				<h1 className="text-3xl font-extralight text-foreground mb-8 tracking-wide">快速开始</h1>
+				<h1 className="text-2xl font-normal text-foreground mb-4">快速开始</h1>
 
 				{/* 描述 */}
-				<p className="text-sm font-light text-foreground/60 text-center max-w-md mb-10 leading-relaxed">
-					{isAuthenticated && user
-						? `你好，「${user.username}」，我是 VVCode，你的 AI 编程助手，随时为你效劳 ✨`
-						: "AI 驱动的智能编程助手，所有操作安全可控"}
+				<p className="text-sm text-foreground/50 text-center max-w-sm mb-8">
+					{isAuthenticated && user ? `你好，${user.username}，我是你的 AI 编程助手` : "AI 驱动的智能编程助手"}
 				</p>
 
-				{/* 使用指南卡片 */}
-				<div className="w-full max-w-md space-y-5">
-					{/* 核心功能 */}
-					<div className="border border-border/50 rounded-lg p-5 bg-background/50">
-						<h2 className="text-base font-normal text-foreground mb-3">✨ 核心功能</h2>
-						<ul className="space-y-1.5 text-sm text-foreground/70">
-							<li className="flex items-start">
-								<span className="mr-2">•</span>
-								<span>智能代码生成与重构</span>
-							</li>
-							<li className="flex items-start">
-								<span className="mr-2">•</span>
-								<span>文件操作与终端集成</span>
-							</li>
-							<li className="flex items-start">
-								<span className="mr-2">•</span>
-								<span>浏览器自动化测试</span>
-							</li>
-						</ul>
+				{/* 使用指南 */}
+				<div className="w-full max-w-xs space-y-5">
+					<div className="flex items-center gap-4">
+						<div className="w-8 h-8 rounded-lg bg-[var(--vscode-input-background)] flex items-center justify-center flex-shrink-0">
+							<i className="codicon codicon-comment-discussion text-foreground/70" />
+						</div>
+						<div>
+							<p className="text-sm text-foreground">输入需求</p>
+							<p className="text-xs text-foreground/40">在聊天框描述你想要完成的任务</p>
+						</div>
 					</div>
 
-					{/* 如何使用 */}
-					<div className="border border-border/50 rounded-lg p-5 bg-background/50">
-						<h2 className="text-base font-normal text-foreground mb-3">🚀 如何使用</h2>
-						<ol className="space-y-1.5 text-sm text-foreground/70">
-							<li className="flex items-start">
-								<span className="mr-2 font-medium">1.</span>
-								<span>在聊天框输入您的需求</span>
-							</li>
-							<li className="flex items-start">
-								<span className="mr-2 font-medium">2.</span>
-								<span>审核 AI 提供的解决方案</span>
-							</li>
-							<li className="flex items-start">
-								<span className="mr-2 font-medium">3.</span>
-								<span>批准后应用更改</span>
-							</li>
-						</ol>
+					<div className="flex items-center gap-4">
+						<div className="w-8 h-8 rounded-lg bg-[var(--vscode-input-background)] flex items-center justify-center flex-shrink-0">
+							<i className="codicon codicon-eye text-foreground/70" />
+						</div>
+						<div>
+							<p className="text-sm text-foreground">审核方案</p>
+							<p className="text-xs text-foreground/40">查看 AI 提供的解决方案</p>
+						</div>
+					</div>
+
+					<div className="flex items-center gap-4">
+						<div className="w-8 h-8 rounded-lg bg-[var(--vscode-input-background)] flex items-center justify-center flex-shrink-0">
+							<i className="codicon codicon-check text-foreground/70" />
+						</div>
+						<div>
+							<p className="text-sm text-foreground">确认执行</p>
+							<p className="text-xs text-foreground/40">批准后自动应用更改</p>
+						</div>
 					</div>
 				</div>
+
+				{/* 提示 */}
+				<p className="text-xs text-foreground/30 mt-8">在下方输入框开始对话</p>
 			</div>
 		</div>
 	)

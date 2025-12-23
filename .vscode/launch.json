@@ -75,7 +75,8 @@
 			"env": {
 				"IS_DEV": "true",
 				"DEV_WORKSPACE_FOLDER": "${workspaceFolder}",
-				"CLINE_ENVIRONMENT": "local"
+				"CLINE_ENVIRONMENT": "local",
+				"DEV_BASE_URL": "http://127.0.0.1:3000"
 			}
 		},
 		{

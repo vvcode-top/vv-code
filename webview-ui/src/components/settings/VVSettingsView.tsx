@@ -3,7 +3,7 @@
 // Modified: 2025-12-20
 
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { useVVAuth } from "@/hooks/useVVAuth"
 import { VVAccountServiceClient } from "@/services/grpc-client"
@@ -22,18 +22,54 @@ const VVSettingsView = ({ onDone }: VVSettingsViewProps) => {
 	const clickCountRef = useRef(0)
 	const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [isRefreshing, setIsRefreshing] = useState(false)
+	const lastRefreshTimeRef = useRef<number>(0)
 
-	// 获取最新配置
-	const handleRefreshConfig = useCallback(async () => {
+	// 统一刷新函数（刷新余额和配置）
+	const handleRefresh = useCallback(async () => {
+		// 节流：5秒内只允许刷新一次
+		const now = Date.now()
+		if (now - lastRefreshTimeRef.current < 5000) {
+			console.log("Refresh throttled, please wait...")
+			return
+		}
+		lastRefreshTimeRef.current = now
+
 		setIsRefreshing(true)
 		try {
-			await VVAccountServiceClient.vvResetAndRefreshConfig({})
+			// 同时刷新用户信息和配置
+			await Promise.all([VVAccountServiceClient.vvRefreshUserInfo({}), VVAccountServiceClient.vvResetAndRefreshConfig({})])
 		} catch (error) {
-			console.error("Failed to refresh config:", error)
+			console.error("Failed to refresh:", error)
 		} finally {
 			setIsRefreshing(false)
 		}
 	}, [])
+
+	// 十分钟自动刷新
+	useEffect(() => {
+		if (!isAuthenticated) return
+
+		// 立即刷新一次
+		handleRefresh()
+
+		// 设置定时器，每10分钟刷新一次
+		const interval = setInterval(
+			() => {
+				handleRefresh()
+			},
+			10 * 60 * 1000,
+		) // 10分钟
+
+		return () => clearInterval(interval)
+	}, [isAuthenticated, handleRefresh])
+
+	// 打开充值页面（使用 a 标签而不是 window.open）
+	const topupUrl = "https://vvcode.top/console/topup"
+
+	// 格式化余额显示
+	const formatQuota = (quota: number) => {
+		return (quota / 500000).toFixed(2)
+	}
 
 	// 连点5下用户名打开Cline设置
 	const handleUsernameClick = useCallback(() => {
@@ -79,12 +115,35 @@ const VVSettingsView = ({ onDone }: VVSettingsViewProps) => {
 						<div className="mb-6">
 							<h4 className="text-sm font-medium mb-3">账户</h4>
 							<div className="p-4 border border-input-border rounded bg-input-background">
-								<p className="text-sm font-medium cursor-pointer select-none mb-3" onClick={handleUsernameClick}>
+								<p className="text-sm font-medium cursor-pointer select-none mb-2" onClick={handleUsernameClick}>
 									{user.username}
 								</p>
-								<div className="flex gap-2">
-									<VSCodeButton appearance="secondary" disabled={isRefreshing} onClick={handleRefreshConfig}>
-										{isRefreshing ? "刷新中..." : "刷新配置"}
+
+								{/* 余额显示 */}
+								{user.quota !== undefined && (
+									<div className="mb-3 p-3 bg-vscode-editor-background rounded">
+										<div className="flex justify-between items-center mb-1">
+											<span className="text-xs text-description">当前余额</span>
+										</div>
+										<div className="text-lg font-semibold mb-1">¥{formatQuota(user.quota)}</div>
+										{user.usedQuota !== undefined && (
+											<div className="text-xs text-description">已使用: ¥{formatQuota(user.usedQuota)}</div>
+										)}
+									</div>
+								)}
+
+								<div className="flex gap-2 flex-wrap">
+									<a
+										href={topupUrl}
+										rel="noopener noreferrer"
+										style={{
+											textDecoration: "none",
+										}}
+										target="_blank">
+										<VSCodeButton appearance="primary">充值</VSCodeButton>
+									</a>
+									<VSCodeButton appearance="secondary" disabled={isRefreshing} onClick={handleRefresh}>
+										{isRefreshing ? "刷新中..." : "刷新"}
 									</VSCodeButton>
 									<VSCodeButton appearance="secondary" onClick={logout}>
 										退出登录

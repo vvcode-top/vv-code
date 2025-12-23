@@ -61,6 +61,10 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 		)
 	}
 
+	const toggleModal = () => {
+		setIsModalVisible((prev) => !prev)
+	}
+
 	const borderColor = `color-mix(in srgb, ${getAsVar(VSC_TITLEBAR_INACTIVE_FOREGROUND)} 20%, transparent)`
 	const borderGradient = `linear-gradient(to bottom, ${borderColor} 0%, transparent 50%)`
 	const bgColor = `color-mix(in srgb, var(--vscode-sideBar-background) 98%, white)`
@@ -112,6 +116,44 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 		)
 	}
 
+	// Collapsed state - show only icon on the right
+	if (!isModalVisible) {
+		return (
+			<div className="mx-3.5 flex justify-end py-1" style={style}>
+				<div
+					aria-label="Open auto-approve settings"
+					className="cursor-pointer p-1.5 rounded hover:bg-vscode-toolbar-hoverBackground transition-colors"
+					onClick={toggleModal}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault()
+							e.stopPropagation()
+							toggleModal()
+						}
+					}}
+					ref={buttonRef}
+					style={{
+						display: "inline-flex",
+						alignItems: "center",
+						justifyContent: "center",
+						color: "var(--vscode-foreground)",
+						opacity: 0.8,
+					}}
+					tabIndex={0}>
+					<span className="codicon codicon-chevron-up" style={{ fontSize: "16px" }} />
+				</div>
+
+				<AutoApproveModal
+					ACTION_METADATA={ACTION_METADATA}
+					buttonRef={buttonRef}
+					isVisible={isModalVisible}
+					setIsVisible={setIsModalVisible}
+				/>
+			</div>
+		)
+	}
+
+	// Expanded state - show full bar with actions
 	return (
 		<div
 			className="mx-3.5 select-none break-words relative"
@@ -143,16 +185,14 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 			/>
 
 			<div
-				aria-label={isModalVisible ? "Close auto-approve settings" : "Open auto-approve settings"}
+				aria-label="Close auto-approve settings"
 				className="group cursor-pointer pt-3 pb-3.5 pr-2 px-3.5 flex items-center justify-between gap-0"
-				onClick={() => {
-					setIsModalVisible((prev) => !prev)
-				}}
+				onClick={toggleModal}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
 						e.preventDefault()
 						e.stopPropagation()
-						setIsModalVisible((prev) => !prev)
+						toggleModal()
 					}
 				}}
 				ref={buttonRef}
@@ -161,11 +201,7 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 					<span className="whitespace-nowrap">Auto-approve:</span>
 					{getEnabledActionsText()}
 				</div>
-				{isModalVisible ? (
-					<span className="codicon codicon-chevron-down" />
-				) : (
-					<span className="codicon codicon-chevron-up" />
-				)}
+				<span className="codicon codicon-chevron-down" />
 			</div>
 
 			<AutoApproveModal

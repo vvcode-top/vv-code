@@ -92,6 +92,18 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Initialize test mode and add disposables to context
 	context.subscriptions.push(...testModeWatchers)
 
+	// VVCode Customization: Initialize balance status bar
+	const { VVBalanceStatusBar } = await import("./services/auth/vv/VVBalanceStatusBar")
+	const balanceStatusBar = VVBalanceStatusBar.getInstance()
+	balanceStatusBar.initialize(context)
+
+	// Register balance refresh command
+	context.subscriptions.push(
+		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
+			await balanceStatusBar.refreshBalance()
+		}),
+	)
+
 	vscode.commands.executeCommand("setContext", "vvcode.isDevMode", IS_DEV && IS_DEV === "true")
 
 	context.subscriptions.push(

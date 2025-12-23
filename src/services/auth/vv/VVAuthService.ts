@@ -35,14 +35,15 @@ export class VVAuthService {
 	private readonly AUTH_PAGE_URL: string
 
 	private constructor() {
-		// 检测开发环境（通过 IS_DEV 环境变量）
-		const isDevelopment = process.env.IS_DEV === "true" || process.env.VV_API_BASE_URL !== undefined
+		// 检测开发环境（仅通过 IS_DEV 环境变量）
+		const isDevelopment = process.env.IS_DEV === "true"
 		const devBaseUrl = process.env.DEV_BASE_URL || "http://127.0.0.1:3000"
 
-		// 支持通过环境变量自定义 API 地址
-		if (process.env.VV_API_BASE_URL) {
-			this.API_BASE_URL = process.env.VV_API_BASE_URL
-			this.AUTH_PAGE_URL = `${process.env.VV_API_BASE_URL.replace("/api", "")}/oauth/vscode/login`
+		// 支持通过环境变量自定义 API 地址（必须是非空字符串）
+		const customApiUrl = process.env.VV_API_BASE_URL
+		if (customApiUrl && customApiUrl.trim() !== "" && customApiUrl !== "undefined") {
+			this.API_BASE_URL = customApiUrl
+			this.AUTH_PAGE_URL = `${customApiUrl.replace("/api", "")}/oauth/vscode/login`
 		} else if (isDevelopment) {
 			// 开发环境默认使用本地地址
 			this.API_BASE_URL = `${devBaseUrl}/api`
@@ -119,7 +120,6 @@ export class VVAuthService {
 
 		try {
 			await this.refreshGroupConfig()
-			console.log("[VVAuth] Group config initialized on startup")
 		} catch (error) {
 			console.warn("[VVAuth] Failed to init group config on startup:", error)
 		}
@@ -238,8 +238,33 @@ export class VVAuthService {
 				controller.stateManager.setSecret("apiKey", undefined)
 				controller.stateManager.setGlobalState("anthropicBaseUrl", undefined)
 				controller.stateManager.setGlobalState("vvGroupConfig", undefined)
+				controller.stateManager.setGlobalState("vvNeedsWebInit", undefined)
 
-				const groupConfig = await this._provider.getGroupTokens(authInfo.accessToken, authInfo.userId)
+				let groupConfig = await this._provider.getGroupTokens(authInfo.accessToken, authInfo.userId)
+
+				// 检查是否有分组没有 apiKey，如果有则调用初始化接口
+				const hasEmptyApiKey = groupConfig.some((g) => !g.apiKey)
+				if (hasEmptyApiKey) {
+					console.log("[VVAuth] Some groups have no API key, initializing...")
+					try {
+						groupConfig = await this._provider.initGroupTokens(authInfo.accessToken, authInfo.userId)
+					} catch (initError) {
+						// 初始化失败，引导用户去 web 端
+						console.warn("[VVAuth] Failed to init group tokens, need web init:", initError)
+						controller.stateManager.setGlobalState("vvGroupConfig", groupConfig)
+						controller.stateManager.setGlobalState("vvNeedsWebInit", true)
+						// 继续执行后续流程，不抛出错误
+					}
+				}
+
+				// 再次检查是否还有空的 apiKey
+				const stillHasEmptyApiKey = groupConfig.some((g) => !g.apiKey)
+				console.log("[VVAuth] After init, groupConfig:", JSON.stringify(groupConfig, null, 2))
+				console.log("[VVAuth] stillHasEmptyApiKey:", stillHasEmptyApiKey)
+				if (stillHasEmptyApiKey) {
+					controller.stateManager.setGlobalState("vvNeedsWebInit", true)
+				}
+
 				controller.stateManager.setGlobalState("vvGroupConfig", groupConfig)
 
 				// 自动应用默认分组的 API Key
@@ -249,6 +274,8 @@ export class VVAuthService {
 				}
 			} catch (error) {
 				console.warn("[VVAuth] Failed to fetch group config:", error)
+				// 获取分组配置失败，引导用户去 web 端
+				controller.stateManager.setGlobalState("vvNeedsWebInit", true)
 			}
 
 			// 8. 立即持久化用户数据
@@ -265,6 +292,9 @@ export class VVAuthService {
 			// 11. 更新认证状态并广播
 			this._authenticated = true
 			this.sendAuthStatusUpdate()
+
+			// 12. 更新状态栏显示
+			this.updateBalanceStatusBar()
 		} catch (error) {
 			// 清理临时存储
 			controller.stateManager.setGlobalState("vv:authState", undefined)
@@ -464,12 +494,25 @@ export class VVAuthService {
 		const userId = controller.stateManager.getSecretKey("vv:userId")
 
 		if (!accessToken || !userId) {
-			return undefined
+			// 未登录时设置为空数组，表示已加载但没有配置
+			controller.stateManager.setGlobalState("vvGroupConfig", [])
+			controller.stateManager.setGlobalState("vvNeedsWebInit", undefined)
+			await controller.stateManager.flushPendingState()
+			return []
 		}
 
 		try {
 			const groupConfig = await this._provider.getGroupTokens(accessToken, parseInt(userId, 10))
 			controller.stateManager.setGlobalState("vvGroupConfig", groupConfig)
+
+			// 检查是否还有空的 apiKey
+			const hasEmptyApiKey = groupConfig.some((g) => !g.apiKey)
+			if (hasEmptyApiKey) {
+				controller.stateManager.setGlobalState("vvNeedsWebInit", true)
+			} else {
+				// 配置完整，清除需要初始化的标记
+				controller.stateManager.setGlobalState("vvNeedsWebInit", undefined)
+			}
 
 			// 重新应用当前默认分组的配置
 			const defaultGroup = groupConfig.find((g) => g.isDefault)
@@ -482,7 +525,10 @@ export class VVAuthService {
 			return groupConfig
 		} catch (error) {
 			console.error("[VVAuth] Failed to refresh group config:", error)
-			return undefined
+			// API 调用失败时设置为空数组，避免一直显示"正在加载"
+			controller.stateManager.setGlobalState("vvGroupConfig", [])
+			await controller.stateManager.flushPendingState()
+			return []
 		}
 	}
 
@@ -493,9 +539,11 @@ export class VVAuthService {
 	public async resetAndRefreshConfig(): Promise<void> {
 		const controller = this.requireController()
 
-		// 1. 清除旧的 API 配置
+		// 1. 清除旧的 API 配置（包括 model 设置）
 		controller.stateManager.setSecret("apiKey", undefined)
 		controller.stateManager.setGlobalState("anthropicBaseUrl", undefined)
+		controller.stateManager.setGlobalState("planModeApiModelId", undefined)
+		controller.stateManager.setGlobalState("actModeApiModelId", undefined)
 		controller.stateManager.setGlobalState("vvGroupConfig", undefined)
 		await controller.stateManager.flushPendingState()
 
@@ -503,6 +551,49 @@ export class VVAuthService {
 		await this.refreshGroupConfig()
 
 		console.log("[VVAuth] Config reset and refreshed")
+	}
+
+	/**
+	 * 刷新用户信息（包括余额）
+	 */
+	public async refreshUserInfo(): Promise<VVUserInfo | undefined> {
+		const controller = this.requireController()
+		const accessToken = controller.stateManager.getSecretKey("vv:accessToken")
+		const userId = controller.stateManager.getSecretKey("vv:userId")
+
+		if (!accessToken || !userId) {
+			return undefined
+		}
+
+		try {
+			const userInfo = await this._provider.getUserInfo(accessToken, parseInt(userId, 10))
+			controller.stateManager.setGlobalState("vvUserInfo", userInfo)
+			await controller.stateManager.flushPendingState()
+			this.sendAuthStatusUpdate()
+			this.updateBalanceStatusBar()
+			return userInfo
+		} catch (error) {
+			console.error("[VVAuth] Failed to refresh user info:", error)
+			return undefined
+		}
+	}
+
+	/**
+	 * 更新状态栏显示
+	 */
+	private updateBalanceStatusBar(): void {
+		try {
+			// 动态导入避免循环依赖
+			import("./VVBalanceStatusBar")
+				.then(({ VVBalanceStatusBar }) => {
+					VVBalanceStatusBar.getInstance().updateDisplay()
+				})
+				.catch((error) => {
+					console.error("[VVAuth] Failed to update balance status bar:", error)
+				})
+		} catch (error) {
+			console.error("[VVAuth] Failed to update balance status bar:", error)
+		}
 	}
 }
 

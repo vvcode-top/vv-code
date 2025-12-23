@@ -217,26 +217,37 @@ export class VVAuthProvider {
 	 * @returns 分组配置列表
 	 */
 	async getGroupTokens(accessToken: string, userId: number): Promise<VVGroupConfig> {
-		const response = await fetch(`${this.apiBaseUrl}/oauth/vscode/group_tokens`, {
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				"New-Api-User": userId.toString(),
-			},
-		})
+		const url = `${this.apiBaseUrl}/oauth/vscode/group_tokens`
+		console.log("[VVAuth] getGroupTokens request:", { url, userId })
 
-		if (!response.ok) {
-			const errorText = await response.text()
-			throw new Error(`Failed to get group tokens: ${errorText}`)
+		try {
+			const response = await fetch(url, {
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"New-Api-User": userId.toString(),
+					Accept: "application/json",
+				},
+			})
+
+			console.log("[VVAuth] getGroupTokens response status:", response.status)
+
+			if (!response.ok) {
+				const errorText = await response.text()
+				console.error("[VVAuth] getGroupTokens error response:", errorText)
+				throw new Error(`Failed to get group tokens: ${errorText}`)
+			}
+
+			const result = await response.json()
+			if (!result.success) {
+				throw new Error(result.message || "Failed to get group tokens")
+			}
+
+			// 将服务器返回的字段映射为前端期望的格式
+			return this.mapGroupTokensResponse(result.data)
+		} catch (error) {
+			console.error("[VVAuth] getGroupTokens fetch error:", error)
+			throw error
 		}
-
-		const result = await response.json()
-
-		console.log("getGroupTokens", result)
-		if (!result.success) {
-			throw new Error(result.message || "Failed to get group tokens")
-		}
-
-		return result.data as VVGroupConfig
 	}
 
 	/**
@@ -246,26 +257,58 @@ export class VVAuthProvider {
 	 * @returns 初始化后的分组配置列表
 	 */
 	async initGroupTokens(accessToken: string, userId: number): Promise<VVGroupConfig> {
-		const response = await fetch(`${this.apiBaseUrl}/oauth/vscode/init_group_tokens`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				"New-Api-User": userId.toString(),
-				"Content-Type": "application/json",
-			},
-		})
+		const url = `${this.apiBaseUrl}/oauth/vscode/init_group_tokens`
+		console.log("[VVAuth] initGroupTokens request:", { url, userId })
 
-		if (!response.ok) {
-			const errorText = await response.text()
-			throw new Error(`Failed to init group tokens: ${errorText}`)
+		try {
+			const response = await fetch(url, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"New-Api-User": userId.toString(),
+					"Content-Type": "application/json",
+					Accept: "application/json",
+				},
+			})
+
+			console.log("[VVAuth] initGroupTokens response status:", response.status)
+
+			if (!response.ok) {
+				const errorText = await response.text()
+				console.error("[VVAuth] initGroupTokens error response:", errorText)
+				throw new Error(`Failed to init group tokens: ${errorText}`)
+			}
+
+			const result = await response.json()
+			console.log("[VVAuth] initGroupTokens result:", JSON.stringify(result, null, 2))
+			if (!result.success) {
+				throw new Error(result.message || "Failed to init group tokens")
+			}
+
+			// 将服务器返回的字段映射为前端期望的格式
+			return this.mapGroupTokensResponse(result.data)
+		} catch (error) {
+			console.error("[VVAuth] initGroupTokens fetch error:", error)
+			throw error
 		}
+	}
 
-		const result = await response.json()
-		if (!result.success) {
-			throw new Error(result.message || "Failed to init group tokens")
-		}
+	/**
+	 * 将服务器返回的分组数据映射为前端期望的格式
+	 */
+	private mapGroupTokensResponse(data: any[]): VVGroupConfig {
+		// 使用 provider 的 apiBaseUrl，去掉 /api 后缀
+		const baseUrl = this.apiBaseUrl.replace(/\/api$/, "")
 
-		return result.data as VVGroupConfig
+		return data.map((item) => ({
+			type: item.type as VVGroupConfig[0]["type"],
+			name: item.name,
+			defaultModelId: item.defaultModelId,
+			apiProvider: item.apiProvider,
+			apiKey: item.apiKey,
+			apiBaseUrl: baseUrl,
+			isDefault: item.isDefault,
+		}))
 	}
 }
 

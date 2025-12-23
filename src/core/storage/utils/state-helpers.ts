@@ -751,6 +751,7 @@ export async function readGlobalStateFromDisk(context: ExtensionContext): Promis
 			vvUserInfo: context.globalState.get<GlobalStateAndSettings["vvUserInfo"]>("vvUserInfo"),
 			vvUserConfig: context.globalState.get<GlobalStateAndSettings["vvUserConfig"]>("vvUserConfig"),
 			vvGroupConfig: context.globalState.get<GlobalStateAndSettings["vvGroupConfig"]>("vvGroupConfig"),
+			vvNeedsWebInit: context.globalState.get<GlobalStateAndSettings["vvNeedsWebInit"]>("vvNeedsWebInit"),
 			// VVCode Customization: 临时认证数据
 			"vv:authState": context.globalState.get<GlobalStateAndSettings["vv:authState"]>("vv:authState"),
 			"vv:codeVerifier": context.globalState.get<GlobalStateAndSettings["vv:codeVerifier"]>("vv:codeVerifier"),

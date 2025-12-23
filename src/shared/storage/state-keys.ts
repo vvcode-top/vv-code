@@ -63,6 +63,7 @@ export interface GlobalState {
 	vvUserInfo: VVUserInfo | undefined
 	vvUserConfig: VVUserConfig | undefined
 	vvGroupConfig: VVGroupConfig | undefined // VVCode 分组配置
+	vvNeedsWebInit: boolean | undefined // VVCode 需要去 web 端初始化配置
 	// VVCode Customization: 临时认证数据（仅在认证流程中使用）
 	"vv:authState": string | undefined
 	"vv:codeVerifier": string | undefined

@@ -108,6 +108,7 @@ export interface ExtensionState {
 	enableParallelToolCalling?: boolean
 	// VVCode Customization: 分组配置
 	vvGroupConfig?: VVGroupConfig
+	vvNeedsWebInit?: boolean // 需要去 web 端初始化配置
 }
 
 export interface ClineMessage {

@@ -998,6 +998,7 @@ export class Controller {
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			// VVCode Customization: 分组配置
 			vvGroupConfig: this.stateManager.getGlobalStateKey("vvGroupConfig"),
+			vvNeedsWebInit: this.stateManager.getGlobalStateKey("vvNeedsWebInit"),
 		}
 	}
 
