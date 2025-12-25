@@ -51,11 +51,15 @@ const VVWelcomeView = () => {
 
 					{/* 公告区域 */}
 					<div className="w-full max-w-xs mx-auto px-6 py-5 mb-8 rounded-xl border border-dashed border-[var(--vscode-focusBorder)]">
-						<p className="text-center text-sm text-[var(--vscode-foreground)] leading-loose">
-							<span className="text-lg mr-1">📢 </span>
-							VV Code 已正式上线
+						<p className="text-center text-sm text-[var(--vscode-foreground)] leading-relaxed">
+							<span className="font-bold text-[var(--vscode-textLink-foreground)]">折扣组</span>
+							：GLM4.7 全天免费
 							<br />
-							<span className="font-bold text-[var(--vscode-textLink-foreground)]">折扣组 免费使用</span>
+							<span className="font-bold text-[var(--vscode-textLink-foreground)]">日常组</span>
+							：适合日常编码
+							<br />
+							<span className="font-bold text-[var(--vscode-textLink-foreground)]">性能组</span>
+							：解决超复杂问题
 						</p>
 					</div>
 
