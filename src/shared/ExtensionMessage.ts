@@ -106,6 +106,7 @@ export interface ExtensionState {
 	subagentsEnabled?: boolean
 	nativeToolCallSetting?: boolean
 	enableParallelToolCalling?: boolean
+	backgroundEditEnabled?: boolean
 	// VVCode Customization: 分组配置
 	vvGroupConfig?: VVGroupConfig
 	vvNeedsWebInit?: boolean // 需要去 web 端初始化配置

@@ -996,6 +996,7 @@ export class Controller {
 			subagentsEnabled,
 			nativeToolCallSetting: this.stateManager.getGlobalStateKey("nativeToolCallEnabled"),
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
+			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
 			// VVCode Customization: 分组配置
 			vvGroupConfig: this.stateManager.getGlobalStateKey("vvGroupConfig"),
 			vvNeedsWebInit: this.stateManager.getGlobalStateKey("vvNeedsWebInit"),

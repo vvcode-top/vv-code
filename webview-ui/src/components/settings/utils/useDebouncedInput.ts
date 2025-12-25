@@ -15,39 +15,28 @@ export function useDebouncedInput<T>(
 	onChange: (value: T) => void,
 	debounceMs: number = 100,
 ): [T, (value: T) => void] {
-	// Local state to prevent jumpy input
+	// Local state to prevent jumpy input - initialize once
 	const [localValue, setLocalValue] = useState(initialValue)
-	// Track the last known external value to detect external changes
-	const lastExternalValueRef = useRef(initialValue)
-	// Track if user has made changes
-	const userChangedRef = useRef(false)
 
-	// Sync with external value changes (e.g., when switching groups)
+	// Track previous initialValue to detect external changes
+	const prevInitialValueRef = useRef<T>(initialValue)
+
+	// Sync local state when initialValue changes externally (e.g., when switching Plan/Act tabs)
 	useEffect(() => {
-		if (initialValue !== lastExternalValueRef.current) {
-			lastExternalValueRef.current = initialValue
+		if (prevInitialValueRef.current !== initialValue) {
 			setLocalValue(initialValue)
-			userChangedRef.current = false
+			prevInitialValueRef.current = initialValue
 		}
 	}, [initialValue])
 
-	// Wrapper to mark user edits
-	const handleSetValue = (value: T) => {
-		userChangedRef.current = true
-		setLocalValue(value)
-	}
-
-	// Debounced backend save - only saves if user made changes
+	// Debounced backend save - saves after user stops changing value
 	useDebounceEffect(
 		() => {
-			// Only save if user changed the value AND it's different from external value
-			if (userChangedRef.current && localValue !== lastExternalValueRef.current) {
-				onChange(localValue)
-			}
+			onChange(localValue)
 		},
 		debounceMs,
 		[localValue],
 	)
 
-	return [localValue, handleSetValue]
+	return [localValue, setLocalValue]
 }

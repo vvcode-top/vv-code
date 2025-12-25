@@ -38,6 +38,7 @@ if (!VALID_PLATFORMS.includes(platform)) {
 console.log("Building webview for", platform)
 
 export default defineConfig({
+	base: "./", // Use relative paths for assets in VSCode webview
 	plugins: [react(), tailwindcss(), writePortToFile()],
 	test: {
 		environment: "jsdom",
@@ -113,6 +114,7 @@ export default defineConfig({
 	define: {
 		__PLATFORM__: JSON.stringify(platform),
 		process: JSON.stringify({
+			platform: JSON.stringify(process?.platform),
 			env: {
 				NODE_ENV: JSON.stringify(process?.env?.IS_DEV ? "development" : "production"),
 				CLINE_ENVIRONMENT: JSON.stringify(process?.env?.CLINE_ENVIRONMENT ?? "production"),
