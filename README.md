@@ -4,7 +4,7 @@ VVCode 是一个强大的 VSCode AI 编程助手，提供自主编码能力。�
 
 ### 加入交流群
 
-<img src="assets/qq.jpg" width="200" alt="QQ群二维码" />
+QQ群：302736266
 
 ## 核心功能
 
