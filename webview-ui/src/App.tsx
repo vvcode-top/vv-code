@@ -2,12 +2,12 @@ import AccountView from "./components/account/AccountView"
 import ChatView from "./components/chat/ChatView"
 import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
-import VVWelcomeView from "./components/onboarding/VVWelcomeView"
+import VvWelcomeView from "./components/onboarding/VvWelcomeView"
 import SettingsView from "./components/settings/SettingsView"
-import VVSettingsView from "./components/settings/VVSettingsView" // VVCode Customization: 添加 VV 设置页面
+import VvSettingsView from "./components/settings/VvSettingsView" // VVCode Customization: 添加 VV 设置页面
 import { useClineAuth } from "./context/ClineAuthContext"
 import { useExtensionState } from "./context/ExtensionStateContext"
-import { useVVAuth } from "./hooks/useVVAuth" // VVCode Customization: 添加 VV 认证
+import { useVvAuth } from "./hooks/useVvAuth" // VVCode Customization: 添加 VV 认证
 import { Providers } from "./Providers"
 
 const AppContent = () => {
@@ -30,7 +30,7 @@ const AppContent = () => {
 	const { clineUser, organizations, activeOrganization } = useClineAuth()
 
 	// VVCode Customization: 检查 VV 认证状态
-	const { isAuthenticated: isVVAuthenticated, ready: vvAuthReady } = useVVAuth()
+	const { isAuthenticated: isVVAuthenticated, ready: vvAuthReady } = useVvAuth()
 
 	if (!didHydrateState || !vvAuthReady) {
 		return null
@@ -38,7 +38,7 @@ const AppContent = () => {
 
 	// VVCode Customization: 未登录 VV 时显示登录页
 	if (!isVVAuthenticated) {
-		return <VVWelcomeView />
+		return <VvWelcomeView />
 	}
 
 	return (
@@ -55,7 +55,7 @@ const AppContent = () => {
 				/>
 			)}
 			{/* VVCode Customization: 添加 VV 设置页面 */}
-			{showVVSettings && <VVSettingsView onDone={hideVVSettings} />}
+			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
 			{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
 			<ChatView isHidden={showSettings || showHistory || showMcp || showAccount || showVVSettings} />
 		</div>

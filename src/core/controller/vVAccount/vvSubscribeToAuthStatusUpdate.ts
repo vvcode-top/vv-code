@@ -2,8 +2,8 @@
 // Created: 2025-12-20
 
 import { EmptyRequest } from "@shared/proto/cline/common"
-import { VVAuthState } from "@shared/proto/cline/vv_account"
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+import { VvAuthState } from "@shared/proto/cline/vv_account"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from ".."
 import { StreamingResponseHandler } from "../grpc-handler"
 
@@ -20,8 +20,8 @@ import { StreamingResponseHandler } from "../grpc-handler"
 export async function vvSubscribeToAuthStatusUpdate(
 	controller: Controller,
 	request: EmptyRequest,
-	responseStream: StreamingResponseHandler<VVAuthState>,
+	responseStream: StreamingResponseHandler<VvAuthState>,
 	requestId?: string,
 ): Promise<void> {
-	VVAuthService.getInstance().subscribeToAuthStatusUpdate(controller, request, responseStream)
+	VvAuthService.getInstance().subscribeToAuthStatusUpdate(controller, request, responseStream)
 }

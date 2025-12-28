@@ -2,13 +2,13 @@
 // Created: 2025-12-20
 
 import { fetch } from "@/shared/net"
-import type { VVGroupConfig, VVUserConfig, VVUserInfo } from "@/shared/storage/state-keys"
+import type { VvGroupConfig, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
 
 /**
  * VVCode 认证提供商
  * 负责与 vvcode.top API 通信，处理 OAuth2 + PKCE 认证流程
  */
-export class VVAuthProvider {
+export class VvAuthProvider {
 	// API 基础 URL（可配置）
 	private apiBaseUrl: string
 
@@ -23,7 +23,7 @@ export class VVAuthProvider {
 	 * @param state CSRF 防护 state
 	 * @returns 认证信息
 	 */
-	async exchangeCodeForToken(code: string, codeVerifier: string, state: string): Promise<VVAuthInfo> {
+	async exchangeCodeForToken(code: string, codeVerifier: string, state: string): Promise<VvAuthInfo> {
 		// 使用 form-urlencoded 格式（OAuth2 标准格式）
 		const formData = new URLSearchParams()
 		formData.append("code", code)
@@ -99,7 +99,7 @@ export class VVAuthProvider {
 	 * @param userId 用户 ID（需要在请求头中传递）
 	 * @returns 用户信息
 	 */
-	async getUserInfo(accessToken: string, userId: number): Promise<VVUserInfo> {
+	async getUserInfo(accessToken: string, userId: number): Promise<VvUserInfo> {
 		const response = await fetch(`${this.apiBaseUrl}/user/self`, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
@@ -131,7 +131,7 @@ export class VVAuthProvider {
 	 * @param refreshToken 刷新令牌
 	 * @returns 新的认证信息
 	 */
-	async refreshAccessToken(refreshToken: string): Promise<VVAuthInfo> {
+	async refreshAccessToken(refreshToken: string): Promise<VvAuthInfo> {
 		const response = await fetch(`${this.apiBaseUrl}/oauth/vscode/refresh`, {
 			method: "POST",
 			headers: {
@@ -162,7 +162,7 @@ export class VVAuthProvider {
 	 * @param userId 用户 ID
 	 * @returns 用户配置
 	 */
-	async getUserConfig(accessToken: string, userId: number): Promise<VVUserConfig> {
+	async getUserConfig(accessToken: string, userId: number): Promise<VvUserConfig> {
 		const response = await fetch(`${this.apiBaseUrl}/user/config`, {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
@@ -216,7 +216,7 @@ export class VVAuthProvider {
 	 * @param userId 用户 ID
 	 * @returns 分组配置列表
 	 */
-	async getGroupTokens(accessToken: string, userId: number): Promise<VVGroupConfig> {
+	async getGroupTokens(accessToken: string, userId: number): Promise<VvGroupConfig> {
 		const url = `${this.apiBaseUrl}/oauth/vscode/group_tokens`
 		console.log("[VVAuth] getGroupTokens request:", { url, userId })
 
@@ -256,7 +256,7 @@ export class VVAuthProvider {
 	 * @param userId 用户 ID
 	 * @returns 初始化后的分组配置列表
 	 */
-	async initGroupTokens(accessToken: string, userId: number): Promise<VVGroupConfig> {
+	async initGroupTokens(accessToken: string, userId: number): Promise<VvGroupConfig> {
 		const url = `${this.apiBaseUrl}/oauth/vscode/init_group_tokens`
 		console.log("[VVAuth] initGroupTokens request:", { url, userId })
 
@@ -296,12 +296,12 @@ export class VVAuthProvider {
 	/**
 	 * 将服务器返回的分组数据映射为前端期望的格式
 	 */
-	private mapGroupTokensResponse(data: any[]): VVGroupConfig {
+	private mapGroupTokensResponse(data: any[]): VvGroupConfig {
 		// 使用 provider 的 apiBaseUrl，去掉 /api 后缀
 		const baseUrl = this.apiBaseUrl.replace(/\/api$/, "")
 
 		return data.map((item) => ({
-			type: item.type as VVGroupConfig[0]["type"],
+			type: item.type as VvGroupConfig[0]["type"],
 			name: item.name,
 			defaultModelId: item.defaultModelId,
 			apiProvider: item.apiProvider,
@@ -315,7 +315,7 @@ export class VVAuthProvider {
 /**
  * VVCode 认证信息
  */
-export interface VVAuthInfo {
+export interface VvAuthInfo {
 	accessToken: string
 	userId: number
 	username: string

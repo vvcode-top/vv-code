@@ -2,7 +2,7 @@
 // Created: 2025-12-20
 
 import { EmptyRequest, String as ProtoString } from "@shared/proto/cline/common"
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from "../index"
 
 /**
@@ -13,6 +13,6 @@ import { Controller } from "../index"
  * @returns 登录 URL 字符串
  */
 export async function vvAccountLoginClicked(_controller: Controller, _: EmptyRequest): Promise<ProtoString> {
-	const authUrl = await VVAuthService.getInstance().createAuthRequest()
+	const authUrl = await VvAuthService.getInstance().createAuthRequest()
 	return ProtoString.create({ value: authUrl })
 }

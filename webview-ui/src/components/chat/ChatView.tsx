@@ -11,7 +11,7 @@ import { useMount } from "react-use"
 import { normalizeApiConfiguration } from "@/components/settings/utils/providerUtils"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { FileServiceClient, UiServiceClient } from "@/services/grpc-client"
-import VVWelcomeView from "../onboarding/VVWelcomeView"
+import VvWelcomeView from "../onboarding/VvWelcomeView"
 import AutoApproveBar from "./auto-approve-menu/AutoApproveBar"
 // Import utilities and hooks from the new structure
 import {
@@ -330,7 +330,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 	if (!hasAvailableGroup) {
 		return (
 			<ChatLayout isHidden={isHidden}>
-				<VVWelcomeView />
+				<VvWelcomeView />
 			</ChatLayout>
 		)
 	}
@@ -351,7 +351,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 						task={task}
 					/>
 				) : (
-					<VVWelcomeView />
+					<VvWelcomeView />
 				)}
 				{task && (
 					<MessagesArea

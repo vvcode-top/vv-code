@@ -3,10 +3,10 @@
 
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import { memo } from "react"
-import { useVVAuth } from "@/hooks/useVVAuth"
+import { useVvAuth } from "@/hooks/useVvAuth"
 
-const VVAccountInfoCard = memo(() => {
-	const { user, isAuthenticated, ready, logout } = useVVAuth()
+const VvAccountInfoCard = memo(() => {
+	const { user, isAuthenticated, ready, logout } = useVvAuth()
 
 	if (!ready) {
 		return (
@@ -60,4 +60,4 @@ const VVAccountInfoCard = memo(() => {
 	)
 })
 
-export default VVAccountInfoCard
+export default VvAccountInfoCard

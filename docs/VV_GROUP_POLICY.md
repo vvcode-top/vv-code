@@ -129,8 +129,8 @@ type VVGroupConfig = VVGroupItem[]
 
 ```
 src/services/auth/vv/
-├── VVAuthService.ts              # 分组管理核心（switchGroup, applyGroupConfig, refreshGroupConfig）
-└── providers/VVAuthProvider.ts   # API 调用（getGroupTokens）
+├── VvAuthService.ts              # 分组管理核心（switchGroup, applyGroupConfig, refreshGroupConfig）
+└── providers/VvAuthProvider.ts   # API 调用（getGroupTokens）
 
 src/core/controller/vVAccount/
 ├── vvSwitchGroup.ts              # 切换分组 RPC handler（含 API handler 重建）
@@ -140,11 +140,11 @@ src/services/uri/
 └── SharedUriHandler.ts           # URI handler（/init-complete）
 
 webview-ui/src/components/chat/
-└── VVGroupSelector.tsx           # 分组选择器 UI
+└── VvGroupSelector.tsx           # 分组选择器 UI
 
 webview-ui/src/components/settings/
-├── VVSettingsView.tsx            # VV 设置页面
-└── VVAccountInfoCard.tsx         # 账户信息卡片
+├── VvSettingsView.tsx            # VV 设置页面
+└── VvAccountInfoCard.tsx         # 账户信息卡片
 
 proto/cline/
 └── vv_account.proto              # gRPC 服务定义
@@ -174,7 +174,7 @@ const baseUrl = isDev ? devBaseUrl : group.apiBaseUrl
 
 连点5下用户名可打开 Cline 原生设置页面（用于调试）。
 
-实现位置：`webview-ui/src/components/settings/VVSettingsView.tsx`
+实现位置：`webview-ui/src/components/settings/VvSettingsView.tsx`
 
 ---
 

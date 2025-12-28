@@ -2,7 +2,7 @@
 // Created: 2025-12-20
 
 import { Empty, EmptyRequest } from "@shared/proto/cline/common"
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from "../index"
 
 /**
@@ -13,6 +13,6 @@ import { Controller } from "../index"
  * @returns 空响应
  */
 export async function vvAccountLogoutClicked(_controller: Controller, _: EmptyRequest): Promise<Empty> {
-	await VVAuthService.getInstance().handleDeauth()
+	await VvAuthService.getInstance().handleDeauth()
 	return Empty.create()
 }

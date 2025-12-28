@@ -114,19 +114,19 @@ StateManager 默认 500ms 防抖，认证流程需要立即持久化以防止数
 
 ```
 src/services/auth/vv/
-├── VVAuthService.ts          # 认证服务（单例）
+├── VvAuthService.ts          # 认证服务（单例）
 └── providers/
-    └── VVAuthProvider.ts     # API 客户端
+    └── VvAuthProvider.ts     # API 客户端
 
 src/shared/
 ├── vv-crypto.ts              # PKCE 工具函数
 └── storage/state-keys.ts     # 类型定义（VVUserInfo, VVUserConfig）
 
 webview-ui/src/
-├── hooks/useVVAuth.ts        # 认证 Hook
+├── hooks/useVvAuth.ts        # 认证 Hook
 └── components/
-    ├── onboarding/VVUsageGuideView.tsx
-    └── settings/VVAccountInfoCard.tsx
+    ├── onboarding/VvUsageGuideView.tsx
+    └── settings/VvAccountInfoCard.tsx
 ```
 
 ---

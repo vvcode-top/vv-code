@@ -60,9 +60,9 @@ export interface GlobalState {
 	remoteWorkflowToggles: ClineRulesToggles
 	dismissedBanners: Array<{ bannerId: string; dismissedAt: number }>
 	// VVCode Customization: VVCode 用户信息
-	vvUserInfo: VVUserInfo | undefined
-	vvUserConfig: VVUserConfig | undefined
-	vvGroupConfig: VVGroupConfig | undefined // VVCode 分组配置
+	vvUserInfo: VvUserInfo | undefined
+	vvUserConfig: VvUserConfig | undefined
+	vvGroupConfig: VvGroupConfig | undefined // VVCode 分组配置
 	vvNeedsWebInit: boolean | undefined // VVCode 需要去 web 端初始化配置
 	// VVCode Customization: 临时认证数据（仅在认证流程中使用）
 	"vv:authState": string | undefined
@@ -70,7 +70,7 @@ export interface GlobalState {
 }
 
 // VVCode Customization: VVCode 用户信息类型
-export interface VVUserInfo {
+export interface VvUserInfo {
 	uid: string
 	username?: string
 	email?: string
@@ -82,18 +82,18 @@ export interface VVUserInfo {
 }
 
 // VVCode Customization: VVCode 用户配置类型
-export interface VVUserConfig {
+export interface VvUserConfig {
 	settings?: Array<{ key: string; value: string }> // 改为数组形式
 	features?: string[]
 	apiBaseUrl?: string
 }
 
 // VVCode Customization: 分组类型枚举
-export type VVGroupType = "discount" | "daily" | "performance"
+export type VvGroupType = "discount" | "daily" | "performance"
 
 // VVCode Customization: 分组配置项
-export interface VVGroupItem {
-	type: VVGroupType
+export interface VvGroupItem {
+	type: VvGroupType
 	name: string // 显示名称（中文）
 	defaultModelId: string // 默认模型 ID
 	apiProvider: string // API Provider（如 "ANTHROPIC"）
@@ -103,7 +103,7 @@ export interface VVGroupItem {
 }
 
 // VVCode Customization: 分组配置列表
-export type VVGroupConfig = VVGroupItem[]
+export type VvGroupConfig = VvGroupItem[]
 
 export interface Settings {
 	awsRegion: string | undefined

@@ -2,8 +2,8 @@
 // Created: 2025-12-20
 
 import { EmptyRequest } from "@shared/proto/cline/common"
-import { VVUserConfig } from "@shared/proto/cline/vv_account"
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+import { VvUserConfig } from "@shared/proto/cline/vv_account"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from "../index"
 
 /**
@@ -12,10 +12,10 @@ import { Controller } from "../index"
  * @param controller Controller 实例
  * @returns 用户配置
  */
-export async function vvGetUserConfig(_controller: Controller, _: EmptyRequest): Promise<VVUserConfig> {
-	const config = VVAuthService.getInstance().getUserConfig()
+export async function vvGetUserConfig(_controller: Controller, _: EmptyRequest): Promise<VvUserConfig> {
+	const config = VvAuthService.getInstance().getUserConfig()
 
-	return VVUserConfig.create({
+	return VvUserConfig.create({
 		settings: config?.settings || [],
 		features: config?.features || [],
 		apiBaseUrl: config?.apiBaseUrl,

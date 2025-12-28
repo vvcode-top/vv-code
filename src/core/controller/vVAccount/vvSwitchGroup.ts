@@ -3,7 +3,7 @@
 
 import { buildApiHandler } from "@core/api"
 import { Empty, String as ProtoString } from "@shared/proto/cline/common"
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from "../index"
 
 /**
@@ -17,7 +17,7 @@ export async function vvSwitchGroup(controller: Controller, request: ProtoString
 		throw new Error("Group type is required")
 	}
 
-	await VVAuthService.getInstance().switchGroup(groupType)
+	await VvAuthService.getInstance().switchGroup(groupType)
 
 	// 重建 API handler 以使用新的 apiKey
 	if (controller.task) {

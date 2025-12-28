@@ -2,9 +2,9 @@
 // Created: 2025-12-20
 
 import { EmptyRequest } from "@shared/proto/cline/common"
-import type { VVAuthState, VVUserInfo } from "@shared/proto/cline/vv_account"
+import type { VvAuthState, VvUserInfo } from "@shared/proto/cline/vv_account"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { VVAccountServiceClient } from "@/services/grpc-client"
+import { VvAccountServiceClient } from "@/services/grpc-client"
 
 /**
  * VVCode 认证 Hook
@@ -14,8 +14,8 @@ import { VVAccountServiceClient } from "@/services/grpc-client"
  * - 提供登录/登出方法
  * - 自动处理认证状态变化
  */
-export function useVVAuth() {
-	const [user, setUser] = useState<VVUserInfo | null>(null)
+export function useVvAuth() {
+	const [user, setUser] = useState<VvUserInfo | null>(null)
 	const [ready, setReady] = useState(false)
 	const [isLoggingIn, setIsLoggingIn] = useState(false)
 
@@ -45,7 +45,7 @@ export function useVVAuth() {
 		}, 60000)
 
 		try {
-			await VVAccountServiceClient.vvAccountLoginClicked(EmptyRequest.create())
+			await VvAccountServiceClient.vvAccountLoginClicked(EmptyRequest.create())
 		} catch (error) {
 			console.error("VVCode login failed:", error)
 			// 发生错误时清除 loading 状态和超时定时器
@@ -62,7 +62,7 @@ export function useVVAuth() {
 	 */
 	const logout = useCallback(async () => {
 		try {
-			await VVAccountServiceClient.vvAccountLogoutClicked(EmptyRequest.create())
+			await VvAccountServiceClient.vvAccountLogoutClicked(EmptyRequest.create())
 		} catch (error) {
 			console.error("VVCode logout failed:", error)
 		}
@@ -74,13 +74,13 @@ export function useVVAuth() {
 	useEffect(() => {
 		unmountedRef.current = false
 
-		const cancel = VVAccountServiceClient.vvSubscribeToAuthStatusUpdate(EmptyRequest.create(), {
-			onResponse: (response: VVAuthState) => {
+		const cancel = VvAccountServiceClient.vvSubscribeToAuthStatusUpdate(EmptyRequest.create(), {
+			onResponse: (response: VvAuthState) => {
 				if (unmountedRef.current) {
 					return
 				}
 
-				const nextUser = response?.user?.uid ? (response.user as VVUserInfo) : null
+				const nextUser = response?.user?.uid ? (response.user as VvUserInfo) : null
 				setUser(nextUser)
 
 				// 清除超时定时器和 loading 状态

@@ -5,7 +5,7 @@ import { memo, useEffect, useState } from "react"
 import ClineLogoWhite from "@/assets/ClineLogoWhite"
 import ApiOptions from "@/components/settings/ApiOptions"
 import { useExtensionState } from "@/context/ExtensionStateContext"
-import { useVVAuth } from "@/hooks/useVVAuth"
+import { useVvAuth } from "@/hooks/useVvAuth"
 import { AccountServiceClient, StateServiceClient } from "@/services/grpc-client"
 import { validateApiConfiguration } from "@/utils/validate"
 
@@ -19,7 +19,7 @@ const WelcomeView = memo(() => {
 	const [isLoading, setIsLoading] = useState(false)
 
 	// VVCode Customization: 添加 VV 认证
-	const { isAuthenticated: isVVAuthenticated, isLoggingIn: isVVLoggingIn, login: vvLogin } = useVVAuth()
+	const { isAuthenticated: isVVAuthenticated, isLoggingIn: isVVLoggingIn, login: vvLogin } = useVvAuth()
 
 	// VVCode: 检查是否有 apiKey
 	const hasApiKey = vvGroupConfig?.some((g) => g.apiKey) ?? false

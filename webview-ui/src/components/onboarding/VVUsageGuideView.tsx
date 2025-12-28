@@ -1,9 +1,9 @@
 import { useEffect } from "react"
-import { useVVAuth } from "@/hooks/useVVAuth"
+import { useVvAuth } from "@/hooks/useVvAuth"
 import { StateServiceClient } from "@/services/grpc-client"
 
-const VVUsageGuideView = () => {
-	const { isAuthenticated, user } = useVVAuth()
+const VvUsageGuideView = () => {
+	const { isAuthenticated, user } = useVvAuth()
 
 	useEffect(() => {
 		// 页面加载时自动标记欢迎流程完成
@@ -61,4 +61,4 @@ const VVUsageGuideView = () => {
 	)
 }
 
-export default VVUsageGuideView
+export default VvUsageGuideView

@@ -7,7 +7,7 @@ import { useCallback, useState } from "react"
 import styled from "styled-components"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useExtensionState } from "@/context/ExtensionStateContext"
-import { VVAccountServiceClient } from "@/services/grpc-client"
+import { VvAccountServiceClient } from "@/services/grpc-client"
 
 // VVCode 创建 Token 页面地址
 const VV_CREATE_TOKEN_URL = "https://vvcode.top/console/start"
@@ -113,11 +113,11 @@ const SetupLink = styled.a`
 	}
 `
 
-interface VVGroupSelectorProps {
+interface VvGroupSelectorProps {
 	className?: string
 }
 
-export function VVGroupSelector({ className }: VVGroupSelectorProps) {
+export function VvGroupSelector({ className }: VvGroupSelectorProps) {
 	const { vvGroupConfig } = useExtensionState()
 	const [isOpen, setIsOpen] = useState(false)
 	const [isSwitching, setIsSwitching] = useState(false)
@@ -134,7 +134,7 @@ export function VVGroupSelector({ className }: VVGroupSelectorProps) {
 			setIsOpen(false)
 
 			try {
-				await VVAccountServiceClient.vvSwitchGroup(ProtoString.create({ value: groupType }))
+				await VvAccountServiceClient.vvSwitchGroup(ProtoString.create({ value: groupType }))
 			} catch (error) {
 				console.error("Failed to switch group:", error)
 			} finally {

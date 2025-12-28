@@ -2,7 +2,7 @@
 // Created: 2025-12-23
 
 import { Empty, EmptyRequest } from "@shared/proto/cline/common"
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from "../index"
 
 /**
@@ -10,7 +10,7 @@ import { Controller } from "../index"
  * @param controller Controller 实例
  */
 export async function vvRefreshUserInfo(controller: Controller, _request: EmptyRequest): Promise<Empty> {
-	await VVAuthService.getInstance().refreshUserInfo()
+	await VvAuthService.getInstance().refreshUserInfo()
 	await controller.postStateToWebview()
 
 	return Empty.create()

@@ -5,20 +5,20 @@
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
-import { useVVAuth } from "@/hooks/useVVAuth"
-import { VVAccountServiceClient } from "@/services/grpc-client"
+import { useVvAuth } from "@/hooks/useVvAuth"
+import { VvAccountServiceClient } from "@/services/grpc-client"
 import { getEnvironmentColor } from "@/utils/environmentColors"
 
-interface VVSettingsViewProps {
+interface VvSettingsViewProps {
 	onDone: () => void
 }
 
 /**
  * VV 自定义设置页面
  */
-const VVSettingsView = ({ onDone }: VVSettingsViewProps) => {
+const VvSettingsView = ({ onDone }: VvSettingsViewProps) => {
 	const { environment, navigateToSettings } = useExtensionState()
-	const { user, isAuthenticated, logout } = useVVAuth()
+	const { user, isAuthenticated, logout } = useVvAuth()
 	const clickCountRef = useRef(0)
 	const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [isRefreshing, setIsRefreshing] = useState(false)
@@ -37,7 +37,7 @@ const VVSettingsView = ({ onDone }: VVSettingsViewProps) => {
 		setIsRefreshing(true)
 		try {
 			// 同时刷新用户信息和配置
-			await Promise.all([VVAccountServiceClient.vvRefreshUserInfo({}), VVAccountServiceClient.vvResetAndRefreshConfig({})])
+			await Promise.all([VvAccountServiceClient.vvRefreshUserInfo({}), VvAccountServiceClient.vvResetAndRefreshConfig({})])
 		} catch (error) {
 			console.error("Failed to refresh:", error)
 		} finally {
@@ -167,4 +167,4 @@ const VVSettingsView = ({ onDone }: VVSettingsViewProps) => {
 	)
 }
 
-export default VVSettingsView
+export default VvSettingsView

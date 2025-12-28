@@ -51,7 +51,7 @@ import { validateApiConfiguration, validateModelId } from "@/utils/validate"
 import ClineRulesToggleModal from "../cline-rules/ClineRulesToggleModal"
 import ServersToggleModal from "./ServersToggleModal"
 import VoiceRecorder from "./VoiceRecorder"
-import { VVGroupSelector } from "./VVGroupSelector"
+import { VvGroupSelector } from "./VvGroupSelector"
 
 const { MAX_IMAGES_AND_FILES_PER_MESSAGE } = CHAT_CONSTANTS
 
@@ -1751,7 +1751,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 							<ClineRulesToggleModal />
 
-							<VVGroupSelector />
+							<VvGroupSelector />
 
 							{/* VVCode: 旧的模型选择入口，已注释
 							<ModelContainer ref={modelSelectorRef}>

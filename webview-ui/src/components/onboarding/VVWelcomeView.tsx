@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useExtensionState } from "@/context/ExtensionStateContext"
-import { useVVAuth } from "@/hooks/useVVAuth"
-import VVUsageGuideView from "./VVUsageGuideView"
+import { useVvAuth } from "@/hooks/useVvAuth"
+import VvUsageGuideView from "./VvUsageGuideView"
 
 // VVCode logo - stylized double V with theme-aware background
 const VVLogo = () => (
@@ -23,9 +23,9 @@ const VV_CREATE_TOKEN_URL = "https://vvcode.top/console/start"
 
 type OnboardingStep = "welcome" | "usageGuide"
 
-const VVWelcomeView = () => {
+const VvWelcomeView = () => {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome")
-	const { isAuthenticated, isLoggingIn, login, user } = useVVAuth()
+	const { isAuthenticated, isLoggingIn, login, user } = useVvAuth()
 	const { vvGroupConfig, vvNeedsWebInit } = useExtensionState()
 
 	// 检查是否有可用的 API Key
@@ -117,7 +117,7 @@ const VVWelcomeView = () => {
 	}
 
 	// 使用指南页
-	return <VVUsageGuideView />
+	return <VvUsageGuideView />
 }
 
-export default VVWelcomeView
+export default VvWelcomeView

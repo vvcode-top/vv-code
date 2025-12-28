@@ -93,8 +93,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(...testModeWatchers)
 
 	// VVCode Customization: Initialize balance status bar
-	const { VVBalanceStatusBar } = await import("./services/auth/vv/VVBalanceStatusBar")
-	const balanceStatusBar = VVBalanceStatusBar.getInstance()
+	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
+	const balanceStatusBar = VvBalanceStatusBar.getInstance()
 	balanceStatusBar.initialize(context)
 
 	// Register balance refresh command
@@ -244,6 +244,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	// Get keyboard shortcut based on platform
+	const getShortcutKey = () => {
+		return process.platform === "darwin" ? "Cmd+'" : "Ctrl+'"
+	}
+
 	// Register code action provider
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
@@ -262,6 +267,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 					const actions: vscode.CodeAction[] = []
 					const editor = vscode.window.activeTextEditor // Get active editor for selection check
+					const shortcutKey = getShortcutKey()
 
 					// Expand range to include surrounding 3 lines or use selection if broader
 					const selection = editor?.selection
@@ -291,40 +297,40 @@ export async function activate(context: vscode.ExtensionContext) {
 						)
 					}
 
-					// Add to Cline (Always available)
-					const addAction = new vscode.CodeAction("Add to Cline", vscode.CodeActionKind.QuickFix)
+					// Add to VVCode (Always available)
+					const addAction = new vscode.CodeAction(`添加到VVCode (${shortcutKey})`, vscode.CodeActionKind.QuickFix)
 					addAction.command = {
 						command: commands.AddToChat,
-						title: "Add to Cline",
+						title: "添加到VVCode",
 						arguments: [expandedRange, context.diagnostics],
 					}
 					actions.push(addAction)
 
-					// Explain with Cline (Always available)
-					const explainAction = new vscode.CodeAction("Explain with Cline", vscode.CodeActionKind.RefactorExtract) // Using a refactor kind
+					// Explain with VVCode (Always available)
+					const explainAction = new vscode.CodeAction("使用VVCode解释代码", vscode.CodeActionKind.RefactorExtract)
 					explainAction.command = {
 						command: commands.ExplainCode,
-						title: "Explain with Cline",
+						title: "使用VVCode解释代码",
 						arguments: [expandedRange],
 					}
 					actions.push(explainAction)
 
-					// Improve with Cline (Always available)
-					const improveAction = new vscode.CodeAction("Improve with Cline", vscode.CodeActionKind.RefactorRewrite) // Using a refactor kind
+					// Improve with VVCode (Always available)
+					const improveAction = new vscode.CodeAction("使用VVCode改进代码", vscode.CodeActionKind.RefactorRewrite)
 					improveAction.command = {
 						command: commands.ImproveCode,
-						title: "Improve with Cline",
+						title: "使用VVCode改进代码",
 						arguments: [expandedRange],
 					}
 					actions.push(improveAction)
 
-					// Fix with Cline (Only if diagnostics exist)
+					// Fix with VVCode (Only if diagnostics exist)
 					if (context.diagnostics.length > 0) {
-						const fixAction = new vscode.CodeAction("Fix with Cline", vscode.CodeActionKind.QuickFix)
+						const fixAction = new vscode.CodeAction("使用VVCode修复问题", vscode.CodeActionKind.QuickFix)
 						fixAction.isPreferred = true
 						fixAction.command = {
 							command: commands.FixWithCline,
-							title: "Fix with Cline",
+							title: "使用VVCode修复问题",
 							arguments: [expandedRange, context.diagnostics],
 						}
 						actions.push(fixAction)

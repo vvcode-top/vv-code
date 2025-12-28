@@ -30,8 +30,8 @@ import { ExtensionRegistryInfo } from "@/registry"
 import { AuthService } from "@/services/auth/AuthService"
 import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
-// VVCode Customization: 导入 VVAuthService
-import { VVAuthService } from "@/services/auth/vv/VVAuthService"
+// VVCode Customization: 导入 VvAuthService
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
 import { telemetryService } from "@/services/telemetry"
@@ -72,7 +72,7 @@ export class Controller {
 	authService: AuthService
 	ocaAuthService: OcaAuthService
 	// VVCode Customization: VVCode 认证服务
-	vvAuthService: import("@/services/auth/vv/VVAuthService").VVAuthService
+	vvAuthService: import("@/services/auth/vv/VvAuthService").VvAuthService
 	readonly stateManager: StateManager
 
 	// NEW: Add workspace manager (optional initially)
@@ -145,8 +145,8 @@ export class Controller {
 		})
 		this.authService = AuthService.getInstance(this)
 		this.ocaAuthService = OcaAuthService.initialize(this)
-		// VVCode Customization: 初始化 VVAuthService
-		this.vvAuthService = VVAuthService.initialize(this)
+		// VVCode Customization: 初始化 VvAuthService
+		this.vvAuthService = VvAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
 
 		this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {

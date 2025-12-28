@@ -4,23 +4,23 @@
 import type { Controller } from "@/core/controller"
 import type { StreamingResponseHandler } from "@/core/controller/grpc-handler"
 import { HostProvider } from "@/hosts/host-provider"
-import type { VVGroupConfig, VVGroupItem, VVUserConfig, VVUserInfo } from "@/shared/storage/state-keys"
+import type { VvGroupConfig, VvGroupItem, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
 import { generateCodeChallenge, generateCodeVerifier, generateState } from "@/shared/vv-crypto"
 import { openExternal } from "@/utils/env"
-import { type VVAuthInfo, VVAuthProvider } from "./providers/VVAuthProvider"
+import { type VvAuthInfo, VvAuthProvider } from "./providers/VvAuthProvider"
 
 /**
  * VVCode 认证服务
  * 使用 VSCode URI Handler + PKCE 实现安全的 OAuth2 认证流程
  */
-export class VVAuthService {
-	private static instance: VVAuthService | null = null
+export class VvAuthService {
+	private static instance: VvAuthService | null = null
 	private _controller: Controller | null = null
-	private _provider: VVAuthProvider
+	private _provider: VvAuthProvider
 	private _authenticated: boolean = false
 	private _activeAuthStatusUpdateSubscriptions = new Set<{
 		controller: Controller
-		responseStream: StreamingResponseHandler<VVAuthState>
+		responseStream: StreamingResponseHandler<VvAuthState>
 	}>()
 
 	// 防止重复请求的标记
@@ -55,7 +55,7 @@ export class VVAuthService {
 			this.AUTH_PAGE_URL = "https://vvcode.top/oauth/vscode/login"
 		}
 
-		this._provider = new VVAuthProvider(this.API_BASE_URL)
+		this._provider = new VvAuthProvider(this.API_BASE_URL)
 	}
 
 	private requireController(): Controller {
@@ -68,32 +68,32 @@ export class VVAuthService {
 	/**
 	 * 初始化单例
 	 */
-	public static initialize(controller: Controller): VVAuthService {
-		if (!VVAuthService.instance) {
-			VVAuthService.instance = new VVAuthService()
+	public static initialize(controller: Controller): VvAuthService {
+		if (!VvAuthService.instance) {
+			VvAuthService.instance = new VvAuthService()
 		}
-		VVAuthService.instance._controller = controller
+		VvAuthService.instance._controller = controller
 
 		// 如果用户已登录，主动获取分组配置
-		VVAuthService.instance.initGroupConfigIfAuthenticated()
+		VvAuthService.instance.initGroupConfigIfAuthenticated()
 
-		return VVAuthService.instance
+		return VvAuthService.instance
 	}
 
 	/**
 	 * 获取单例实例
 	 */
-	public static getInstance(): VVAuthService {
-		if (!VVAuthService.instance || !VVAuthService.instance._controller) {
-			throw new Error("VVAuthService not initialized. Call VVAuthService.initialize(controller) first.")
+	public static getInstance(): VvAuthService {
+		if (!VvAuthService.instance || !VvAuthService.instance._controller) {
+			throw new Error("VvAuthService not initialized. Call VvAuthService.initialize(controller) first.")
 		}
-		return VVAuthService.instance
+		return VvAuthService.instance
 	}
 
 	/**
 	 * 获取当前认证状态
 	 */
-	public getInfo(): VVAuthState {
+	public getInfo(): VvAuthState {
 		const controller = this.requireController()
 		const user = controller.stateManager.getGlobalStateKey("vvUserInfo")
 
@@ -216,7 +216,7 @@ export class VVAuthService {
 			}
 
 			// 3. 使用 code 交换 access_token
-			const authInfo: VVAuthInfo = await this._provider.exchangeCodeForToken(code, codeVerifier, state)
+			const authInfo: VvAuthInfo = await this._provider.exchangeCodeForToken(code, codeVerifier, state)
 
 			// 4. 存储 access_token 和 user_id
 			controller.stateManager.setSecret("vv:accessToken", authInfo.accessToken)
@@ -358,7 +358,7 @@ export class VVAuthService {
 	public subscribeToAuthStatusUpdate(
 		controller: Controller,
 		_request: any,
-		responseStream: StreamingResponseHandler<VVAuthState>,
+		responseStream: StreamingResponseHandler<VvAuthState>,
 	): () => void {
 		const subscription = { controller, responseStream }
 		this._activeAuthStatusUpdateSubscriptions.add(subscription)
@@ -404,7 +404,7 @@ export class VVAuthService {
 	/**
 	 * 获取用户信息
 	 */
-	public getUserInfo(): VVUserInfo | undefined {
+	public getUserInfo(): VvUserInfo | undefined {
 		const controller = this.requireController()
 		return controller.stateManager.getGlobalStateKey("vvUserInfo")
 	}
@@ -412,7 +412,7 @@ export class VVAuthService {
 	/**
 	 * 获取用户配置
 	 */
-	public getUserConfig(): VVUserConfig | undefined {
+	public getUserConfig(): VvUserConfig | undefined {
 		const controller = this.requireController()
 		return controller.stateManager.getGlobalStateKey("vvUserConfig")
 	}
@@ -420,7 +420,7 @@ export class VVAuthService {
 	/**
 	 * 获取分组配置
 	 */
-	public getGroupConfig(): VVGroupConfig | undefined {
+	public getGroupConfig(): VvGroupConfig | undefined {
 		const controller = this.requireController()
 		return controller.stateManager.getGlobalStateKey("vvGroupConfig")
 	}
@@ -465,7 +465,7 @@ export class VVAuthService {
 	 * 应用分组配置到 API 设置
 	 * @param group 分组配置
 	 */
-	private async applyGroupConfig(group: VVGroupItem): Promise<void> {
+	private async applyGroupConfig(group: VvGroupItem): Promise<void> {
 		const controller = this.requireController()
 		const isDev = process.env.IS_DEV === "true"
 		const devBaseUrl = process.env.DEV_BASE_URL || "http://127.0.0.1:3000"
@@ -490,7 +490,7 @@ export class VVAuthService {
 	/**
 	 * 刷新分组配置
 	 */
-	public async refreshGroupConfig(): Promise<VVGroupConfig | undefined> {
+	public async refreshGroupConfig(): Promise<VvGroupConfig | undefined> {
 		const controller = this.requireController()
 		const accessToken = controller.stateManager.getSecretKey("vv:accessToken")
 		const userId = controller.stateManager.getSecretKey("vv:userId")
@@ -558,7 +558,7 @@ export class VVAuthService {
 	/**
 	 * 刷新用户信息（包括余额）
 	 */
-	public async refreshUserInfo(): Promise<VVUserInfo | undefined> {
+	public async refreshUserInfo(): Promise<VvUserInfo | undefined> {
 		const controller = this.requireController()
 		const accessToken = controller.stateManager.getSecretKey("vv:accessToken")
 		const userId = controller.stateManager.getSecretKey("vv:userId")
@@ -586,9 +586,9 @@ export class VVAuthService {
 	private updateBalanceStatusBar(): void {
 		try {
 			// 动态导入避免循环依赖
-			import("./VVBalanceStatusBar")
-				.then(({ VVBalanceStatusBar }) => {
-					VVBalanceStatusBar.getInstance().updateDisplay()
+			import("@hosts/vscode/VvBalanceStatusBar")
+				.then(({ VvBalanceStatusBar }) => {
+					VvBalanceStatusBar.getInstance().updateDisplay()
 				})
 				.catch((error) => {
 					console.error("[VVAuth] Failed to update balance status bar:", error)
@@ -602,6 +602,6 @@ export class VVAuthService {
 /**
  * VVCode 认证状态
  */
-export interface VVAuthState {
-	user?: VVUserInfo
+export interface VvAuthState {
+	user?: VvUserInfo
 }
