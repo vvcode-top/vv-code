@@ -34,7 +34,7 @@ export const ClineAccountInfoCard = () => {
 			) : (
 				<div>
 					<VSCodeButton className="mt-0" disabled={isLoading} onClick={handleLogin}>
-						Sign Up with Cline
+						Sign Up with VVCode
 						{isLoading && (
 							<span className="ml-1 animate-spin">
 								<span className="codicon codicon-refresh"></span>

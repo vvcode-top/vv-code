@@ -1,7 +1,8 @@
 import { expect } from "@playwright/test"
 import { e2e } from "./utils/helpers"
 
-e2e("Chat - can send messages and switch between modes", async ({ helper, sidebar, page }) => {
+// VVCode: Skip - requires VV login which needs browser redirect (not testable in E2E)
+e2e.skip("Chat - can send messages and switch between modes", async ({ helper, sidebar, page }) => {
 	// Sign in
 	await helper.signin(sidebar)
 

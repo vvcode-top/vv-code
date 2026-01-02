@@ -66,7 +66,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ open, onClose, ver
 			<div className="flex gap-2 flex-wrap">{children}</div>
 		) : (
 			<Button className="my-1" onClick={handleShowAccount} size="sm">
-				Sign Up with Cline
+				Sign Up with VVCode
 			</Button>
 		)
 
@@ -87,7 +87,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ open, onClose, ver
 					{/* Description */}
 					<ul className="text-sm pl-3 list-disc" style={{ color: "var(--vscode-descriptionForeground)" }}>
 						<li className="mb-2">
-							<strong>Cline provider</strong> now runs on the Vercel AI Gateway for better latency and fewer errors.
+							<strong>VVCode provider</strong> now runs on the Vercel AI Gateway for better latency and fewer
+							errors.
 						</li>
 						<li>
 							<strong>GLM 4.7</strong> now available!
