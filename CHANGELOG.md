@@ -1,5 +1,13 @@
 # VVCode Changelog
 
+## [1.1.4] - 2025-01-10
+
+### Added
+- 新增备用登录功能（本地回环），解决部分 Windows 用户无法通过 URI Handler 完成登录的问题
+
+### Fixed
+- 修复初始化登录时拉取 token 的问题
+
 ## [1.1.3] - 2025-01-10
 
 ### Changed

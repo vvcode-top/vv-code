@@ -17,6 +17,10 @@ service VvAccountService {
   // 生成 PKCE 参数，打开浏览器跳转到 vvcode.top
   rpc vvAccountLoginClicked(EmptyRequest) returns (String);
 
+  // 备用登录（使用本地回环）
+  // 当 URI Handler 无法正常工作时，使用本地 HTTP 服务器接收回调
+  rpc vvAccountFallbackLogin(EmptyRequest) returns (String);
+
   // 用户点击登出按钮
   // 清除所有认证信息和用户状态
   rpc vvAccountLogoutClicked(EmptyRequest) returns (Empty);

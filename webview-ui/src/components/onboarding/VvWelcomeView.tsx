@@ -25,7 +25,7 @@ type OnboardingStep = "welcome" | "usageGuide"
 
 const VvWelcomeView = () => {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome")
-	const { isAuthenticated, isLoggingIn, login, user } = useVvAuth()
+	const { isAuthenticated, isLoggingIn, login, fallbackLogin, user } = useVvAuth()
 	const { vvGroupConfig, vvNeedsWebInit } = useExtensionState()
 
 	// 检查是否有可用的 API Key
@@ -100,16 +100,23 @@ const VvWelcomeView = () => {
 							)}
 						</div>
 					) : (
-						<Button className="px-8 py-5" disabled={isLoggingIn} onClick={login} variant="default">
-							{isLoggingIn ? (
-								<>
-									<i className="codicon codicon-loading codicon-modifier-spin mr-2"></i>
-									正在跳转...
-								</>
-							) : (
-								"登录账号"
+						<div className="flex flex-col gap-3 items-center">
+							<Button className="px-8 py-5" disabled={isLoggingIn} onClick={login} variant="default">
+								{isLoggingIn ? (
+									<>
+										<i className="codicon codicon-loading codicon-modifier-spin mr-2"></i>
+										正在跳转...
+									</>
+								) : (
+									"登录账号"
+								)}
+							</Button>
+							{isLoggingIn && (
+								<Button className="text-xs" onClick={fallbackLogin} variant="link">
+									登录失败？点此重试登录
+								</Button>
 							)}
-						</Button>
+						</div>
 					)}
 				</div>
 			</div>

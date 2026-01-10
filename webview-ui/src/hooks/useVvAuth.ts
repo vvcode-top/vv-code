@@ -58,6 +58,38 @@ export function useVvAuth() {
 	}, [])
 
 	/**
+	 * 备用登录（使用本地回环）
+	 * 当 URI Handler 无法正常工作时使用
+	 */
+	const fallbackLogin = useCallback(async () => {
+		setIsLoggingIn(true)
+
+		// 清除之前的超时定时器
+		if (loginTimeoutRef.current) {
+			clearTimeout(loginTimeoutRef.current)
+		}
+
+		// 设置 60 秒超时
+		loginTimeoutRef.current = setTimeout(() => {
+			console.warn("VVCode fallback login timeout: no response after 60s")
+			setIsLoggingIn(false)
+			loginTimeoutRef.current = null
+		}, 60000)
+
+		try {
+			await VvAccountServiceClient.vvAccountFallbackLogin(EmptyRequest.create())
+		} catch (error) {
+			console.error("VVCode fallback login failed:", error)
+			// 发生错误时清除 loading 状态和超时定时器
+			if (loginTimeoutRef.current) {
+				clearTimeout(loginTimeoutRef.current)
+				loginTimeoutRef.current = null
+			}
+			setIsLoggingIn(false)
+		}
+	}, [])
+
+	/**
 	 * 登出
 	 */
 	const logout = useCallback(async () => {
@@ -157,6 +189,7 @@ export function useVvAuth() {
 		ready,
 		isLoggingIn,
 		login,
+		fallbackLogin,
 		logout,
 	}
 }

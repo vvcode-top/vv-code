@@ -3,6 +3,7 @@
 
 import type { Controller } from "@/core/controller"
 import type { StreamingResponseHandler } from "@/core/controller/grpc-handler"
+import { AuthHandler } from "@/hosts/external/AuthHandler"
 import { HostProvider } from "@/hosts/host-provider"
 import type { VvGroupConfig, VvGroupItem, VvGroupType, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
 import { generateCodeChallenge, generateCodeVerifier, generateState } from "@/shared/vv-crypto"
@@ -113,10 +114,21 @@ export class VvAuthService {
 
 	/**
 	 * 初始化时检查登录状态并获取分组配置
+	 * 注意：由于 StateManager 异步读取 secrets，此方法需要重试机制
 	 */
 	private async initGroupConfigIfAuthenticated(): Promise<void> {
+		// 首次检查
 		if (!this.isAuthenticated) {
-			return
+			// 可能是 secrets 还没加载完成，等待后重试
+			console.log("[VVAuth] Not authenticated on first check, waiting for secrets to load...")
+			await new Promise((resolve) => setTimeout(resolve, 500))
+
+			// 重试检查
+			if (!this.isAuthenticated) {
+				console.log("[VVAuth] Still not authenticated after waiting, skipping group init")
+				return
+			}
+			console.log("[VVAuth] Authenticated after waiting, proceeding with group init")
 		}
 
 		try {
@@ -154,6 +166,50 @@ export class VvAuthService {
 
 		// 5. 构建回调 URI（使用 HostProvider 获取回调 URL）
 		const callbackHost = await HostProvider.get().getCallbackUrl()
+		const callbackUri = `${callbackHost}/vv-callback`
+
+		// 6. 构建授权 URL
+		const authUrl = new URL(this.AUTH_PAGE_URL)
+		authUrl.searchParams.set("state", state)
+		authUrl.searchParams.set("code_challenge", codeChallenge)
+		authUrl.searchParams.set("redirect_uri", callbackUri)
+
+		// 7. 打开浏览器
+		await openExternal(authUrl.toString())
+
+		return authUrl.toString()
+	}
+
+	/**
+	 * 创建备用登录请求（使用本地回环）
+	 * 当 URI Handler 无法正常工作时，使用本地 HTTP 服务器接收回调
+	 */
+	public async createFallbackAuthRequest(): Promise<string> {
+		const controller = this.requireController()
+
+		// 1. 生成 PKCE 参数
+		const state = generateState()
+		const codeVerifier = generateCodeVerifier()
+		const codeChallenge = generateCodeChallenge(codeVerifier)
+
+		// 2. 保存到 GlobalState（临时使用，因为 Secrets 可能在扩展重载时丢失）
+		controller.stateManager.setGlobalState("vv:authState", state)
+		controller.stateManager.setGlobalState("vv:codeVerifier", codeVerifier)
+
+		// 3. 强制立即持久化到磁盘
+		await controller.stateManager.flushPendingState()
+
+		// 4. 验证保存成功
+		const savedState = controller.stateManager.getGlobalStateKey("vv:authState")
+		const savedVerifier = controller.stateManager.getGlobalStateKey("vv:codeVerifier")
+
+		if (!savedState || !savedVerifier) {
+			throw new Error("Failed to save authentication state. Please try again.")
+		}
+
+		// 5. 启用 AuthHandler 并获取本地回环 URL
+		AuthHandler.getInstance().setEnabled(true)
+		const callbackHost = await AuthHandler.getInstance().getCallbackUrl()
 		const callbackUri = `${callbackHost}/vv-callback`
 
 		// 6. 构建授权 URL
