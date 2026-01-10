@@ -8,7 +8,7 @@ const id = ClineDefaultTool.FILE_READ
 const generic: ClineToolSpec = {
 	variant: ModelFamily.GENERIC,
 	id,
-	name: "read_file",
+	name: "Read",
 	description:
 		"Request to read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files. Automatically extracts raw text from PDF and DOCX files. May not be suitable for other types of binary files, as it returns the raw content as a string. Do NOT use this tool to list the contents of a directory. Only use this tool on files.",
 	parameters: [
@@ -25,7 +25,7 @@ const generic: ClineToolSpec = {
 const NATIVE_GPT_5: ClineToolSpec = {
 	variant: ModelFamily.NATIVE_GPT_5,
 	id,
-	name: "read_file",
+	name: "Read",
 	description:
 		"Request to read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files. Automatically extracts raw text from PDF and DOCX files. May not be suitable for other types of binary files, as it returns the raw content as a string. Do NOT use this tool to list the contents of a directory. Only use this tool on files.",
 	parameters: [

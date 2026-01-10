@@ -1,5 +1,10 @@
 # VVCode Changelog
 
+## [1.1.3] - 2025-01-10
+
+### Changed
+- 优化 read_file 工具名称显示
+
 ## [1.1.1] - 2025-12-31
 
 ### Changed

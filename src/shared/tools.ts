@@ -10,7 +10,7 @@ export enum ClineDefaultTool {
 	ATTEMPT = "attempt_completion",
 	BASH = "execute_command",
 	FILE_EDIT = "replace_in_file",
-	FILE_READ = "read_file",
+	FILE_READ = "Read",
 	FILE_NEW = "write_to_file",
 	SEARCH = "search_files",
 	LIST_FILES = "list_files",

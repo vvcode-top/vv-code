@@ -24,10 +24,10 @@
 			"preLaunchTask": "${defaultBuildTask}",
 			"envFile": "${workspaceFolder}/.env",
 			"env": {
-				"IS_DEV": "true",
+				"IS_DEV": "false",
 				"DEV_WORKSPACE_FOLDER": "${workspaceFolder}",
 				"CLINE_ENVIRONMENT": "production",
-				"DEV_BASE_URL": "http://127.0.0.1:3000"
+				"DEV_BASE_URL": "https://vvcode.top"
 			}
 		},
 		{
