@@ -114,21 +114,11 @@ export class VvAuthService {
 
 	/**
 	 * 初始化时检查登录状态并获取分组配置
-	 * 注意：由于 StateManager 异步读取 secrets，此方法需要重试机制
+	 * 注意：WebView 初始化时会再次调用 refreshGroupConfig，确保状态同步
 	 */
 	private async initGroupConfigIfAuthenticated(): Promise<void> {
-		// 首次检查
 		if (!this.isAuthenticated) {
-			// 可能是 secrets 还没加载完成，等待后重试
-			console.log("[VVAuth] Not authenticated on first check, waiting for secrets to load...")
-			await new Promise((resolve) => setTimeout(resolve, 500))
-
-			// 重试检查
-			if (!this.isAuthenticated) {
-				console.log("[VVAuth] Still not authenticated after waiting, skipping group init")
-				return
-			}
-			console.log("[VVAuth] Authenticated after waiting, proceeding with group init")
+			return
 		}
 
 		try {
@@ -353,11 +343,14 @@ export class VvAuthService {
 			// 10. 记录已处理的授权码
 			this._lastProcessedCode = code
 
-			// 11. 更新认证状态并广播
+			// 11. 先同步完整状态到 WebView（确保 vvGroupConfig 在认证状态更新前已推送）
+			await controller.postStateToWebview()
+
+			// 12. 再更新认证状态并广播（此时 WebView 已有最新的 vvGroupConfig）
 			this._authenticated = true
 			this.sendAuthStatusUpdate()
 
-			// 12. 更新状态栏显示
+			// 13. 更新状态栏显示
 			this.updateBalanceStatusBar()
 		} catch (error) {
 			// 清理临时存储

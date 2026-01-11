@@ -1,7 +1,9 @@
-import { useState } from "react"
+import { EmptyRequest } from "@shared/proto/cline/common"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { useVvAuth } from "@/hooks/useVvAuth"
+import { VvAccountServiceClient } from "@/services/grpc-client"
 import VvUsageGuideView from "./VvUsageGuideView"
 
 // VVCode logo - stylized double V with theme-aware background
@@ -31,7 +33,16 @@ const VvWelcomeView = () => {
 	// 检查是否有可用的 API Key
 	// undefined 表示还在加载中，空数组或所有分组都没有 apiKey 表示需要创建
 	const isLoadingConfig = vvGroupConfig === undefined
-	const hasApiKey = vvGroupConfig?.some((g) => g.apiKey && g.apiKey.trim() !== "") ?? false
+	const hasApiKey = useMemo(() => vvGroupConfig?.some((g) => g.apiKey && g.apiKey.trim() !== "") ?? false, [vvGroupConfig])
+
+	// 已登录但分组配置还未加载时，主动请求刷新
+	useEffect(() => {
+		if (isAuthenticated && isLoadingConfig) {
+			VvAccountServiceClient.vvRefreshGroupConfig(EmptyRequest.create()).catch((err) =>
+				console.warn("[VvWelcomeView] Failed to refresh group config:", err),
+			)
+		}
+	}, [isAuthenticated, isLoadingConfig])
 
 	// 欢迎页
 	if (currentStep === "welcome") {
@@ -111,11 +122,9 @@ const VvWelcomeView = () => {
 									"登录账号"
 								)}
 							</Button>
-							{isLoggingIn && (
-								<Button className="text-xs" onClick={fallbackLogin} variant="link">
-									登录失败？点此重试登录
-								</Button>
-							)}
+							<Button className="text-xs" onClick={fallbackLogin} variant="link">
+								{isLoggingIn ? "登录遇到问题？点此重试" : "备用登录入口"}
+							</Button>
 						</div>
 					)}
 				</div>
