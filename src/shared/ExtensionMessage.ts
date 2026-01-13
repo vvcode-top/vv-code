@@ -1,7 +1,7 @@
 // type that represents json data that is sent from extension to webview, called ExtensionMessage and has 'type' enum which can be 'plusButtonClicked' or 'settingsButtonClicked' or 'hello'
 
 import { WorkspaceRoot } from "@shared/multi-root/types"
-import { RemoteConfigFields } from "@shared/storage/state-keys"
+import { RemoteConfigFields, VvGroupConfig } from "@shared/storage/state-keys"
 import type { Environment } from "../config"
 import { AutoApprovalSettings } from "./AutoApprovalSettings"
 import { ApiConfiguration } from "./api"
@@ -111,6 +111,10 @@ export interface ExtensionState {
 	nativeToolCallSetting?: boolean
 	enableParallelToolCalling?: boolean
 	backgroundEditEnabled?: boolean
+	// VVCode Customization: 分组配置
+	vvGroupConfig?: VvGroupConfig
+	vvNeedsWebInit?: boolean // 需要去 web 端初始化配置
+	vvSelectedGroupType?: string // 用户选中的分组类型
 	optOutOfRemoteConfig?: boolean
 	banners?: BannerCardData[]
 }

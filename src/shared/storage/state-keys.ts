@@ -22,6 +22,46 @@ import { UserInfo } from "@shared/UserInfo"
 import { LanguageModelChatSelector } from "vscode"
 
 // ============================================================================
+// VVCode Customization: VVCode 类型定义
+// ============================================================================
+
+// VVCode 用户信息类型
+export interface VvUserInfo {
+	uid: string
+	username?: string
+	email?: string
+	avatarUrl?: string
+	createdAt?: number
+	quota?: number
+	usedQuota?: number
+	vipLevel?: number
+}
+
+// VVCode 用户配置类型
+export interface VvUserConfig {
+	settings?: Array<{ key: string; value: string }> // 改为数组形式
+	features?: string[]
+	apiBaseUrl?: string
+}
+
+// 分组类型枚举
+export type VvGroupType = "discount" | "daily" | "performance"
+
+// 分组配置项
+export interface VvGroupItem {
+	type: VvGroupType
+	name: string // 显示名称（中文）
+	defaultModelId: string // 默认模型 ID
+	apiProvider: string // API Provider（如 "ANTHROPIC"）
+	apiKey: string // API Key（未配置时为空字符串）
+	apiBaseUrl?: string // 可选：自定义端点
+	isDefault: boolean // 是否为默认分组
+}
+
+// 分组配置列表
+export type VvGroupConfig = VvGroupItem[]
+
+// ============================================================================
 // SINGLE SOURCE OF TRUTH FOR STORAGE KEYS
 //
 // Property definitions with types, default values, and metadata
@@ -80,6 +120,21 @@ const GLOBAL_STATE_FIELDS = {
 	remoteRulesToggles: { default: {} as ClineRulesToggles },
 	remoteWorkflowToggles: { default: {} as ClineRulesToggles },
 	dismissedBanners: { default: [] as Array<{ bannerId: string; dismissedAt: number }> },
+	// VVCode Customization: VVCode 用户信息
+	vvUserInfo: { default: undefined as VvUserInfo | undefined },
+	vvUserConfig: { default: undefined as VvUserConfig | undefined },
+	vvGroupConfig: { default: undefined as VvGroupConfig | undefined }, // VVCode 分组配置
+	vvSelectedGroupType: { default: undefined as VvGroupType | undefined }, // VVCode 用户上次选中的分组类型
+	vvNeedsWebInit: { default: undefined as boolean | undefined }, // VVCode 需要去 web 端初始化配置
+	// VVCode Customization: Inline completion settings
+	vvInlineCompletionEnabled: { default: undefined as boolean | undefined },
+	vvInlineCompletionProvider: { default: undefined as string | undefined },
+	vvInlineCompletionModelId: { default: undefined as string | undefined },
+	vvInlineCompletionDebounceMs: { default: undefined as number | undefined },
+	vvInlineCompletionUseGroupApiKey: { default: undefined as boolean | undefined },
+	// VVCode Customization: 临时认证数据（仅在认证流程中使用）
+	"vv:authState": { default: undefined as string | undefined },
+	"vv:codeVerifier": { default: undefined as string | undefined },
 } satisfies FieldDefinitions
 
 // Fields that map directly to ApiHandlerOptions in @shared/api.ts
@@ -334,6 +389,14 @@ const SECRETS_KEYS = [
 	"ocaApiKey",
 	"ocaRefreshToken",
 	"mcpOAuthSecrets",
+	// VVCode Customization: VVCode 认证相关密钥
+	"vv:accessToken", // VVCode 访问令牌
+	"vv:refreshToken", // VVCode 刷新令牌
+	"vv:userId", // VVCode 用户 ID
+	"vv:authState", // CSRF 防护 state（临时）- 已迁移到 GlobalState
+	"vv:codeVerifier", // PKCE code_verifier（临时）- 已迁移到 GlobalState
+	// VVCode Customization: Inline completion API key
+	"vv:completionApiKey",
 ] as const
 
 export const LocalStateKeys = [
