@@ -32,14 +32,15 @@ import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
 // VVCode Customization: 导入 VvAuthService
 import { VvAuthService } from "@/services/auth/vv/VvAuthService"
+import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
 import { telemetryService } from "@/services/telemetry"
+import { BannerCardData } from "@/shared/cline/banner"
 import { getAxiosSettings } from "@/shared/net"
 import { ShowMessageType } from "@/shared/proto/host/window"
 import { getLatestAnnouncementId } from "@/utils/announcements"
 import { getCwd, getDesktopDir } from "@/utils/path"
-import { BannerService } from "../../services/banner/BannerService"
 import { PromptRegistry } from "../prompts/system-prompt"
 import {
 	ensureCacheDirectoryExists,
@@ -873,6 +874,8 @@ export class Controller {
 		const enableCheckpointsSetting = this.stateManager.getGlobalSettingsKey("enableCheckpointsSetting")
 		const globalClineRulesToggles = this.stateManager.getGlobalSettingsKey("globalClineRulesToggles")
 		const globalWorkflowToggles = this.stateManager.getGlobalSettingsKey("globalWorkflowToggles")
+		const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles")
+		const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles")
 		const remoteRulesToggles = this.stateManager.getGlobalStateKey("remoteRulesToggles")
 		const remoteWorkflowToggles = this.stateManager.getGlobalStateKey("remoteWorkflowToggles")
 		const shellIntegrationTimeout = this.stateManager.getGlobalSettingsKey("shellIntegrationTimeout")
@@ -893,6 +896,7 @@ export class Controller {
 		const lastDismissedModelBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedModelBannerVersion") || 0
 		const lastDismissedCliBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedCliBannerVersion") || 0
 		const subagentsEnabled = this.stateManager.getGlobalSettingsKey("subagentsEnabled")
+		const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
 
 		const localClineRulesToggles = this.stateManager.getWorkspaceStateKey("localClineRulesToggles")
 		const localWindsurfRulesToggles = this.stateManager.getWorkspaceStateKey("localWindsurfRulesToggles")
@@ -916,6 +920,7 @@ export class Controller {
 		const distinctId = getDistinctId()
 		const version = ExtensionRegistryInfo.version
 		const environment = ClineEnv.config().environment
+		const banners = await this.getBanners()
 
 		// Set feature flag in dictation settings based on platform
 		const updatedDictationSettings = {
@@ -956,6 +961,8 @@ export class Controller {
 			localAgentsRulesToggles: localAgentsRulesToggles || {},
 			localWorkflowToggles: workflowToggles || {},
 			globalWorkflowToggles: globalWorkflowToggles || {},
+			globalSkillsToggles: globalSkillsToggles || {},
+			localSkillsToggles: localSkillsToggles || {},
 			remoteRulesToggles: remoteRulesToggles,
 			remoteWorkflowToggles: remoteWorkflowToggles,
 			shellIntegrationTimeout,
@@ -1001,6 +1008,9 @@ export class Controller {
 			vvGroupConfig: this.stateManager.getGlobalStateKey("vvGroupConfig"),
 			vvNeedsWebInit: this.stateManager.getGlobalStateKey("vvNeedsWebInit"),
 			vvSelectedGroupType: this.stateManager.getGlobalStateKey("vvSelectedGroupType"),
+			skillsEnabled,
+			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
+			banners,
 		}
 	}
 
@@ -1043,64 +1053,12 @@ export class Controller {
 		return history
 	}
 
-	/**
-	 * Initializes the BannerService if not already initialized
-	 */
-	private async ensureBannerService() {
-		if (!BannerService.isInitialized()) {
-			try {
-				BannerService.initialize(this)
-			} catch (error) {
-				console.error("Failed to initialize BannerService:", error)
-			}
-		}
-	}
-
-	/**
-	 * Fetches non-dismissed banners for display
-	 * @returns Array of banners that haven't been dismissed
-	 */
-	async fetchBannersForDisplay(): Promise<any[]> {
+	async getBanners(): Promise<BannerCardData[]> {
 		try {
-			await this.ensureBannerService()
-			if (BannerService.isInitialized()) {
-				return await BannerService.get().getNonDismissedBanners()
-			}
-		} catch (error) {
-			console.error("Failed to fetch banners:", error)
-		}
-		return []
-	}
-
-	/**
-	 * Dismisses a banner and sends telemetry
-	 * @param bannerId The ID of the banner to dismiss
-	 */
-	async dismissBanner(bannerId: string): Promise<void> {
-		try {
-			await this.ensureBannerService()
-			if (BannerService.isInitialized()) {
-				await BannerService.get().dismissBanner(bannerId)
-				await this.postStateToWebview()
-			}
-		} catch (error) {
-			console.error("Failed to dismiss banner:", error)
-		}
-	}
-
-	/**
-	 * Sends a banner event for telemetry tracking
-	 * @param bannerId The ID of the banner
-	 * @param eventType The type of event (seen, dismiss, click)
-	 */
-	async trackBannerEvent(bannerId: string, eventType: "dismiss"): Promise<void> {
-		try {
-			await this.ensureBannerService()
-			if (BannerService.isInitialized()) {
-				await BannerService.get().sendBannerEvent(bannerId, eventType)
-			}
-		} catch (error) {
-			console.error("Failed to track banner event:", error)
+			return BannerService.get().getActiveBanners()
+		} catch (err) {
+			console.log(err)
+			return []
 		}
 	}
 }

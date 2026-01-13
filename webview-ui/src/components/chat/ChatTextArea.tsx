@@ -566,7 +566,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				}
 				if (showContextMenu) {
 					if (event.key === "Escape") {
-						// event.preventDefault()
+						setShowContextMenu(false)
 						setSelectedType(null)
 						setSelectedMenuIndex(DEFAULT_CONTEXT_MENU_OPTION)
 						setSearchQuery("")
@@ -1155,9 +1155,17 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		// Get model display name
 		const modelDisplayName = useMemo(() => {
 			const { selectedProvider, selectedModelId } = normalizeApiConfiguration(apiConfiguration, mode)
-			const { vsCodeLmModelSelector, togetherModelId, lmStudioModelId, ollamaModelId, liteLlmModelId, requestyModelId } =
-				getModeSpecificFields(apiConfiguration, mode)
+			const {
+				vsCodeLmModelSelector,
+				togetherModelId,
+				lmStudioModelId,
+				ollamaModelId,
+				liteLlmModelId,
+				requestyModelId,
+				vercelAiGatewayModelId,
+			} = getModeSpecificFields(apiConfiguration, mode)
 			const unknownModel = "unknown"
+
 			if (!apiConfiguration) {
 				return unknownModel
 			}
@@ -1178,6 +1186,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					return `${selectedProvider}:${liteLlmModelId}`
 				case "requesty":
 					return `${selectedProvider}:${requestyModelId}`
+				case "vercel-ai-gateway":
+					return `${selectedProvider}:${vercelAiGatewayModelId || selectedModelId}`
 				case "anthropic":
 				case "openrouter":
 				default:

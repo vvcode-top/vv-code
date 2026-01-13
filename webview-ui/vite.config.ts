@@ -39,6 +39,9 @@ console.log("Building webview for", platform)
 
 export default defineConfig({
 	base: "./", // Use relative paths for assets in VSCode webview
+	optimizeDeps: {
+		force: true, // Forces re-optimization
+	},
 	plugins: [react(), tailwindcss(), writePortToFile()],
 	test: {
 		environment: "jsdom",
