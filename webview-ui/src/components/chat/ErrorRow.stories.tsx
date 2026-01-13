@@ -206,7 +206,7 @@ export const InteractiveSignIn: Story = {
 		message: createMockMessage(),
 		errorType: "error",
 		apiRequestFailedMessage: JSON.stringify({
-			message: "Please sign in to access Cline services.",
+			message: "Please sign in to access VVCode services.",
 			code: "ERR_BAD_REQUEST",
 			request_id: "req_signin_test",
 			providerId: "cline",
@@ -216,7 +216,7 @@ export const InteractiveSignIn: Story = {
 		const canvas = within(canvasElement)
 
 		// Find the sign in button
-		const signInButton = canvas.getByRole("button", { name: /sign in to cline/i })
+		const signInButton = canvas.getByRole("button", { name: /sign in to vvcode/i })
 		await expect(signInButton).toBeInTheDocument()
 
 		// Test button is clickable
