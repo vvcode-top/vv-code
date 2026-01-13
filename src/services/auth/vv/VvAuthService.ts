@@ -552,6 +552,10 @@ export class VvAuthService {
 		const isDev = process.env.IS_DEV === "true"
 		const devBaseUrl = process.env.DEV_BASE_URL || "http://127.0.0.1:3000"
 
+		// 设置 API Provider 为 Anthropic
+		controller.stateManager.setGlobalState("planModeApiProvider", "anthropic")
+		controller.stateManager.setGlobalState("actModeApiProvider", "anthropic")
+
 		// 设置 Anthropic API Key
 		controller.stateManager.setSecret("apiKey", group.apiKey)
 
