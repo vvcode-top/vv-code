@@ -310,6 +310,29 @@ export class VvAuthProvider {
 			isDefault: item.isDefault,
 		}))
 	}
+
+	/**
+	 * 获取系统状态（包含公告等信息）
+	 * @returns 系统状态信息
+	 */
+	async getSystemStatus(): Promise<VvSystemStatusResponse> {
+		const response = await fetch(`${this.apiBaseUrl}/status`, {
+			headers: {
+				Accept: "application/json",
+			},
+		})
+
+		if (!response.ok) {
+			throw new Error(`Failed to get system status: ${response.statusText}`)
+		}
+
+		const result = await response.json()
+		if (!result.success) {
+			throw new Error(result.message || "Failed to get system status")
+		}
+
+		return result.data
+	}
 }
 
 /**
@@ -322,4 +345,24 @@ export interface VvAuthInfo {
 	displayName?: string
 	role?: number
 	expiresIn?: number
+}
+
+/**
+ * VVCode 系统状态响应
+ */
+export interface VvSystemStatusResponse {
+	announcements_enabled: boolean
+	announcements?: VvAnnouncementItem[]
+	version?: string
+	system_name?: string
+}
+
+/**
+ * VVCode 公告项
+ */
+export interface VvAnnouncementItem {
+	content: string
+	publishDate: string
+	type?: string
+	extra?: string
 }

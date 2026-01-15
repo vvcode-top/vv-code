@@ -29,6 +29,7 @@ const VvWelcomeView = () => {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome")
 	const { isAuthenticated, isLoggingIn, login, fallbackLogin, user } = useVvAuth()
 	const { vvGroupConfig, vvNeedsWebInit } = useExtensionState()
+	const [latestAnnouncement, setLatestAnnouncement] = useState<string | null>(null)
 
 	// 检查是否有可用的 API Key
 	// undefined 表示还在加载中，空数组或所有分组都没有 apiKey 表示需要创建
@@ -43,6 +44,21 @@ const VvWelcomeView = () => {
 			)
 		}
 	}, [isAuthenticated, isLoadingConfig])
+
+	// 获取最新公告
+	useEffect(() => {
+		VvAccountServiceClient.vvGetSystemStatus(EmptyRequest.create())
+			.then((status) => {
+				if (status.announcementsEnabled && status.announcements && status.announcements.length > 0) {
+					// 获取最新的一条公告（第一条）
+					const newest = status.announcements[0]
+					setLatestAnnouncement(newest.content)
+				}
+			})
+			.catch((err) => {
+				console.warn("[VvWelcomeView] Failed to fetch announcements:", err)
+			})
+	}, [])
 
 	// 欢迎页
 	if (currentStep === "welcome") {
@@ -62,16 +78,23 @@ const VvWelcomeView = () => {
 
 					{/* 公告区域 */}
 					<div className="w-full max-w-xs mx-auto px-6 py-5 mb-8 rounded-xl border border-dashed border-[var(--vscode-focusBorder)]">
-						<p className="text-center text-sm text-[var(--vscode-foreground)] leading-relaxed">
-							<span className="font-bold text-[var(--vscode-textLink-foreground)]">折扣组</span>
-							：GLM4.7 全天免费
-							<br />
-							<span className="font-bold text-[var(--vscode-textLink-foreground)]">日常组</span>
-							：适合日常编码
-							<br />
-							<span className="font-bold text-[var(--vscode-textLink-foreground)]">性能组</span>
-							：解决超复杂问题
-						</p>
+						{latestAnnouncement ? (
+							<div
+								className="text-center text-sm text-[var(--vscode-foreground)] leading-relaxed [&_a]:text-[var(--vscode-textLink-foreground)] [&_a]:underline"
+								dangerouslySetInnerHTML={{ __html: latestAnnouncement }}
+							/>
+						) : (
+							<p className="text-center text-sm text-[var(--vscode-foreground)] leading-relaxed">
+								<span className="font-bold text-[var(--vscode-textLink-foreground)]">折扣组</span>
+								：GLM4.7 全天免费
+								<br />
+								<span className="font-bold text-[var(--vscode-textLink-foreground)]">日常组</span>
+								：适合日常编码
+								<br />
+								<span className="font-bold text-[var(--vscode-textLink-foreground)]">性能组</span>
+								：解决超复杂问题
+							</p>
+						)}
 					</div>
 
 					{/* 登录状态/按钮 */}

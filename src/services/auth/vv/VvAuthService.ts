@@ -690,6 +690,23 @@ export class VvAuthService {
 			console.error("[VVAuth] Failed to update balance status bar:", error)
 		}
 	}
+
+	/**
+	 * 获取系统状态（包含公告等信息）
+	 * @returns 系统状态信息
+	 */
+	public async getSystemStatus(): Promise<any> {
+		try {
+			return await this._provider.getSystemStatus()
+		} catch (error) {
+			console.error("[VVAuth] Failed to get system status:", error)
+			// 返回默认值，避免前端报错
+			return {
+				announcements_enabled: false,
+				announcements: [],
+			}
+		}
+	}
 }
 
 /**

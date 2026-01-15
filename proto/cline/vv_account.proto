@@ -43,6 +43,9 @@ service VvAccountService {
 
   // 刷新用户信息（包括余额）
   rpc vvRefreshUserInfo(EmptyRequest) returns (Empty);
+
+  // 获取系统状态（包含公告等信息）
+  rpc vvGetSystemStatus(EmptyRequest) returns (VvSystemStatus);
 }
 
 // VVCode 认证状态
@@ -74,4 +77,20 @@ message VvUserConfig {
 message VvConfigEntry {
   string key = 1;
   string value = 2;
+}
+
+// VVCode 系统状态
+message VvSystemStatus {
+  bool announcements_enabled = 1; // 是否启用公告功能
+  repeated VvAnnouncement announcements = 2; // 公告列表
+  optional string version = 3; // 系统版本
+  optional string system_name = 4; // 系统名称
+}
+
+// VVCode 公告
+message VvAnnouncement {
+  string content = 1; // 公告内容，最多500字符
+  string publish_date = 2; // 发布日期，RFC3339格式
+  optional string type = 3; // 公告类型：default/ongoing/success/warning/error
+  optional string extra = 4; // 额外说明信息，最多200字符
 }
