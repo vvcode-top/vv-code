@@ -76,26 +76,15 @@ const VvWelcomeView = () => {
 					{/* 品牌介绍 */}
 					<p className="text-sm text-foreground/50 text-center mb-8">AI 驱动的智能编程助手</p>
 
-					{/* 公告区域 */}
-					<div className="w-full max-w-xs mx-auto px-6 py-5 mb-8 rounded-xl border border-dashed border-[var(--vscode-focusBorder)]">
-						{latestAnnouncement ? (
+					{/* 公告区域 - 仅在有公告时显示 */}
+					{latestAnnouncement && (
+						<div className="w-full max-w-xs mx-auto px-6 py-5 mb-8 rounded-xl border border-dashed border-[var(--vscode-focusBorder)]">
 							<div
 								className="text-center text-sm text-[var(--vscode-foreground)] leading-relaxed [&_a]:text-[var(--vscode-textLink-foreground)] [&_a]:underline"
 								dangerouslySetInnerHTML={{ __html: latestAnnouncement }}
 							/>
-						) : (
-							<p className="text-center text-sm text-[var(--vscode-foreground)] leading-relaxed">
-								<span className="font-bold text-[var(--vscode-textLink-foreground)]">折扣组</span>
-								：GLM4.7 全天免费
-								<br />
-								<span className="font-bold text-[var(--vscode-textLink-foreground)]">日常组</span>
-								：适合日常编码
-								<br />
-								<span className="font-bold text-[var(--vscode-textLink-foreground)]">性能组</span>
-								：解决超复杂问题
-							</p>
-						)}
-					</div>
+						</div>
+					)}
 
 					{/* 登录状态/按钮 */}
 					{isAuthenticated && user ? (

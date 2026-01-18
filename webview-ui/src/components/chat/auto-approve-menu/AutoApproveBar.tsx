@@ -116,13 +116,15 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 		)
 	}
 
-	// Collapsed state - show only icon on the right
+	// Collapsed state - show only icon on the right (floating)
 	if (!isModalVisible) {
 		return (
-			<div className="mx-3.5 flex justify-end py-1" style={style}>
+			<div
+				className="absolute top-0 right-0 z-10 pointer-events-none"
+				style={{ transform: "translateY(-100%)", paddingRight: "14px", paddingBottom: "1px", ...style }}>
 				<div
 					aria-label="Open auto-approve settings"
-					className="cursor-pointer p-1.5 rounded hover:bg-vscode-toolbar-hoverBackground transition-colors"
+					className="cursor-pointer rounded hover:opacity-100 transition-all pointer-events-auto"
 					onClick={toggleModal}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
@@ -136,11 +138,16 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 						display: "inline-flex",
 						alignItems: "center",
 						justifyContent: "center",
+						padding: "6px 8px",
+						minWidth: "32px",
+						minHeight: "28px",
 						color: "var(--vscode-foreground)",
-						opacity: 0.8,
+						backgroundColor: bgColor,
+						opacity: 0.95,
+						boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
 					}}
 					tabIndex={0}>
-					<span className="codicon codicon-chevron-up" style={{ fontSize: "16px" }} />
+					<span className="codicon codicon-fold-up" style={{ fontSize: "16px" }} />
 				</div>
 
 				<AutoApproveModal

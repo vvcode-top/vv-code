@@ -368,7 +368,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 					/>
 				)}
 			</div>
-			<footer className="bg-(--vscode-sidebar-background)" style={{ gridRow: "2" }}>
+			<footer className="bg-(--vscode-sidebar-background) relative" style={{ gridRow: "2" }}>
 				<AutoApproveBar />
 				<ActionButtons
 					chatState={chatState}
