@@ -1,44 +1,66 @@
+import type { Boolean, EmptyRequest } from "@shared/proto/cline/common"
+import { useEffect } from "react"
 import AccountView from "./components/account/AccountView"
 import ChatView from "./components/chat/ChatView"
 import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
-import VvWelcomeView from "./components/onboarding/VvWelcomeView"
+import OnboardingView from "./components/onboarding/OnboardingView"
 import SettingsView from "./components/settings/SettingsView"
-import VvSettingsView from "./components/settings/VvSettingsView" // VVCode Customization: 添加 VV 设置页面
+import WelcomeView from "./components/welcome/WelcomeView"
+import WorktreesView from "./components/worktrees/WorktreesView"
 import { useClineAuth } from "./context/ClineAuthContext"
 import { useExtensionState } from "./context/ExtensionStateContext"
-import { useVvAuth } from "./hooks/useVvAuth" // VVCode Customization: 添加 VV 认证
 import { Providers } from "./Providers"
+import { UiServiceClient } from "./services/grpc-client"
 
 const AppContent = () => {
 	const {
 		didHydrateState,
+		showWelcome,
+		shouldShowAnnouncement,
 		showMcp,
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
 		showHistory,
 		showAccount,
-		showVVSettings, // VVCode Customization: 添加 VV 设置页面状态
+		showWorktrees,
+		showAnnouncement,
+		onboardingModels,
+		setShowAnnouncement,
+		setShouldShowAnnouncement,
 		closeMcpView,
+		navigateToHistory,
 		hideSettings,
 		hideHistory,
 		hideAccount,
-		hideVVSettings, // VVCode Customization: 添加 VV 设置页面隐藏函数
+		hideWorktrees,
+		hideAnnouncement,
 	} = useExtensionState()
 
 	const { clineUser, organizations, activeOrganization } = useClineAuth()
 
-	// VVCode Customization: 检查 VV 认证状态
-	const { isAuthenticated: isVVAuthenticated, ready: vvAuthReady } = useVvAuth()
+	useEffect(() => {
+		if (shouldShowAnnouncement) {
+			setShowAnnouncement(true)
 
-	if (!didHydrateState || !vvAuthReady) {
+			// Use the gRPC client instead of direct WebviewMessage
+			UiServiceClient.onDidShowAnnouncement({} as EmptyRequest)
+				.then((response: Boolean) => {
+					setShouldShowAnnouncement(response.value)
+				})
+				.catch((error) => {
+					console.error("Failed to acknowledge announcement:", error)
+				})
+		}
+	}, [shouldShowAnnouncement, setShouldShowAnnouncement, setShowAnnouncement])
+
+	if (!didHydrateState) {
 		return null
 	}
 
-	// VVCode Customization: 未登录 VV 时显示登录页
-	if (!isVVAuthenticated) {
-		return <VvWelcomeView />
+	if (showWelcome) {
+		return onboardingModels ? <OnboardingView onboardingModels={onboardingModels} /> : <WelcomeView />
 	}
 
 	return (
@@ -54,10 +76,14 @@ const AppContent = () => {
 					organizations={organizations}
 				/>
 			)}
-			{/* VVCode Customization: 添加 VV 设置页面 */}
-			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
+			{showWorktrees && <WorktreesView onDone={hideWorktrees} />}
 			{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
-			<ChatView isHidden={showSettings || showHistory || showMcp || showAccount || showVVSettings} />
+			<ChatView
+				hideAnnouncement={hideAnnouncement}
+				isHidden={showSettings || showHistory || showMcp || showAccount || showWorktrees}
+				showAnnouncement={showAnnouncement}
+				showHistoryView={navigateToHistory}
+			/>
 		</div>
 	)
 }

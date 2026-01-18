@@ -4,10 +4,12 @@
 import assert from "node:assert"
 import { DIFF_VIEW_URI_SCHEME } from "@hosts/vscode/VscodeDiffViewProvider"
 import * as vscode from "vscode"
+import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
 import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChatButtonClicked"
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
-import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
+import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
+import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
 import { Logger } from "./services/logging/Logger"
@@ -113,7 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// Register balance refresh command
+	// Register refresh balance command
 	context.subscriptions.push(
 		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
 			await balanceStatusBar.refreshBalance()
@@ -121,6 +123,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	)
 
 	vscode.commands.executeCommand("setContext", "vvcode.isDevMode", IS_DEV && IS_DEV === "true")
+
+	vscode.commands.executeCommand("setContext", "cline.isDevMode", IS_DEV && IS_DEV === "true")
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(VscodeWebviewProvider.SIDEBAR_ID, webview, {
@@ -147,17 +151,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// VVCode Customization: Replaced original Settings and Account buttons with VV Settings
-	// Commented out original buttons:
-	// context.subscriptions.push(
-	// 	vscode.commands.registerCommand(commands.SettingsButton, () => {
-	// 		sendSettingsButtonClickedEvent()
-	// 	}),
-	// )
-
 	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
-			sendVVSettingsButtonClickedEvent()
+		vscode.commands.registerCommand(commands.SettingsButton, () => {
+			sendSettingsButtonClickedEvent()
 		}),
 	)
 
@@ -168,12 +164,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// context.subscriptions.push(
-	// 	vscode.commands.registerCommand(commands.AccountButton, () => {
-	// 		// Send event to all subscribers using the gRPC streaming method
-	// 		sendAccountButtonClickedEvent()
-	// 	}),
-	// )
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.AccountButton, () => {
+			// Send event to all subscribers using the gRPC streaming method
+			sendAccountButtonClickedEvent()
+		}),
+	)
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.WorktreesButton, () => {
+			// Send event to all subscribers using the gRPC streaming method
+			sendWorktreesButtonClickedEvent()
+		}),
+	)
 
 	/*
 	We use the text document content provider API to show the left side for diff view by creating a
@@ -260,11 +263,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// Get keyboard shortcut based on platform
-	const getShortcutKey = () => {
-		return process.platform === "darwin" ? "Cmd+'" : "Ctrl+'"
-	}
-
 	// Register code action provider
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
@@ -283,7 +281,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 					const actions: vscode.CodeAction[] = []
 					const editor = vscode.window.activeTextEditor // Get active editor for selection check
-					const shortcutKey = getShortcutKey()
 
 					// Expand range to include surrounding 3 lines or use selection if broader
 					const selection = editor?.selection
@@ -313,40 +310,40 @@ export async function activate(context: vscode.ExtensionContext) {
 						)
 					}
 
-					// Add to VVCode (Always available)
-					const addAction = new vscode.CodeAction(`添加到VVCode (${shortcutKey})`, vscode.CodeActionKind.QuickFix)
+					// Add to Cline (Always available)
+					const addAction = new vscode.CodeAction("Add to Cline", vscode.CodeActionKind.QuickFix)
 					addAction.command = {
 						command: commands.AddToChat,
-						title: "添加到VVCode",
+						title: "Add to Cline",
 						arguments: [expandedRange, context.diagnostics],
 					}
 					actions.push(addAction)
 
-					// Explain with VVCode (Always available)
-					const explainAction = new vscode.CodeAction("使用VVCode解释代码", vscode.CodeActionKind.RefactorExtract)
+					// Explain with Cline (Always available)
+					const explainAction = new vscode.CodeAction("Explain with Cline", vscode.CodeActionKind.RefactorExtract) // Using a refactor kind
 					explainAction.command = {
 						command: commands.ExplainCode,
-						title: "使用VVCode解释代码",
+						title: "Explain with Cline",
 						arguments: [expandedRange],
 					}
 					actions.push(explainAction)
 
-					// Improve with VVCode (Always available)
-					const improveAction = new vscode.CodeAction("使用VVCode改进代码", vscode.CodeActionKind.RefactorRewrite)
+					// Improve with Cline (Always available)
+					const improveAction = new vscode.CodeAction("Improve with Cline", vscode.CodeActionKind.RefactorRewrite) // Using a refactor kind
 					improveAction.command = {
 						command: commands.ImproveCode,
-						title: "使用VVCode改进代码",
+						title: "Improve with Cline",
 						arguments: [expandedRange],
 					}
 					actions.push(improveAction)
 
-					// Fix with VVCode (Only if diagnostics exist)
+					// Fix with Cline (Only if diagnostics exist)
 					if (context.diagnostics.length > 0) {
-						const fixAction = new vscode.CodeAction("使用VVCode修复问题", vscode.CodeActionKind.QuickFix)
+						const fixAction = new vscode.CodeAction("Fix with Cline", vscode.CodeActionKind.QuickFix)
 						fixAction.isPreferred = true
 						fixAction.command = {
 							command: commands.FixWithCline,
-							title: "使用VVCode修复问题",
+							title: "Fix with Cline",
 							arguments: [expandedRange, context.diagnostics],
 						}
 						actions.push(fixAction)
