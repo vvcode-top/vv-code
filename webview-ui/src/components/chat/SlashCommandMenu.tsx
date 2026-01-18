@@ -14,6 +14,7 @@ interface SlashCommandMenuProps {
 	globalWorkflowToggles?: Record<string, boolean>
 	remoteWorkflowToggles?: Record<string, boolean>
 	remoteWorkflows?: any[]
+	availableSkills?: any[]
 }
 
 const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
@@ -26,6 +27,7 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 	globalWorkflowToggles = {},
 	remoteWorkflowToggles,
 	remoteWorkflows,
+	availableSkills,
 }) => {
 	const menuRef = useRef<HTMLDivElement>(null)
 
@@ -36,9 +38,11 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 		globalWorkflowToggles,
 		remoteWorkflowToggles,
 		remoteWorkflows,
+		availableSkills,
 	)
 	const defaultCommands = filteredCommands.filter((cmd) => cmd.section === "default" || !cmd.section)
-	const workflowCommands = filteredCommands.filter((cmd) => cmd.section === "custom")
+	const skillCommands = filteredCommands.filter((cmd) => cmd.section === "custom" && cmd.type === "skill")
+	const workflowCommands = filteredCommands.filter((cmd) => cmd.section === "custom" && cmd.type === "workflow")
 
 	// Screen reader announcements
 	const getCommandLabel = useCallback((command: SlashCommand) => {
@@ -105,6 +109,11 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 							role="option">
 							<div className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">
 								<span className="ph-no-capture">/{command.name}</span>
+								{command.type && (
+									<span className="text-[0.85em] text-(--vscode-descriptionForeground) ml-2">
+										({command.type})
+									</span>
+								)}
 							</div>
 							{showDescriptions && command.description && (
 								<div className="text-[0.85em] text-(--vscode-descriptionForeground) whitespace-normal overflow-hidden text-ellipsis">
@@ -134,7 +143,13 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 				{filteredCommands.length > 0 ? (
 					<>
 						{renderCommandSection(defaultCommands, "Default Commands", 0, true)}
-						{renderCommandSection(workflowCommands, "Workflow Commands", defaultCommands.length, false)}
+						{renderCommandSection(skillCommands, "Skills", defaultCommands.length, true)}
+						{renderCommandSection(
+							workflowCommands,
+							"Workflows",
+							defaultCommands.length + skillCommands.length,
+							false,
+						)}
 					</>
 				) : (
 					<div aria-selected="false" className="py-2 px-3 cursor-default flex flex-col" role="option">

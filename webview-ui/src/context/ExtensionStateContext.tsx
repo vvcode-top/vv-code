@@ -266,9 +266,10 @@ export const ExtensionStateContextProvider: React.FC<{
 		lastDismissedCliBannerVersion: 0,
 		subagentsEnabled: false,
 		backgroundEditEnabled: false,
-		skillsEnabled: false,
+		skillsEnabled: true,
 		globalSkillsToggles: {},
 		localSkillsToggles: {},
+		availableSkills: [], // Skills metadata for slash command autocomplete
 
 		// NEW: Add workspace information with defaults
 		workspaceRoots: [],

@@ -280,6 +280,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			setShowChatModelSelector: setShowModelSelector,
 			dictationSettings,
 			navigateToSettings,
+			availableSkills,
 		} = useExtensionState()
 		const { clineUser } = useClineAuth()
 		const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
@@ -533,6 +534,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								globalWorkflowToggles,
 								remoteWorkflowToggles,
 								remoteConfigSettings?.remoteGlobalWorkflows,
+								availableSkills,
 							)
 
 							if (allCommands.length === 0) {
@@ -557,6 +559,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							globalWorkflowToggles,
 							remoteWorkflowToggles,
 							remoteConfigSettings?.remoteGlobalWorkflows,
+							availableSkills,
 						)
 						if (commands.length > 0) {
 							handleSlashCommandsSelect(commands[selectedSlashCommandsIndex])
@@ -1505,6 +1508,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					{showSlashCommandsMenu && (
 						<div ref={slashCommandsMenuContainerRef}>
 							<SlashCommandMenu
+								availableSkills={availableSkills}
 								globalWorkflowToggles={globalWorkflowToggles}
 								localWorkflowToggles={localWorkflowToggles}
 								onMouseDown={handleMenuMouseDown}

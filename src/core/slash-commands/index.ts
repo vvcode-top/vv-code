@@ -41,6 +41,7 @@ export async function parseSlashCommands(
 	focusChainSettings?: { enabled: boolean },
 	enableNativeToolCalls?: boolean,
 	providerInfo?: ApiProviderInfo,
+	availableSkills?: import("@/shared/skills").SkillMetadata[],
 ): Promise<{ processedText: string; needsClinerulesFileCheck: boolean }> {
 	const SUPPORTED_DEFAULT_COMMANDS = [
 		"newtask",
@@ -205,6 +206,23 @@ export async function parseSlashCommands(
 					return { processedText, needsClinerulesFileCheck: false }
 				} catch (error) {
 					console.error(`Error reading workflow file ${matchingWorkflow.fullPath}: ${error}`)
+				}
+			}
+
+			// Check for skills (after workflows)
+			if (availableSkills && availableSkills.length > 0) {
+				const matchingSkill = availableSkills.find((skill) => skill.name === commandName)
+
+				if (matchingSkill) {
+					// remove the slash command and add instruction to use the skill
+					const textWithoutSlashCommand = removeSlashCommand(text, tagContent, contentStartIndex, slashMatch)
+					const processedText =
+						`Please use the "${matchingSkill.name}" skill to handle this request.\n\n` + textWithoutSlashCommand
+
+					// Track telemetry for skill command usage
+					telemetryService.captureSlashCommandUsed(ulid, commandName, "skill")
+
+					return { processedText, needsClinerulesFileCheck: false }
 				}
 			}
 		}

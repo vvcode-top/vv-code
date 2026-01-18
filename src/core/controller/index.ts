@@ -870,6 +870,10 @@ export class Controller {
 		const globalWorkflowToggles = this.stateManager.getGlobalSettingsKey("globalWorkflowToggles")
 		const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles")
 		const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles")
+
+		// Get available skills metadata for slash command autocomplete
+		const availableSkills = await this.getAvailableSkillsMetadata()
+
 		const remoteRulesToggles = this.stateManager.getGlobalStateKey("remoteRulesToggles")
 		const remoteWorkflowToggles = this.stateManager.getGlobalStateKey("remoteWorkflowToggles")
 		const shellIntegrationTimeout = this.stateManager.getGlobalSettingsKey("shellIntegrationTimeout")
@@ -1003,6 +1007,7 @@ export class Controller {
 			vvNeedsWebInit: this.stateManager.getGlobalStateKey("vvNeedsWebInit"),
 			vvSelectedGroupType: this.stateManager.getGlobalStateKey("vvSelectedGroupType"),
 			skillsEnabled,
+			availableSkills,
 			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
 			banners,
 		}
@@ -1052,6 +1057,35 @@ export class Controller {
 			return BannerService.get().getActiveBanners()
 		} catch (err) {
 			console.log(err)
+			return []
+		}
+	}
+
+	/**
+	 * Get available skills metadata for slash command autocomplete
+	 */
+	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
+		try {
+			const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
+			if (!skillsEnabled) {
+				return []
+			}
+
+			const { discoverSkills, getAvailableSkills } = await import("../context/instructions/user-instructions/skills")
+			const cwd = this.workspaceManager?.getPrimaryRoot()?.path || (await getCwd(getDesktopDir()))
+			const allSkills = await discoverSkills(cwd)
+			const resolvedSkills = getAvailableSkills(allSkills)
+
+			// Filter by toggle state
+			const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles") || {}
+			const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles") || {}
+
+			return resolvedSkills.filter((skill) => {
+				const toggles = skill.source === "global" ? globalSkillsToggles : localSkillsToggles
+				return toggles[skill.path] !== false
+			})
+		} catch (error) {
+			console.error("Failed to get skills metadata:", error)
 			return []
 		}
 	}

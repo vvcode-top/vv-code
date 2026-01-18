@@ -1522,7 +1522,7 @@ export class TelemetryService {
 	 * @param commandName The name of the command (e.g., "newtask", "reportbug", or custom workflow name)
 	 * @param commandType Whether it's a built-in command or custom workflow
 	 */
-	public captureSlashCommandUsed(ulid: string, commandName: string, commandType: "builtin" | "workflow") {
+	public captureSlashCommandUsed(ulid: string, commandName: string, commandType: "builtin" | "workflow" | "skill") {
 		this.capture({
 			event: TelemetryService.EVENTS.TASK.SLASH_COMMAND_USED,
 			properties: {
