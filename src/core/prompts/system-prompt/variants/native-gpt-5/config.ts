@@ -24,6 +24,12 @@ export const config = createVariant(ModelFamily.NATIVE_GPT_5)
 		}
 		const providerInfo = context.providerInfo
 		const modelId = providerInfo.model.id
+		if (!isNextGenModelProvider(providerInfo)) {
+			return false
+		}
+		if (modelId.includes("gpt-oss")) {
+			return true
+		}
 		return (
 			isGPT5ModelFamily(modelId) &&
 			// Exclude gpt-5.1 and gpt-5.2 models except for codex variants
@@ -52,9 +58,9 @@ export const config = createVariant(ModelFamily.NATIVE_GPT_5)
 		ClineDefaultTool.BASH,
 		ClineDefaultTool.FILE_READ,
 		// Should disable FILE_NEW and FILE_EDIT when enabled
-		// ClineDefaultTool.APPLY_PATCH,
-		ClineDefaultTool.FILE_NEW, // Replaced by APPLY_PATCH
-		ClineDefaultTool.FILE_EDIT, // Replaced by APPLY_PATCH
+		ClineDefaultTool.APPLY_PATCH,
+		// ClineDefaultTool.FILE_NEW, // Replaced by APPLY_PATCH
+		// ClineDefaultTool.FILE_EDIT, // Replaced by APPLY_PATCH
 		ClineDefaultTool.SEARCH,
 		ClineDefaultTool.LIST_FILES,
 		ClineDefaultTool.LIST_CODE_DEF,

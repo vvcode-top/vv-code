@@ -2,4 +2,4 @@
 "claude-dev": patch
 ---
 
-Fix auth state loop
+Add claude 4.5 haiku
