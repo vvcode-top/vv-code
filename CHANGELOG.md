@@ -1,5 +1,14 @@
 # VVCode Changelog
 
+## [1.2.4] - 2026-01-18
+
+### Added
+- 支持通过 Slash Command 调用 Skills（输入 /skill-name 即可快速调用）
+
+### Changed
+- 优化 Auto-Approve 按钮为浮动显示，节省垂直空间
+- 欢迎页公告区域改为动态显示（无公告时不显示）
+
 ## [1.2.2] - 2026-01-15
 
 ### Added
