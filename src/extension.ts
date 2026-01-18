@@ -43,6 +43,7 @@ import { ExtensionRegistryInfo } from "./registry"
 import { AuthService } from "./services/auth/AuthService"
 import { LogoutReason } from "./services/auth/types"
 import { telemetryService } from "./services/telemetry"
+import { ClineTempManager } from "./services/temp"
 import { SharedUriHandler } from "./services/uri/SharedUriHandler"
 import { ShowMessageType } from "./shared/proto/host/window"
 import { fileExistsAtPath } from "./utils/fs"
@@ -85,6 +86,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	)
 
 	const webview = (await initialize(context)) as VscodeWebviewProvider
+
+	// Clean up old temp files in background (non-blocking) and start periodic cleanup every 24 hours
+	ClineTempManager.startPeriodicCleanup()
 
 	Logger.log("Cline extension activated")
 
@@ -525,6 +529,9 @@ async function getBinaryLocation(name: string): Promise<string> {
 // This method is called when your extension is deactivated
 export async function deactivate() {
 	Logger.log("Cline extension deactivating, cleaning up resources...")
+
+	// Stop periodic temp file cleanup
+	ClineTempManager.stopPeriodicCleanup()
 
 	tearDown()
 
