@@ -6,7 +6,6 @@ import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
 import OnboardingView from "./components/onboarding/OnboardingView"
 import SettingsView from "./components/settings/SettingsView"
-import VvSettingsView from "./components/settings/VvSettingsView" // VVCode Customization: 添加 VV 设置页面
 import WelcomeView from "./components/welcome/WelcomeView"
 import WorktreesView from "./components/worktrees/WorktreesView"
 import { useClineAuth } from "./context/ClineAuthContext"
@@ -27,7 +26,6 @@ const AppContent = () => {
 		showAccount,
 		showWorktrees,
 		showAnnouncement,
-		showVVSettings, // VVCode Customization
 		onboardingModels,
 		setShowAnnouncement,
 		setShouldShowAnnouncement,
@@ -38,7 +36,6 @@ const AppContent = () => {
 		hideAccount,
 		hideWorktrees,
 		hideAnnouncement,
-		hideVVSettings, // VVCode Customization
 	} = useExtensionState()
 
 	const { clineUser, organizations, activeOrganization } = useClineAuth()
@@ -80,12 +77,10 @@ const AppContent = () => {
 				/>
 			)}
 			{showWorktrees && <WorktreesView onDone={hideWorktrees} />}
-			{/* VVCode Customization: 添加 VV 设置页面 */}
-			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
 			{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
 			<ChatView
 				hideAnnouncement={hideAnnouncement}
-				isHidden={showSettings || showHistory || showMcp || showAccount || showWorktrees || showVVSettings}
+				isHidden={showSettings || showHistory || showMcp || showAccount || showWorktrees}
 				showAnnouncement={showAnnouncement}
 				showHistoryView={navigateToHistory}
 			/>

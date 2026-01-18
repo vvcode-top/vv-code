@@ -60,7 +60,6 @@ export interface ExtensionStateContextType extends ExtensionState {
 	showAnnouncement: boolean
 	showChatModelSelector: boolean
 	expandTaskHeader: boolean
-	showVVSettings: boolean // VVCode Customization: 添加 VV 设置页面状态
 
 	// Setters
 	setDictationSettings: (value: DictationSettings) => void
@@ -107,7 +106,6 @@ export interface ExtensionStateContextType extends ExtensionState {
 	navigateToAccount: () => void
 	navigateToWorktrees: () => void
 	navigateToChat: () => void
-	navigateToVVSettings: () => void // VVCode Customization: 添加 VV 设置页面导航
 
 	// Hide functions
 	hideSettings: () => void
@@ -116,7 +114,6 @@ export interface ExtensionStateContextType extends ExtensionState {
 	hideWorktrees: () => void
 	hideAnnouncement: () => void
 	hideChatModelSelector: () => void
-	hideVVSettings: () => void // VVCode Customization
 	closeMcpView: () => void
 
 	// Event callbacks
@@ -138,7 +135,6 @@ export const ExtensionStateContextProvider: React.FC<{
 	const [showWorktrees, setShowWorktrees] = useState(false)
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [showChatModelSelector, setShowChatModelSelector] = useState(false)
-	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization: 添加 VV 设置页面状态
 
 	// Helper for MCP view
 	const closeMcpView = useCallback(() => {
@@ -156,7 +152,6 @@ export const ExtensionStateContextProvider: React.FC<{
 	const hideWorktrees = useCallback(() => setShowWorktrees(false), [setShowWorktrees])
 	const hideAnnouncement = useCallback(() => setShowAnnouncement(false), [setShowAnnouncement])
 	const hideChatModelSelector = useCallback(() => setShowChatModelSelector(false), [setShowChatModelSelector])
-	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 
 	// Navigation functions
 	const navigateToMcp = useCallback(
@@ -165,13 +160,12 @@ export const ExtensionStateContextProvider: React.FC<{
 			setShowHistory(false)
 			setShowAccount(false)
 			setShowWorktrees(false)
-			setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 			if (tab) {
 				setMcpTab(tab)
 			}
 			setShowMcp(true)
 		},
-		[setShowMcp, setMcpTab, setShowSettings, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings],
+		[setShowMcp, setMcpTab, setShowSettings, setShowHistory, setShowAccount, setShowWorktrees],
 	)
 
 	const navigateToSettings = useCallback(
@@ -180,11 +174,10 @@ export const ExtensionStateContextProvider: React.FC<{
 			closeMcpView()
 			setShowAccount(false)
 			setShowWorktrees(false)
-			setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 			setSettingsTargetSection(targetSection)
 			setShowSettings(true)
 		},
-		[closeMcpView, setShowVVSettings],
+		[closeMcpView],
 	)
 
 	const navigateToHistory = useCallback(() => {
@@ -192,27 +185,24 @@ export const ExtensionStateContextProvider: React.FC<{
 		closeMcpView()
 		setShowAccount(false)
 		setShowWorktrees(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowHistory(true)
-	}, [setShowSettings, closeMcpView, setShowAccount, setShowWorktrees, setShowHistory, setShowVVSettings])
+	}, [setShowSettings, closeMcpView, setShowAccount, setShowWorktrees, setShowHistory])
 
 	const navigateToAccount = useCallback(() => {
 		setShowSettings(false)
 		closeMcpView()
 		setShowHistory(false)
 		setShowWorktrees(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowAccount(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowWorktrees, setShowAccount, setShowVVSettings])
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowWorktrees, setShowAccount])
 
 	const navigateToWorktrees = useCallback(() => {
 		setShowSettings(false)
 		closeMcpView()
 		setShowHistory(false)
 		setShowAccount(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowWorktrees(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings])
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
 
 	const navigateToChat = useCallback(() => {
 		setShowSettings(false)
@@ -220,16 +210,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowHistory(false)
 		setShowAccount(false)
 		setShowWorktrees(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings])
-
-	const navigateToVVSettings = useCallback(() => {
-		setShowSettings(false)
-		closeMcpView()
-		setShowHistory(false)
-		setShowAccount(false)
-		setShowVVSettings(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount])
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
 
 	const [state, setState] = useState<ExtensionState>({
 		version: "",
@@ -336,7 +317,6 @@ export const ExtensionStateContextProvider: React.FC<{
 	const chatButtonUnsubscribeRef = useRef<(() => void) | null>(null)
 	const accountButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const settingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
-	const vvSettingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null) // VVCode Customization
 	const worktreesButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const partialMessageUnsubscribeRef = useRef<(() => void) | null>(null)
 	const mcpMarketplaceUnsubscribeRef = useRef<(() => void) | null>(null)
@@ -492,22 +472,6 @@ export const ExtensionStateContextProvider: React.FC<{
 				console.log("Settings button clicked subscription completed")
 			},
 		})
-
-		// VVCode Customization: Set up VV settings button clicked subscription
-		vvSettingsButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToVvSettingsButtonClicked(
-			EmptyRequest.create({}),
-			{
-				onResponse: () => {
-					navigateToVVSettings()
-				},
-				onError: (error) => {
-					console.error("Error in VV settings button clicked subscription:", error)
-				},
-				onComplete: () => {
-					console.log("VV settings button clicked subscription completed")
-				},
-			},
-		)
 
 		// Set up worktrees button clicked subscription
 		worktreesButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToWorktreesButtonClicked(
@@ -677,10 +641,6 @@ export const ExtensionStateContextProvider: React.FC<{
 				settingsButtonClickedSubscriptionRef.current()
 				settingsButtonClickedSubscriptionRef.current = null
 			}
-			if (vvSettingsButtonClickedSubscriptionRef.current) {
-				vvSettingsButtonClickedSubscriptionRef.current()
-				vvSettingsButtonClickedSubscriptionRef.current = null
-			}
 			if (worktreesButtonClickedSubscriptionRef.current) {
 				worktreesButtonClickedSubscriptionRef.current()
 				worktreesButtonClickedSubscriptionRef.current = null
@@ -818,7 +778,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		showWorktrees,
 		showAnnouncement,
 		showChatModelSelector,
-		showVVSettings, // VVCode Customization: 添加 VV 设置页面状态
 		globalClineRulesToggles: state.globalClineRulesToggles || {},
 		localClineRulesToggles: state.localClineRulesToggles || {},
 		localCursorRulesToggles: state.localCursorRulesToggles || {},
@@ -838,7 +797,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		navigateToAccount,
 		navigateToWorktrees,
 		navigateToChat,
-		navigateToVVSettings, // VVCode Customization: 添加 VV 设置页面导航
 
 		// Hide functions
 		hideSettings,
@@ -848,7 +806,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		hideAnnouncement,
 		setShowAnnouncement,
 		hideChatModelSelector,
-		hideVVSettings, // VVCode Customization
 		setShowWelcome,
 		setOnboardingModels,
 		setShowChatModelSelector,

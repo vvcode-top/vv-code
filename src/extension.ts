@@ -4,11 +4,11 @@
 import assert from "node:assert"
 import { DIFF_VIEW_URI_SCHEME } from "@hosts/vscode/VscodeDiffViewProvider"
 import * as vscode from "vscode"
+import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
 import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChatButtonClicked"
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
-import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
@@ -98,32 +98,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Initialize test mode and add disposables to context
 	context.subscriptions.push(...testModeWatchers)
 
-	// VVCode Customization: Initialize balance status bar
-	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
-	const balanceStatusBar = VvBalanceStatusBar.getInstance()
-	balanceStatusBar.initialize(context)
-
-	// VVCode Customization: Initialize inline completion provider
-	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
-	const completionProvider = new VvCompletionProvider(webview.controller)
-	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{ pattern: "**" }], completionProvider))
-
-	// Register accept completion command
-	context.subscriptions.push(
-		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {
-			completionProvider.acceptCompletion(completionId)
-		}),
-	)
-
-	// Register refresh balance command
-	context.subscriptions.push(
-		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
-			await balanceStatusBar.refreshBalance()
-		}),
-	)
-
-	vscode.commands.executeCommand("setContext", "vvcode.isDevMode", IS_DEV && IS_DEV === "true")
-
 	vscode.commands.executeCommand("setContext", "cline.isDevMode", IS_DEV && IS_DEV === "true")
 
 	context.subscriptions.push(
@@ -164,19 +138,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// VVCode Customization: Register VV Settings Button instead of Account Button
 	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
-			sendVVSettingsButtonClickedEvent()
+		vscode.commands.registerCommand(commands.AccountButton, () => {
+			// Send event to all subscribers using the gRPC streaming method
+			sendAccountButtonClickedEvent()
 		}),
 	)
-
-	// context.subscriptions.push(
-	// 	vscode.commands.registerCommand(commands.AccountButton, () => {
-	// 		// Send event to all subscribers using the gRPC streaming method
-	// 		sendAccountButtonClickedEvent()
-	// 	}),
-	// )
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.WorktreesButton, () => {
