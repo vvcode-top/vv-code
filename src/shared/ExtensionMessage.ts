@@ -196,6 +196,7 @@ export type ClineSay =
 	| "task_progress"
 	| "hook_status"
 	| "hook_output_stream"
+	| "conditional_rules_applied"
 
 export interface ClineSayTool {
 	tool:
