@@ -228,16 +228,17 @@ fi
 ```bash
 if [[ $file == "src/shared/storage/state-keys.ts" ]] || \
    [[ $file == "src/extension.ts" ]] || \
-   [[ $file == "src/registry.ts" ]]; then
+   [[ $file == "src/registry.ts" ]] || \
+   [[ $file == "webview-ui/src/App.tsx" ]] || \
+   [[ $file == "webview-ui/src/context/ExtensionStateContext.tsx" ]]; then
   # 关键文件，需要智能合并
-  echo "⚠️ $file: 需要手动处理（VVCode 有重要定制）"
+  echo "⚠️ $file: 需要智能合并（VVCode 有重要定制）"
   
-  # 策略：先接受上游版本，然后从旧版本恢复 VVCode 定制
+  # 策略：先接受上游版本，然后立即恢复 VVCode 定制
   git checkout --theirs $file
-  git add $file
   
-  # 标记需要后续恢复 VVCode 定制
-  echo $file >> .vvcode-restore-needed
+  # 标记需要立即恢复 VVCode 定制
+  echo $file >> .vvcode-restore-current-day
 fi
 ```
 
@@ -249,15 +250,81 @@ git add $file
 echo "✅ $file: 接受上游版本"
 ```
 
-#### 3. 检查是否所有冲突已解决
+#### 3. 立即恢复 VVCode 定制（关键！）
+
+**如果有关键文件冲突，必须立即恢复 VVCode 定制：**
+
+```bash
+if [ -f .vvcode-restore-current-day ]; then
+  echo "🔄 立即恢复 VVCode 定制..."
+  
+  # 获取合并前的版本（HEAD~1）
+  while read file; do
+    echo "处理: $file"
+    
+    # 获取旧版本内容
+    git show HEAD~1:$file > /tmp/old-$(basename $file)
+    
+    echo "⚠️ 需要恢复 $file 中的 VVCode 定制"
+    echo "   旧版本已保存到 /tmp/old-$(basename $file)"
+    
+    # 根据文件类型给出具体提示
+    case $file in
+      "src/shared/storage/state-keys.ts")
+        echo "   需恢复: VvUserInfo, VvUserConfig, VvGroupConfig 等类型"
+        echo "   需恢复: 所有 vv* 开头的字段"
+        ;;
+      "src/extension.ts")
+        echo "   需恢复: VV Balance Status Bar 初始化"
+        echo "   需恢复: VV Completion Provider 注册"
+        ;;
+      "src/registry.ts")
+        echo "   需恢复: VVSettingsButton 注册"
+        ;;
+      "webview-ui/src/App.tsx")
+        echo "   需恢复: VVCode UI 组件导入和使用"
+        ;;
+      "webview-ui/src/context/ExtensionStateContext.tsx")
+        echo "   需恢复: VVCode 状态字段 (vv* 开头)"
+        ;;
+    esac
+  done < .vvcode-restore-current-day
+  
+  echo ""
+  echo "🛑 现在需要手动恢复 VVCode 定制："
+  echo "1. 使用 replace_in_file 工具对比旧版本和新版本"
+  echo "2. 将 VVCode 特有的代码添加回去"
+  echo "3. 保持上游的新功能,只添加 VVCode 的额外功能"
+  echo "4. 恢复完成后继续执行"
+  echo ""
+  
+  # 等待恢复完成
+  # 清理标记文件将在恢复完成并验证通过后删除
+fi
+```
+
+**恢复原则**：
+- ✅ 保留上游的所有新功能和改进
+- ✅ 添加 VVCode 的额外类型、字段、组件
+- ✅ 不覆盖上游的核心逻辑
+- ✅ 确保 VVCode 功能完整性
+
+#### 4. 检查是否所有冲突已解决
 
 ```bash
 git status
 ```
 
-如果仍有未解决的冲突，询问用户如何处理。
+如果仍有未解决的冲突,询问用户如何处理。
 
-#### 4. 提交合并
+#### 5. 暂存已解决的冲突文件
+
+```bash
+# 暂存所有已解决的文件(包括恢复了VVCode定制的文件)
+git add .
+```
+
+#### 6. 提交合并
 
 ```bash
 git commit -m "Merge upstream Day -$N commits
@@ -265,10 +332,13 @@ git commit -m "Merge upstream Day -$N commits
 Auto-resolved conflicts:
 - VVCode特有文件: 保留本地版本
 - 品牌文件: 保留VVCode品牌
-- 核心文件: 接受上游更新
+- 关键定制文件: 接受上游更新并立即恢复VVCode定制
+- 其他核心文件: 接受上游更新
 
-需要后续恢复VVCode定制的文件:
-$(cat .vvcode-restore-needed 2>/dev/null || echo "无")"
+VVCode功能已在本次提交中完整恢复。"
+
+# 清理标记文件
+rm -f .vvcode-restore-current-day
 ```
 
 ### 第五步：验证每次合并
@@ -305,13 +375,86 @@ npm run compile
 - 🛑 停止合并流程
 - 需要修复后继续
 
+#### 4. 检测重大变更并请求用户验证
+
+```bash
+# 统计本次合并的变更规模
+CHANGED_LINES=$(git diff HEAD~1 --stat | tail -1 | awk '{print $4, $6}')
+INSERTIONS=$(echo $CHANGED_LINES | awk '{print $1}')
+DELETIONS=$(echo $CHANGED_LINES | awk '{print $2}')
+TOTAL_CHANGES=$((INSERTIONS + DELETIONS))
+
+# 检查是否有关键文件被修改
+HAS_KEY_FILE_CHANGES=$(git diff HEAD~1 --name-only | grep -E "(state-keys|extension\.ts|registry\.ts|App\.tsx|ExtensionStateContext)" || echo "")
+
+# 检查是否有 proto 文件变更
+HAS_PROTO_CHANGES=$(git diff HEAD~1 --name-only | grep "proto/" || echo "")
+
+# 判断是否需要用户验证
+NEED_USER_VERIFICATION=false
+
+if [ $TOTAL_CHANGES -gt 100 ]; then
+  NEED_USER_VERIFICATION=true
+  REASON="检测到重大变更（$TOTAL_CHANGES 行变更）"
+fi
+
+if [ ! -z "$HAS_KEY_FILE_CHANGES" ]; then
+  NEED_USER_VERIFICATION=true
+  REASON="检测到关键文件变更并已恢复VVCode定制"
+fi
+
+if [ ! -z "$HAS_PROTO_CHANGES" ]; then
+  NEED_USER_VERIFICATION=true
+  REASON="检测到 Proto 文件结构变更"
+fi
+
+# 如果需要验证，停下来请求用户测试
+if [ "$NEED_USER_VERIFICATION" = true ]; then
+  echo ""
+  echo "⚠️ $REASON"
+  echo ""
+  echo "🛑 需要用户验证 - 请执行以下测试："
+  echo ""
+  echo "1. 运行开发模式:"
+  echo "   在 VSCode 中按 F5 启动调试模式"
+  echo "   这会打开一个新的扩展开发主机窗口"
+  echo ""
+  echo "2. 测试 VVCode 核心功能:"
+  echo "   ✓ VV Balance Status Bar 显示正常"
+  echo "   ✓ VV Settings 按钮可点击"
+  echo "   ✓ VV 认证流程正常"
+  echo "   ✓ VV 代码补全功能正常"
+  echo "   ✓ VVCode 品牌元素显示正常"
+  echo ""
+  echo "3. 测试上游新功能是否正常工作"
+  echo ""
+  echo "4. 检查控制台是否有错误"
+  echo ""
+  echo "📋 验证完成后："
+  echo "   ✅ 如果一切正常 - 输入 'continue' 继续下一天的合并"
+  echo "   ❌ 如果有问题 - 输入 'abort' 停止合并"
+  echo "   🔧 如果需要修复 - 手动修复后输入 'continue'"
+  echo ""
+  
+  # 等待用户反馈
+  # 在实际执行时，这里会暂停并等待用户响应
+fi
+```
+
 **如果验证通过**：
 - ✅ 继续下一天的合并
-- 或者如果是最后一天，进入"恢复VVCode定制"步骤
+- 或者如果是最后一天，进入最终验证步骤
 
-### 第六步：恢复 VVCode 定制
+**如果发现问题**：
+- 🔧 修复问题
+- 🔄 重新运行类型检查和编译
+- ✅ 确认无误后继续
 
-在所有天数合并完成后，如果有 `.vvcode-restore-needed` 文件：
+### 第六步：最终检查（备用恢复流程）
+
+**注意：在新流程中，VVCode 定制应该已经在每天合并时立即恢复了。**
+
+但如果由于某种原因有遗漏，可以检查是否有 `.vvcode-restore-needed` 文件：
 
 #### 1. 读取需要恢复的文件列表
 
@@ -417,7 +560,8 @@ npm run test:unit
 #### 4. 本地运行验证
 
 ```bash
-npm run dev
+# 在 VSCode 中按 F5 启动调试模式
+# 这会打开一个新的扩展开发主机窗口
 ```
 
 提示用户测试：
