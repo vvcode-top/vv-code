@@ -1,373 +1,574 @@
 ---
 name: vv-merge-upstream
-description: Merge latest code from Cline upstream repository. Use when the user asks to sync with Cline, merge upstream changes, or update from the original Cline repository. Handles upstream setup, branch creation, conflict resolution with VVCode customizations preserved.
+description: Incrementally merge code from Cline upstream repository day by day. Use when the user asks to sync with Cline, merge upstream changes, or update from the original Cline repository. Handles upstream setup, incremental merging, conflict resolution with VVCode customizations preserved.
 ---
 
-# VVCode Merge Upstream
+# VVCode Incremental Merge Upstream
 
-这个 skill 帮助你从 Cline 上游仓库合并最新代码，同时保留 VVCode 的品牌定制和新增功能。
+这个 skill 帮助你从 Cline 上游仓库**增量合并**最新代码，按天分批处理，同时保留 VVCode 的品牌定制和新增功能。
+
+## 核心策略：按天增量合并
+
+**为什么按天合并？**
+- ✅ 每次合并的 commits 数量少，冲突更容易处理
+- ✅ 可以在每一步验证编译和功能
+- ✅ 出问题时容易定位和回滚
+- ✅ 避免一次性合并导致的大量冲突
+
+**工作流程**：
+1. 获取上游最近 N 天的 commits
+2. 按天分组
+3. 逐天合并，每次合并后验证
+4. 自动保护 VVCode 关键文件
+5. 智能恢复 VVCode 定制
+
+## VVCode 关键文件清单
+
+在合并过程中，这些文件需要**特别保护**：
+
+```bash
+# 核心定制文件（VVCode 定制较多，需要手动合并）
+PROTECTED_FILES=(
+  "src/shared/storage/state-keys.ts"     # VVCode 类型定义
+  "src/extension.ts"                      # 扩展初始化
+  "src/registry.ts"                       # 按钮注册
+  "webview-ui/src/App.tsx"                # UI 入口
+  "webview-ui/src/context/ExtensionStateContext.tsx"  # 状态管理
+)
+
+# VVCode 特有文件（保留所有更改）
+VV_PATTERNS=(
+  "src/services/auth/vv/"                 # VV 认证服务
+  "src/hosts/vscode/Vv*.ts"              # VV Host 组件
+  "src/core/controller/vv*/"             # VV Controller
+  "webview-ui/src/components/onboarding/VvWelcomeView.tsx"
+)
+
+# 品牌文件（完全保留 VVCode 版本）
+BRAND_FILES=(
+  "package.json"
+  "README.md"
+  "README.vvcode.md"
+  "assets/icons/"
+)
+```
 
 ## 前置检查
 
-### 1. 确认当前在正确的仓库
+### 1. 确认环境
 
 ```bash
+# 检查仓库
 git remote -v
-```
 
-确认 `origin` 指向 `vvcode-top/vv-code`。
-
-### 2. 检查工作目录状态
-
-```bash
+# 检查工作目录
 git status
-```
 
-如果有未提交的更改：
-- 询问用户是否先提交这些更改
-- 或者使用 `git stash` 临时保存
-- 确保工作目录干净后再继续
-
-### 3. 获取当前分支
-
-```bash
+# 获取当前分支
 git branch --show-current
 ```
 
-建议从 `main` 分支开始操作，如果不在 `main` 分支，询问用户是否切换。
+如果有未提交的更改，询问用户是否：
+- 提交这些更改
+- 使用 `git stash` 保存
+- 取消合并操作
 
-## 第一步：检查和设置上游仓库
+建议从 `main` 分支开始。
 
-### 1. 检查是否已配置上游
+### 2. 设置上游仓库
 
 ```bash
+# 检查上游
 git remote -v | grep upstream
-```
 
-### 2. 如果没有上游，添加 Cline 上游仓库
-
-```bash
+# 如果没有，添加上游
 git remote add upstream https://github.com/cline/cline.git
-```
 
-### 3. 验证上游配置
-
-```bash
-git remote -v
-```
-
-应该看到：
-- `origin` -> vvcode-top/vv-code
-- `upstream` -> cline/cline
-
-### 4. 获取上游最新代码
-
-```bash
+# 获取上游最新代码
 git fetch upstream
 ```
 
-这会拉取上游的所有分支和标签，但不会合并。
+## 增量合并流程
 
-## 第二步：查看上游更新
+### 第一步：分析上游更新
 
-### 1. 查看上游 main 分支的最新提交
+#### 1. 获取上次合并的时间点
 
 ```bash
-git log HEAD..upstream/main --oneline --no-decorate | head -20
+# 查找最近的上游合并 commit
+git log --grep="Merge upstream" --oneline -1
 ```
 
-### 2. 查看文件变更统计
+如果找到了上次合并的 commit，记录其 hash。
+
+#### 2. 按天统计上游新增 commits
 
 ```bash
-git diff HEAD..upstream/main --stat
+# 获取上游在过去 N 天的 commits，按天分组
+for days in {1..30}; do
+  count=$(git log HEAD..upstream/main \
+    --since="$days days ago" \
+    --until="$((days-1)) days ago" \
+    --oneline | wc -l)
+  
+  if [ $count -gt 0 ]; then
+    echo "Day -$days: $count commits"
+    git log HEAD..upstream/main \
+      --since="$days days ago" \
+      --until="$((days-1)) days ago" \
+      --oneline --no-decorate | head -5
+  fi
+done
 ```
 
-### 3. 向用户展示更新摘要
+#### 3. 向用户展示合并计划
 
-分析上面的输出，向用户说明：
-- 有多少个新提交
-- 哪些文件会被修改
-- 是否有重要的功能更新或 breaking changes
+基于上面的分析，向用户展示：
+```
+📊 上游更新分析：
+- 总共有 X 天的更新未合并
+- 共 Y 个新 commits
+- 建议分 X 次合并（每次一天）
 
-询问用户是否继续合并。
+合并计划：
+Day -1: 5 commits  (最近一天)
+Day -2: 3 commits
+Day -3: 8 commits
+...
 
-## 第三步：创建合并分支
-
-### 1. 创建新的合并分支
-
-基于当前 main 分支创建一个新分支，命名格式：`merge-upstream-YYYYMMDD`
-
-```bash
-git checkout -b merge-upstream-$(date +%Y%m%d)
+是否开始增量合并？
 ```
 
-### 2. 确认分支创建成功
+询问用户：
+- 是否继续
+- 是否要调整合并粒度（例如每次合并 2-3 天）
+
+### 第二步：创建合并分支
 
 ```bash
+# 创建新分支
+git checkout -b merge-upstream-incremental-$(date +%Y%m%d)
+
+# 确认分支
 git branch --show-current
 ```
 
-## 第四步：合并上游代码
+### 第三步：逐天合并
 
-### 1. 尝试合并上游 main 分支
+对于每一天的 commits：
 
-```bash
-git merge upstream/main --no-ff -m "Merge upstream/main into vvcode"
-```
-
-使用 `--no-ff` 保留合并历史。
-
-### 2. 检查合并状态
+#### 1. 找到该天的最后一个 commit
 
 ```bash
-git status
+# 获取 N 天前的最后一个 commit hash
+TARGET_COMMIT=$(git log upstream/main \
+  --since="$N days ago" \
+  --until="$((N-1)) days ago" \
+  --pretty=format:"%H" | tail -1)
 ```
 
-**如果合并成功**（没有冲突）：
-- 跳到"第六步：验证和推送"
-
-**如果有冲突**（出现 "CONFLICT" 消息）：
-- 继续到"第五步：解决冲突"
-
-## 第五步：解决冲突
-
-### 1. 列出所有冲突文件
+#### 2. 尝试合并到该 commit
 
 ```bash
-git status | grep "both modified"
+echo "📦 合并 Day -$N 的更新..."
+git merge $TARGET_COMMIT --no-ff -m "Merge upstream commits from Day -$N"
 ```
 
-### 2. 对每个冲突文件进行分析
-
-对于每个冲突文件，使用 `read_file` 查看冲突内容：
-
-```bash
-# 查看冲突文件
-cat path/to/conflicted/file
-```
-
-### 3. 冲突解决策略
-
-根据 `.clinerules/fork-development.md` 的指导原则：
-
-#### 优先保留的 VVCode 定制（必须保留）：
-
-1. **品牌化文件**：
-   - `package.json` - name, displayName, publisher, repository
-   - `README.md`, `README.vvcode.md`
-   - `assets/icons/` - 图标文件
-   - 所有 `vv*` 或 `Vv*` 开头的文件
-
-2. **VVCode 新增功能**：
-   - `src/exports/vv-*` - 导出的自定义功能
-   - `src/integrations/vv-*` - 第三方服务集成
-   - `webview-ui/src/components/vv-*` - 自定义 UI 组件
-   - 所有在文件顶部有 `// VVCode Customization:` 注释的修改
-
-3. **VVCode 特有的 API Provider**：
-   - 自定义的 API provider 配置
-   - VVCode 特有的设置项
-
-#### 可以接受上游的更新：
-
-1. **核心逻辑文件**（如果没有 VVCode 定制）：
-   - `src/core/task/index.ts`
-   - `src/core/controller/index.ts`
-   - `src/core/webview/index.ts`
-   - `proto/` 文件（除非有 VVCode 扩展）
-
-2. **依赖更新**：
-   - `package-lock.json`
-   - `yarn.lock`
-
-3. **测试和构建配置**：
-   - 测试文件
-   - CI/CD 配置（根据情况）
-
-### 4. 解决单个冲突文件
-
-对于每个冲突文件：
-
-a. **读取冲突内容**：
-```bash
-cat path/to/file
-```
-
-b. **分析冲突标记**：
-```
-<<<<<<< HEAD
-VVCode 的代码
-=======
-Cline 上游的代码
->>>>>>> upstream/main
-```
-
-c. **决策流程**：
-
-- **如果是 VVCode 品牌文件**：保留 HEAD（VVCode）版本
-- **如果是 VVCode 新增功能**：保留 HEAD 版本
-- **如果是核心文件且 VVCode 没有定制**：接受上游版本
-- **如果不确定**：使用 `ask_followup_question` 询问用户
-
-d. **编辑文件解决冲突**：
-
-使用 `replace_in_file` 工具修改文件，删除冲突标记并保留正确的代码。
-
-e. **标记文件为已解决**：
-```bash
-git add path/to/file
-```
-
-### 5. 常见冲突文件的处理建议
-
-#### `package.json`
-- 保留 VVCode 的 name, displayName, publisher, repository
-- 接受上游的 dependencies 和 devDependencies 更新
-- 合并 scripts 部分（保留 VVCode 特有的脚本）
-
-#### `README.md`
-- 保留 VVCode 的品牌说明
-- 可以接受上游的功能描述更新（如果不冲突）
-
-#### `src/shared/api.ts`
-- 保留 VVCode 的自定义 API provider
-- 接受上游的新增 provider 和模型
-
-#### `webview-ui/` 下的文件
-- 保留所有 `Vv*` 开头的组件
-- 如果是现有组件的修改，需要仔细判断
-
-### 6. 批量检查是否所有冲突已解决
+#### 3. 检查合并状态
 
 ```bash
 git status
 ```
 
-确保没有 "Unmerged paths" 的文件。
+**情况 A：无冲突**
+- ✅ 合并成功
+- 继续到"验证步骤"
 
-## 第六步：验证和测试
+**情况 B：有冲突**
+- ⚠️ 进入"冲突处理流程"
 
-### 1. 重新生成 Protobuf 类型（如果 proto 文件有变化）
+### 第四步：智能冲突处理
+
+#### 1. 分析冲突文件
 
 ```bash
-npm run protos
+# 列出冲突文件
+CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
 ```
 
-### 2. 安装可能的新依赖
+#### 2. 自动处理策略
+
+对每个冲突文件：
+
+**A. 检查是否是 VVCode 特有文件**
+```bash
+if [[ $file == src/services/auth/vv/* ]] || \
+   [[ $file == *Vv*.ts ]] || \
+   [[ $file == webview-ui/src/components/vv-* ]]; then
+  # VVCode 特有文件，完全保留我们的版本
+  git checkout --ours $file
+  git add $file
+  echo "✅ $file: 保留 VVCode 版本"
+fi
+```
+
+**B. 检查是否是品牌文件**
+```bash
+if [[ $file == "package.json" ]] || \
+   [[ $file == "README.md" ]] || \
+   [[ $file == assets/icons/* ]]; then
+  # 品牌文件，保留 VVCode 版本
+  git checkout --ours $file
+  git add $file
+  echo "✅ $file: 保留 VVCode 品牌"
+fi
+```
+
+**C. 检查是否是关键定制文件**
+```bash
+if [[ $file == "src/shared/storage/state-keys.ts" ]] || \
+   [[ $file == "src/extension.ts" ]] || \
+   [[ $file == "src/registry.ts" ]]; then
+  # 关键文件，需要智能合并
+  echo "⚠️ $file: 需要手动处理（VVCode 有重要定制）"
+  
+  # 策略：先接受上游版本，然后从旧版本恢复 VVCode 定制
+  git checkout --theirs $file
+  git add $file
+  
+  # 标记需要后续恢复 VVCode 定制
+  echo $file >> .vvcode-restore-needed
+fi
+```
+
+**D. 其他文件**
+```bash
+# 核心文件且 VVCode 没有定制，接受上游版本
+git checkout --theirs $file
+git add $file
+echo "✅ $file: 接受上游版本"
+```
+
+#### 3. 检查是否所有冲突已解决
 
 ```bash
-npm run install:all
+git status
 ```
 
-### 3. 进行类型检查
+如果仍有未解决的冲突，询问用户如何处理。
+
+#### 4. 提交合并
+
+```bash
+git commit -m "Merge upstream Day -$N commits
+
+Auto-resolved conflicts:
+- VVCode特有文件: 保留本地版本
+- 品牌文件: 保留VVCode品牌
+- 核心文件: 接受上游更新
+
+需要后续恢复VVCode定制的文件:
+$(cat .vvcode-restore-needed 2>/dev/null || echo "无")"
+```
+
+### 第五步：验证每次合并
+
+在每天的合并完成后：
+
+#### 1. 重新生成 Protobuf（如果需要）
+
+```bash
+if git diff HEAD~1 --name-only | grep -q "proto/"; then
+  echo "🔄 检测到 proto 文件变更，重新生成..."
+  npm run protos
+fi
+```
+
+#### 2. 快速类型检查
 
 ```bash
 npm run check-types
 ```
 
-如果有类型错误：
-- 分析错误原因
-- 可能是 VVCode 的定制代码需要适配新的类型
-- 修复错误或询问用户
+如果类型检查失败：
+- 🛑 停止合并流程
+- 📝 记录当前位置
+- 🔧 需要修复类型错误后才能继续
 
-### 4. 构建测试
+#### 3. 编译检查
 
 ```bash
 npm run compile
 ```
 
-### 5. 运行单元测试（可选）
+如果编译失败：
+- 🛑 停止合并流程
+- 需要修复后继续
+
+**如果验证通过**：
+- ✅ 继续下一天的合并
+- 或者如果是最后一天，进入"恢复VVCode定制"步骤
+
+### 第六步：恢复 VVCode 定制
+
+在所有天数合并完成后，如果有 `.vvcode-restore-needed` 文件：
+
+#### 1. 读取需要恢复的文件列表
+
+```bash
+cat .vvcode-restore-needed
+```
+
+#### 2. 对每个文件恢复 VVCode 定制
+
+**示例：恢复 state-keys.ts 的 VVCode 类型**
+
+```bash
+# 获取合并前的版本（包含 VVCode 定制）
+OLD_COMMIT=$(git log --grep="Merge upstream" -2 --pretty=format:"%H" | tail -1)
+
+# 提取 VVCode 类型定义部分
+git show $OLD_COMMIT:src/shared/storage/state-keys.ts > /tmp/old-state-keys.ts
+```
+
+然后使用 `replace_in_file` 工具将 VVCode 的类型定义添加回去：
+- VvUserInfo
+- VvUserConfig  
+- VvGroupConfig
+- VvGroupType
+- VvGroupItem
+- 所有 `vv*` 开头的字段
+
+#### 3. 恢复 extension.ts 的 VVCode 初始化
+
+```bash
+git show $OLD_COMMIT:src/extension.ts > /tmp/old-extension.ts
+```
+
+恢复：
+- VV Balance Status Bar 初始化
+- VV Completion Provider 注册
+- 中文 UI 文本
+
+#### 4. 恢复 registry.ts 的按钮定义
+
+```bash
+git show $OLD_COMMIT:src/registry.ts > /tmp/old-registry.ts
+```
+
+恢复：
+- VVSettingsButton
+- 移除的 Settings/Account 按钮注释
+
+#### 5. 恢复 webview 文件
+
+对于 `App.tsx` 和 `ExtensionStateContext.tsx`，执行类似的恢复操作。
+
+#### 6. 验证恢复结果
+
+```bash
+# 检查类型
+npm run check-types
+
+# 编译
+npm run compile
+```
+
+如果有错误，继续修复直到通过。
+
+#### 7. 提交恢复的更改
+
+```bash
+git add .
+git commit -m "chore: restore VVCode customizations after upstream merge
+
+Restored VVCode customizations in:
+- src/shared/storage/state-keys.ts (VVCode types)
+- src/extension.ts (VV components initialization)
+- src/registry.ts (VV Settings button)
+- webview-ui/ (VVCode UI customizations)
+
+All VVCode features preserved while keeping upstream updates."
+
+# 清理临时文件
+rm -f .vvcode-restore-needed
+```
+
+### 第七步：最终验证
+
+#### 1. 完整类型检查
+
+```bash
+npm run check-types
+```
+
+#### 2. 完整编译
+
+```bash
+npm run compile
+```
+
+#### 3. 运行测试（可选）
 
 ```bash
 npm run test:unit
 ```
 
-## 第七步：提交合并
-
-### 1. 查看所有更改
+#### 4. 本地运行验证
 
 ```bash
-git status
-git diff --cached --stat
+npm run dev
 ```
 
-### 2. 提交合并（如果有冲突解决）
+提示用户测试：
+- VVCode 品牌显示正常
+- VV Balance Status Bar 功能正常
+- VV Settings 按钮工作正常
+- VV 代码补全功能正常
+- 上游新功能也能正常使用
+
+## 完成和推送
+
+### 1. 查看合并历史
 
 ```bash
-git commit -m "Merge upstream/main with conflict resolution
-
-- Resolved conflicts in: [list key files]
-- Preserved VVCode branding and custom features
-- Updated dependencies from upstream"
+git log --oneline --graph -20
 ```
 
-如果没有冲突，合并已经自动提交了。
+应该看到：
+- 多个"Merge upstream Day -N commits"
+- 可能有"restore VVCode customizations"
 
-### 3. 本地测试完成
+### 2. 统计信息
 
-**重要提示：合并流程在本地完成，不会自动推送到远程。**
+```bash
+# 查看文件变更统计
+git diff origin/main --stat
 
-向用户说明：
-> ✅ 上游代码合并完成！所有更改已在本地提交。
-> 
-> 📋 下一步建议：
-> 1. 在本地充分测试合并后的代码
-> 2. 运行开发服务器验证功能：`npm run dev`
-> 3. 测试主要功能是否正常工作
-> 4. 确认 VVCode 的品牌和自定义功能都正常
-> 
-> ⚠️ 测试通过后，你可以手动推送：
-> ```bash
-> git push origin HEAD
-> ```
-> 
-> 或创建 Pull Request 进行代码审查：
-> ```bash
-> gh pr create --title "Merge upstream Cline updates [$(date +%Y-%m-%d)]" \
->   --body "合并来自 cline/cline 的最新更新" \
->   --base main
-> ```
+# 查看新增 commits 数量
+git log origin/main..HEAD --oneline | wc -l
+```
 
-## 错误处理
+### 3. 向用户报告
 
-### 常见问题
+```
+✅ 增量合并完成！
 
-1. **没有安装 git**：
-   - 提示用户安装 git
+📊 合并统计：
+- 合并了 X 天的更新
+- 共 Y 个 commits
+- Z 个文件被修改
+- VVCode 所有定制功能已恢复
 
-2. **上游仓库 URL 错误**：
-   - 确保使用 `https://github.com/cline/cline.git`
+✅ 验证通过：
+- TypeScript 类型检查: 通过
+- 编译: 成功
+- 本地运行: 正常
 
-3. **合并冲突太多**：
-   - 建议用户考虑部分合并
-   - 或者先在测试分支上尝试
+📋 下一步：
+1. 在本地充分测试功能
+2. 确认 VVCode 品牌和特有功能正常
+3. 测试上游新功能
 
-4. **类型检查失败**：
-   - VVCode 的定制代码可能需要适配新的上游接口
-   - 需要手动修复适配
+⚠️ 测试通过后可以推送：
+```bash
+git push origin HEAD
+```
 
-5. **测试失败**：
-   - 检查是否是 VVCode 特有功能的测试
-   - 或者是上游更新导致的破坏性变更
+或创建 Pull Request：
+```bash
+gh pr create \
+  --title "Incremental merge: Cline upstream (Day -X to Day -1)" \
+  --body "增量合并 X 天的上游更新，共 Y 个 commits"
+```
+```
+
+## 增量合并的优势
+
+### 与一次性合并对比
+
+| 特性 | 一次性合并 | 增量合并（按天） |
+|------|-----------|----------------|
+| 冲突数量 | 很多 | 少量 |
+| 冲突复杂度 | 高 | 低 |
+| 定位问题 | 困难 | 容易 |
+| 回滚成本 | 高 | 低 |
+| 验证粒度 | 粗 | 细 |
+| 处理时间 | 长 | 可分段 |
+
+### 实际效果
+
+**一次性合并**（旧方案）：
+- 685 个文件冲突
+- 使用 `--theirs` 策略
+- 导致 103 个编译错误
+- 需要手动恢复所有 VVCode 定制
+
+**增量合并**（新方案）：
+- 每天可能只有 5-10 个文件冲突
+- 自动保护 VVCode 关键文件
+- 每步验证编译
+- 智能恢复 VVCode 定制
+- 出问题立即发现并修复
+
+## 错误恢复
+
+### 如果某一天的合并出现问题
+
+```bash
+# 回滚到上一次成功的合并
+git reset --hard HEAD~1
+
+# 或者回滚到合并前
+git reset --hard origin/main
+
+# 重新开始合并
+# 可以跳过有问题的那一天，或者调整策略
+```
+
+### 如果 VVCode 定制恢复不完整
+
+```bash
+# 查看合并前的完整状态
+git show origin/main:src/shared/storage/state-keys.ts
+
+# 手动补充缺失的定制
+# 使用 replace_in_file 工具
+```
+
+## 定期合并建议
+
+**推荐频率**：
+- 🟢 **理想**：每周合并一次（1-7 天的更新）
+- 🟡 **可接受**：每月合并一次（1-30 天的更新）
+- 🔴 **不推荐**：超过 2 个月不合并（冲突会很多）
+
+**自动化建议**：
+- 可以设置 GitHub Actions 定期运行此 skill
+- 自动创建合并 PR
+- 人工审查后合并
 
 ## 总结清单
 
-完成合并前，确认：
-- [ ] 工作目录干净（或已保存）
+完成增量合并前，确认：
+- [ ] 工作目录干净
 - [ ] 上游仓库已配置
-- [ ] 已获取上游最新代码
 - [ ] 创建了合并分支
-- [ ] 所有冲突已解决
-- [ ] VVCode 品牌和自定义功能已保留
-- [ ] Protobuf 类型已重新生成（如需要）
-- [ ] 依赖已安装
-- [ ] 类型检查通过
-- [ ] 代码可以编译
-- [ ] 更改已提交并推送
+- [ ] 按天逐步合并
+- [ ] 每步都验证编译
+- [ ] VVCode 关键文件已保护
+- [ ] VVCode 定制已恢复
+- [ ] 最终类型检查通过
+- [ ] 最终编译成功
+- [ ] 本地测试通过
+- [ ] 准备推送或创建 PR
 
-## 最后的建议
+## 文件命名和组织
 
-- **保持小步合并**：定期同步上游可以减少冲突
-- **记录定制内容**：在 `.clinerules/` 中记录所有 VVCode 的定制
-- **使用命名规范**：所有 VVCode 新增文件以 `vv` 或 `Vv` 开头
-- **测试彻底**：合并后务必测试主要功能
+确保所有 VVCode 新增文件遵循命名规范：
+- 文件名以 `vv` 或 `Vv` 开头
+- 在文件顶部添加 `// VVCode Customization:` 注释
+- 尽量将代码放在独立模块中
+- 避免对核心文件做过多侵入性修改
+
+这样在未来的合并中，自动化工具可以更容易识别和保护 VVCode 的定制内容。
