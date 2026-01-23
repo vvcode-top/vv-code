@@ -90,7 +90,22 @@ export async function customFeature(controller: Controller, request: CustomReque
 
 ## 保持同步的策略
 
-**1. 使用 Git 管理上游同步**
+**1. 使用专用 Skill 自动化合并（推荐）**
+
+我们创建了专用的 `vv-merge-upstream` skill 来自动化上游合并流程：
+
+```
+使用方式：直接告诉 AI "合并 Cline 上游最新代码" 或 "同步上游更新"
+```
+
+这个 skill 会自动执行：
+- ✅ 检查和设置上游仓库
+- ✅ 创建合并分支
+- ✅ 智能处理冲突（保留 VVCode 定制）
+- ✅ 运行验证和测试
+- ✅ 提交并推送更改
+
+**2. 手动 Git 管理上游同步**
 ```bash
 # 添加上游仓库
 git remote add upstream https://github.com/cline/cline.git
