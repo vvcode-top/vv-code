@@ -92,18 +92,21 @@ export async function customFeature(controller: Controller, request: CustomReque
 
 **1. 使用专用 Skill 自动化合并（推荐）**
 
-我们创建了专用的 `vv-merge-upstream` skill 来自动化上游合并流程：
+我们创建了专用的 `vv-merge-cline` skill 来自动化上游合并流程：
 
 ```
-使用方式：直接告诉 AI "合并 Cline 上游最新代码" 或 "同步上游更新"
+使用方式：
+- 告诉 AI "合并上游代码"              # 合并到今天
+- 告诉 AI "同步 Cline 到 2025-01-20"  # 合并到指定日期
 ```
 
 这个 skill 会自动执行：
 - ✅ 检查和设置上游仓库
-- ✅ 创建合并分支
-- ✅ 智能处理冲突（保留 VVCode 定制）
-- ✅ 运行验证和测试
-- ✅ 提交并推送更改
+- ✅ 获取待合并 commits 列表
+- ✅ 根据冲突数量智能选择合并策略（批量或单个）
+- ✅ 自动解决冲突并恢复 VVCode 定制
+- ✅ 每次合并后编译验证
+- ✅ 大改动时请求用户手动测试
 
 **2. 手动 Git 管理上游同步**
 ```bash
