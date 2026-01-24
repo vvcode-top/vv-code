@@ -13,7 +13,8 @@ const ClineCommands = {
 	McpButton: prefix + ".mcpButtonClicked",
 	SettingsButton: prefix + ".settingsButtonClicked",
 	HistoryButton: prefix + ".historyButtonClicked",
-	AccountButton: prefix + ".accountButtonClicked",
+	// AccountButton: prefix + ".accountButtonClicked",  // Removed for VVCode
+	VVSettingsButton: prefix + ".vvSettingsButtonClicked",
 	WorktreesButton: prefix + ".worktreesButtonClicked",
 	TerminalOutput: prefix + ".addTerminalOutputToChat",
 	AddToChat: prefix + ".addToChat",

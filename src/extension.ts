@@ -4,11 +4,11 @@
 import assert from "node:assert"
 import { DIFF_VIEW_URI_SCHEME } from "@hosts/vscode/VscodeDiffViewProvider"
 import * as vscode from "vscode"
-import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
 import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChatButtonClicked"
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
+import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
@@ -164,12 +164,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	// VVCode Customization: Register VV Settings Button instead of Account Button
 	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.AccountButton, () => {
-			// Send event to all subscribers using the gRPC streaming method
-			sendAccountButtonClickedEvent()
+		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
+			sendVVSettingsButtonClickedEvent()
 		}),
 	)
+
+	// context.subscriptions.push(
+	// 	vscode.commands.registerCommand(commands.AccountButton, () => {
+	// 		// Send event to all subscribers using the gRPC streaming method
+	// 		sendAccountButtonClickedEvent()
+	// 	}),
+	// )
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.WorktreesButton, () => {
