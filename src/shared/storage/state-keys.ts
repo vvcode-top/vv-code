@@ -28,6 +28,9 @@ export interface VvUserInfo {
 	email?: string
 	avatarUrl?: string
 	createdAt?: number
+	quota?: number // 用户额度
+	usedQuota?: number // 已使用额度
+	vipLevel?: string // VIP 等级
 }
 
 // VVCode 用户配置类型
@@ -126,6 +129,12 @@ const GLOBAL_STATE_FIELDS = {
 	vvNeedsWebInit: { default: undefined as boolean | undefined }, // VVCode 需要去 web 端初始化配置
 	"vv:authState": { default: undefined as string | undefined },
 	"vv:codeVerifier": { default: undefined as string | undefined },
+	// VVCode Completion settings
+	vvInlineCompletionEnabled: { default: false as boolean },
+	vvInlineCompletionProvider: { default: "anthropic" as string },
+	vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
+	vvInlineCompletionDebounceMs: { default: 300 as number },
+	vvInlineCompletionUseGroupApiKey: { default: false as boolean },
 } satisfies FieldDefinitions
 
 // Fields that map directly to ApiHandlerOptions in @shared/api.ts
