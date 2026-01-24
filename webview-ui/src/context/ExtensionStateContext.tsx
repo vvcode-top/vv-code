@@ -60,6 +60,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	showAnnouncement: boolean
 	showChatModelSelector: boolean
 	expandTaskHeader: boolean
+	showVVSettings: boolean // VVCode Customization: 添加 VV 设置页面状态
 
 	// Setters
 	setDictationSettings: (value: DictationSettings) => void
@@ -106,6 +107,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	navigateToAccount: () => void
 	navigateToWorktrees: () => void
 	navigateToChat: () => void
+	navigateToVVSettings: () => void // VVCode Customization: 添加 VV 设置页面导航
 
 	// Hide functions
 	hideSettings: () => void
@@ -135,6 +137,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const [showWorktrees, setShowWorktrees] = useState(false)
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [showChatModelSelector, setShowChatModelSelector] = useState(false)
+	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization: 添加 VV 设置页面状态
 
 	// Helper for MCP view
 	const closeMcpView = useCallback(() => {
@@ -211,6 +214,14 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowAccount(false)
 		setShowWorktrees(false)
 	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
+
+	const navigateToVVSettings = useCallback(() => {
+		setShowSettings(false)
+		closeMcpView()
+		setShowHistory(false)
+		setShowAccount(false)
+		setShowVVSettings(true)
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount])
 
 	const [state, setState] = useState<ExtensionState>({
 		version: "",
@@ -317,6 +328,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const chatButtonUnsubscribeRef = useRef<(() => void) | null>(null)
 	const accountButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const settingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
+	const vvSettingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null) // VVCode Customization
 	const worktreesButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const partialMessageUnsubscribeRef = useRef<(() => void) | null>(null)
 	const mcpMarketplaceUnsubscribeRef = useRef<(() => void) | null>(null)
@@ -472,6 +484,22 @@ export const ExtensionStateContextProvider: React.FC<{
 				console.log("Settings button clicked subscription completed")
 			},
 		})
+
+		// VVCode Customization: Set up VV settings button clicked subscription
+		vvSettingsButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToVvSettingsButtonClicked(
+			EmptyRequest.create({}),
+			{
+				onResponse: () => {
+					navigateToVVSettings()
+				},
+				onError: (error) => {
+					console.error("Error in VV settings button clicked subscription:", error)
+				},
+				onComplete: () => {
+					console.log("VV settings button clicked subscription completed")
+				},
+			},
+		)
 
 		// Set up worktrees button clicked subscription
 		worktreesButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToWorktreesButtonClicked(
@@ -641,6 +669,10 @@ export const ExtensionStateContextProvider: React.FC<{
 				settingsButtonClickedSubscriptionRef.current()
 				settingsButtonClickedSubscriptionRef.current = null
 			}
+			if (vvSettingsButtonClickedSubscriptionRef.current) {
+				vvSettingsButtonClickedSubscriptionRef.current()
+				vvSettingsButtonClickedSubscriptionRef.current = null
+			}
 			if (worktreesButtonClickedSubscriptionRef.current) {
 				worktreesButtonClickedSubscriptionRef.current()
 				worktreesButtonClickedSubscriptionRef.current = null
@@ -778,6 +810,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		showWorktrees,
 		showAnnouncement,
 		showChatModelSelector,
+		showVVSettings, // VVCode Customization: 添加 VV 设置页面状态
 		globalClineRulesToggles: state.globalClineRulesToggles || {},
 		localClineRulesToggles: state.localClineRulesToggles || {},
 		localCursorRulesToggles: state.localCursorRulesToggles || {},
@@ -797,6 +830,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		navigateToAccount,
 		navigateToWorktrees,
 		navigateToChat,
+		navigateToVVSettings, // VVCode Customization: 添加 VV 设置页面导航
 
 		// Hide functions
 		hideSettings,
