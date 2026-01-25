@@ -122,7 +122,7 @@ export class VvAuthProvider {
 			createdAt: user.created_time,
 			quota: user.quota,
 			usedQuota: user.used_quota,
-			vipLevel: user.role, // 使用 role 作为 VIP 等级
+			vipLevel: typeof user.role === "number" ? user.role : undefined, // 使用 role 作为 VIP 等级
 		}
 	}
 
