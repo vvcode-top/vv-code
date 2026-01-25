@@ -14,15 +14,18 @@ import "./utils/path" // necessary to have access to String.prototype.toPosix
 import { HostProvider } from "@/hosts/host-provider"
 import { FileContextTracker } from "./core/context/context-tracking/FileContextTracker"
 import { StateManager } from "./core/storage/StateManager"
+import { openAiCodexOAuthManager } from "./integrations/openai-codex/oauth"
 import { ExtensionRegistryInfo } from "./registry"
 import { BannerService } from "./services/banner/BannerService"
 import { audioRecordingService } from "./services/dictation/AudioRecordingService"
 import { ErrorService } from "./services/error"
 import { featureFlagsService } from "./services/feature-flags"
-import { initializeDistinctId } from "./services/logging/distinctId"
+import { getDistinctId, initializeDistinctId } from "./services/logging/distinctId"
 import { telemetryService } from "./services/telemetry"
 import { PostHogClientProvider } from "./services/telemetry/providers/posthog/PostHogClientProvider"
 import { ShowMessageType } from "./shared/proto/host/window"
+import { syncWorker } from "./shared/services/worker/sync"
+import { getBlobStoreSettingsFromEnv } from "./shared/services/worker/worker"
 import { getLatestAnnouncementId } from "./utils/announcements"
 import { arePathsEqual } from "./utils/path"
 /**
@@ -38,9 +41,12 @@ export async function initialize(context: vscode.ExtensionContext): Promise<Webv
 		console.error("[Controller] CRITICAL: Failed to initialize StateManager - extension may not function properly:", error)
 		HostProvider.window.showMessage({
 			type: ShowMessageType.ERROR,
-			message: "Failed to initialize VVCode's application state. Please restart the extension.",
+			message: "Failed to initialize Cline's application state. Please restart the extension.",
 		})
 	}
+
+	// Initialize OpenAI Codex OAuth manager with extension context for secrets storage
+	openAiCodexOAuthManager.initialize(context)
 
 	// Set the distinct ID for logging and telemetry
 	await initializeDistinctId(context)
@@ -86,6 +92,10 @@ export async function initialize(context: vscode.ExtensionContext): Promise<Webv
 
 	telemetryService.captureExtensionActivated()
 
+	// Use remote config blobStoreConfig if available, otherwise fall back to env vars
+	const blobStoreSettings = StateManager.get().getRemoteConfigSettings()?.blobStoreConfig ?? getBlobStoreSettingsFromEnv()
+	syncWorker().init({ ...blobStoreSettings, userDistinctId: getDistinctId() })
+
 	return webview
 }
 
@@ -96,19 +106,17 @@ async function showVersionUpdateAnnouncement(context: vscode.ExtensionContext) {
 	// Perform post-update actions if necessary
 	try {
 		if (!previousVersion || currentVersion !== previousVersion) {
-			Logger.log(`VVCode version changed: ${previousVersion} -> ${currentVersion}. First run or update detected.`)
+			Logger.log(`Cline version changed: ${previousVersion} -> ${currentVersion}. First run or update detected.`)
 
 			// Check if there's a new announcement to show
 			const lastShownAnnouncementId = context.globalState.get<string>("lastShownAnnouncementId")
 			const latestAnnouncementId = getLatestAnnouncementId()
 
 			if (lastShownAnnouncementId !== latestAnnouncementId) {
-				// Focus VVCode when there's a new announcement to show (major/minor updates or fresh installs)
+				// Show notification when there's a new announcement (major/minor updates or fresh installs)
 				const message = previousVersion
-					? `VVCode has been updated to v${currentVersion}`
-					: `Welcome to VVCode v${currentVersion}`
-				await HostProvider.workspace.openClineSidebarPanel({})
-				await new Promise((resolve) => setTimeout(resolve, 200))
+					? `Cline has been updated to v${currentVersion}`
+					: `Welcome to Cline v${currentVersion}`
 				HostProvider.window.showMessage({
 					type: ShowMessageType.INFORMATION,
 					message,
@@ -169,4 +177,5 @@ export async function tearDown(): Promise<void> {
 	featureFlagsService.dispose()
 	// Dispose all webview instances
 	await WebviewProvider.disposeAllInstances()
+	syncWorker().dispose()
 }

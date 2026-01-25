@@ -9,7 +9,6 @@ import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChat
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
-import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
@@ -33,7 +32,7 @@ import { sendShowWebviewEvent } from "./core/controller/ui/subscribeToShowWebvie
 import { HookDiscoveryCache } from "./core/hooks/HookDiscoveryCache"
 import { HookProcessRegistry } from "./core/hooks/HookProcessRegistry"
 import { workspaceResolver } from "./core/workspace"
-import { getContextForCommand, showWebview } from "./hosts/vscode/commandUtils"
+import { findMatchingNotebookCell, getContextForCommand, showWebview } from "./hosts/vscode/commandUtils"
 import { abortCommitGeneration, generateCommitMsg } from "./hosts/vscode/commit-message-generator"
 import {
 	disposeVscodeCommentReviewController,
@@ -129,13 +128,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.SettingsButton, () => {
 			sendSettingsButtonClickedEvent()
-		}),
-	)
-
-	// VVCode Customization: Register VV Settings button
-	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
-			sendVVSettingsButtonClickedEvent()
 		}),
 	)
 
@@ -403,6 +395,107 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	// Register Jupyter Notebook command handlers
+	const NOTEBOOK_EDIT_INSTRUCTIONS = `Special considerations for using replace_in_file on *.ipynb files:
+* Jupyter notebook files are JSON format with specific structure for source code cells
+* Source code in cells is stored as JSON string arrays ending with explicit \\n characters and commas
+* Always match the exact JSON format including quotes, commas, and escaped newlines.`
+
+	// Helper to get notebook context for Jupyter commands
+	async function getNotebookCommandContext(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) {
+		const activeNotebook = vscode.window.activeNotebookEditor
+		if (!activeNotebook) {
+			HostProvider.window.showMessage({
+				type: ShowMessageType.ERROR,
+				message: "No active Jupyter notebook found. Please open a .ipynb file first.",
+			})
+			return null
+		}
+
+		const ctx = await getContextForCommand(range, diagnostics)
+		if (!ctx) {
+			return null
+		}
+
+		const filePath = ctx.commandContext.filePath || ""
+		let cellJson: string | null = null
+		if (activeNotebook.notebook.cellCount > 0) {
+			const cellIndex = activeNotebook.notebook.cellAt(activeNotebook.selection.start).index
+			cellJson = await findMatchingNotebookCell(filePath, cellIndex)
+		}
+
+		return { ...ctx, cellJson }
+	}
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			commands.JupyterGenerateCell,
+			async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
+				const userPrompt = await showJupyterPromptInput(
+					"Generate Notebook Cell",
+					"Enter your prompt for generating notebook cell (press Enter to confirm & Esc to cancel)",
+				)
+				if (!userPrompt) return
+
+				const ctx = await getNotebookCommandContext(range, diagnostics)
+				if (!ctx) return
+
+				const notebookContext = `User prompt: ${userPrompt}
+Insert a new Jupyter notebook cell above or below the current cell based on user prompt.
+${NOTEBOOK_EDIT_INSTRUCTIONS}
+
+Current Notebook Cell Context (JSON, sanitized of image data):
+\`\`\`json
+${ctx.cellJson || "{}"}
+\`\`\``
+
+				await addToCline(ctx.controller, ctx.commandContext, notebookContext)
+			},
+		),
+	)
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			commands.JupyterExplainCell,
+			async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
+				const ctx = await getNotebookCommandContext(range, diagnostics)
+				if (!ctx) return
+
+				const notebookContext = ctx.cellJson
+					? `\n\nCurrent Notebook Cell Context (JSON, sanitized of image data):\n\`\`\`json\n${ctx.cellJson}\n\`\`\``
+					: undefined
+
+				await explainWithCline(ctx.controller, ctx.commandContext, notebookContext)
+			},
+		),
+	)
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			commands.JupyterImproveCell,
+			async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
+				const userPrompt = await showJupyterPromptInput(
+					"Improve Notebook Cell",
+					"Enter your prompt for improving the current notebook cell (press Enter to confirm & Esc to cancel)",
+				)
+				if (!userPrompt) return
+
+				const ctx = await getNotebookCommandContext(range, diagnostics)
+				if (!ctx) return
+
+				const notebookContext = `User prompt: ${userPrompt}
+${NOTEBOOK_EDIT_INSTRUCTIONS}
+
+Current Notebook Cell Context (JSON, sanitized of image data):
+\`\`\`json
+${ctx.cellJson || "{}"}
+\`\`\``
+
+				await improveWithCline(ctx.controller, ctx.commandContext, notebookContext)
+			},
+		),
+	)
+
 	// Register the openWalkthrough command handler
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.Walkthrough, async () => {
@@ -450,31 +543,53 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// VVCode Customization: Initialize VV Balance StatusBar
-	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
-	const balanceStatusBar = VvBalanceStatusBar.getInstance()
-	balanceStatusBar.initialize(context)
-
-	// VVCode Customization: Initialize inline completion provider
-	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
-	const completionProvider = new VvCompletionProvider(webview.controller)
-	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{ pattern: "**" }], completionProvider))
-
-	// Register accept completion command
-	context.subscriptions.push(
-		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {
-			completionProvider.acceptCompletion(completionId)
-		}),
-	)
-
-	// Register refresh balance command
-	context.subscriptions.push(
-		vscode.commands.registerCommand("vv.refreshBalance", () => {
-			balanceStatusBar.refreshBalance()
-		}),
-	)
-
 	return createClineAPI(webview.controller)
+}
+
+async function showJupyterPromptInput(title: string, placeholder: string): Promise<string | undefined> {
+	return new Promise((resolve) => {
+		const quickPick = vscode.window.createQuickPick()
+		quickPick.title = title
+		quickPick.placeholder = placeholder
+		quickPick.ignoreFocusOut = true
+
+		// Allow free text input
+		quickPick.canSelectMany = false
+
+		let userInput = ""
+
+		quickPick.onDidChangeValue((value) => {
+			userInput = value
+			// Update items to show the current input
+			if (value) {
+				quickPick.items = [
+					{
+						label: "$(check) Use this prompt",
+						detail: value,
+						alwaysShow: true,
+					},
+				]
+			} else {
+				quickPick.items = []
+			}
+		})
+
+		quickPick.onDidAccept(() => {
+			if (userInput) {
+				resolve(userInput)
+				quickPick.hide()
+			}
+		})
+
+		quickPick.onDidHide(() => {
+			if (!userInput) {
+				resolve(undefined)
+			}
+			quickPick.dispose()
+		})
+
+		quickPick.show()
+	})
 }
 
 function setupHostProvider(context: ExtensionContext) {

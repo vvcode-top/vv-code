@@ -54,7 +54,6 @@ export interface ExtensionStateContextType extends ExtensionState {
 	mcpTab?: McpViewTab
 	showSettings: boolean
 	settingsTargetSection?: string
-	showVVSettings: boolean // VVCode Customization
 	showHistory: boolean
 	showAccount: boolean
 	showWorktrees: boolean
@@ -103,7 +102,6 @@ export interface ExtensionStateContextType extends ExtensionState {
 	// Navigation functions
 	navigateToMcp: (tab?: McpViewTab) => void
 	navigateToSettings: (targetSection?: string) => void
-	navigateToVVSettings: () => void // VVCode Customization
 	navigateToHistory: () => void
 	navigateToAccount: () => void
 	navigateToWorktrees: () => void
@@ -111,7 +109,6 @@ export interface ExtensionStateContextType extends ExtensionState {
 
 	// Hide functions
 	hideSettings: () => void
-	hideVVSettings: () => void // VVCode Customization
 	hideHistory: () => void
 	hideAccount: () => void
 	hideWorktrees: () => void
@@ -133,7 +130,6 @@ export const ExtensionStateContextProvider: React.FC<{
 	const [mcpTab, setMcpTab] = useState<McpViewTab | undefined>(undefined)
 	const [showSettings, setShowSettings] = useState(false)
 	const [settingsTargetSection, setSettingsTargetSection] = useState<string | undefined>(undefined)
-	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization
 	const [showHistory, setShowHistory] = useState(false)
 	const [showAccount, setShowAccount] = useState(false)
 	const [showWorktrees, setShowWorktrees] = useState(false)
@@ -151,7 +147,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowSettings(false)
 		setSettingsTargetSection(undefined)
 	}, [])
-	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 	const hideHistory = useCallback(() => setShowHistory(false), [setShowHistory])
 	const hideAccount = useCallback(() => setShowAccount(false), [setShowAccount])
 	const hideWorktrees = useCallback(() => setShowWorktrees(false), [setShowWorktrees])
@@ -184,16 +179,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		},
 		[closeMcpView],
 	)
-
-	// VVCode Customization: Navigate to VV Settings
-	const navigateToVVSettings = useCallback(() => {
-		setShowSettings(false)
-		setShowHistory(false)
-		closeMcpView()
-		setShowAccount(false)
-		setShowWorktrees(false)
-		setShowVVSettings(true)
-	}, [setShowSettings, setShowHistory, closeMcpView, setShowAccount, setShowWorktrees, setShowVVSettings])
 
 	const navigateToHistory = useCallback(() => {
 		setShowSettings(false)
@@ -332,7 +317,6 @@ export const ExtensionStateContextProvider: React.FC<{
 	const chatButtonUnsubscribeRef = useRef<(() => void) | null>(null)
 	const accountButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const settingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
-	const vvSettingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null) // VVCode Customization
 	const worktreesButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const partialMessageUnsubscribeRef = useRef<(() => void) | null>(null)
 	const mcpMarketplaceUnsubscribeRef = useRef<(() => void) | null>(null)
@@ -488,24 +472,6 @@ export const ExtensionStateContextProvider: React.FC<{
 				console.log("Settings button clicked subscription completed")
 			},
 		})
-
-		// VVCode Customization: Set up VV settings button clicked subscription
-		vvSettingsButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToVvSettingsButtonClicked(
-			EmptyRequest.create({}),
-			{
-				onResponse: () => {
-					// When VV settings button is clicked, navigate to VV settings
-					console.log("[DEBUG] Received VV settings button clicked event from gRPC stream")
-					navigateToVVSettings()
-				},
-				onError: (error) => {
-					console.error("Error in VV settings button clicked subscription:", error)
-				},
-				onComplete: () => {
-					console.log("VV settings button clicked subscription completed")
-				},
-			},
-		)
 
 		// Set up worktrees button clicked subscription
 		worktreesButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToWorktreesButtonClicked(
@@ -675,10 +641,6 @@ export const ExtensionStateContextProvider: React.FC<{
 				settingsButtonClickedSubscriptionRef.current()
 				settingsButtonClickedSubscriptionRef.current = null
 			}
-			if (vvSettingsButtonClickedSubscriptionRef.current) {
-				vvSettingsButtonClickedSubscriptionRef.current()
-				vvSettingsButtonClickedSubscriptionRef.current = null
-			}
 			if (worktreesButtonClickedSubscriptionRef.current) {
 				worktreesButtonClickedSubscriptionRef.current()
 				worktreesButtonClickedSubscriptionRef.current = null
@@ -811,7 +773,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
-		showVVSettings, // VVCode Customization
 		showHistory,
 		showAccount,
 		showWorktrees,
@@ -832,7 +793,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		// Navigation functions
 		navigateToMcp,
 		navigateToSettings,
-		navigateToVVSettings, // VVCode Customization
 		navigateToHistory,
 		navigateToAccount,
 		navigateToWorktrees,
@@ -840,7 +800,6 @@ export const ExtensionStateContextProvider: React.FC<{
 
 		// Hide functions
 		hideSettings,
-		hideVVSettings, // VVCode Customization
 		hideHistory,
 		hideAccount,
 		hideWorktrees,
