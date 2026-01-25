@@ -255,7 +255,7 @@ service UiService {
 
   // Subscribe to settings button clicked events
   rpc subscribeToSettingsButtonClicked(EmptyRequest) returns (stream Empty);
-  
+
   // VVCode Customization: Subscribe to VV settings button clicked events
   rpc subscribeToVvSettingsButtonClicked(EmptyRequest) returns (stream Empty);
 

@@ -6,6 +6,7 @@ import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
 import OnboardingView from "./components/onboarding/OnboardingView"
 import SettingsView from "./components/settings/SettingsView"
+import VvSettingsView from "./components/settings/VvSettingsView"
 import WelcomeView from "./components/welcome/WelcomeView"
 import WorktreesView from "./components/worktrees/WorktreesView"
 import { useClineAuth } from "./context/ClineAuthContext"
@@ -68,11 +69,7 @@ const AppContent = () => {
 	return (
 		<div className="flex h-screen w-full flex-col">
 			{showSettings && <SettingsView onDone={hideSettings} targetSection={settingsTargetSection} />}
-			{showVVSettings &&
-				(() => {
-					const VvSettingsView = require("./components/settings/VvSettingsView").default
-					return <VvSettingsView onDone={hideVVSettings} />
-				})()}
+			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
 			{showHistory && <HistoryView onDone={hideHistory} />}
 			{showMcp && <McpView initialTab={mcpTab} onDone={closeMcpView} />}
 			{showAccount && (

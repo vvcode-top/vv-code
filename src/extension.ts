@@ -98,6 +98,30 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Initialize test mode and add disposables to context
 	context.subscriptions.push(...testModeWatchers)
 
+	// VVCode Customization: Initialize balance status bar
+	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
+	const balanceStatusBar = VvBalanceStatusBar.getInstance()
+	balanceStatusBar.initialize(context)
+
+	// VVCode Customization: Initialize inline completion provider
+	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
+	const completionProvider = new VvCompletionProvider(webview.controller)
+	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{ pattern: "**" }], completionProvider))
+
+	// Register accept completion command
+	context.subscriptions.push(
+		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {
+			completionProvider.acceptCompletion(completionId)
+		}),
+	)
+
+	// Register refresh balance command
+	context.subscriptions.push(
+		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
+			await balanceStatusBar.refreshBalance()
+		}),
+	)
+
 	vscode.commands.executeCommand("setContext", "cline.isDevMode", IS_DEV && IS_DEV === "true")
 
 	context.subscriptions.push(
