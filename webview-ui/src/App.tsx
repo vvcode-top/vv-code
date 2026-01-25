@@ -6,6 +6,7 @@ import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
 import OnboardingView from "./components/onboarding/OnboardingView"
 import SettingsView from "./components/settings/SettingsView"
+import VvSettingsView from "./components/settings/VvSettingsView"
 import WelcomeView from "./components/welcome/WelcomeView"
 import WorktreesView from "./components/worktrees/WorktreesView"
 import { useClineAuth } from "./context/ClineAuthContext"
@@ -22,6 +23,7 @@ const AppContent = () => {
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
+		showVVSettings,
 		showHistory,
 		showAccount,
 		showWorktrees,
@@ -32,6 +34,7 @@ const AppContent = () => {
 		closeMcpView,
 		navigateToHistory,
 		hideSettings,
+		hideVVSettings,
 		hideHistory,
 		hideAccount,
 		hideWorktrees,
@@ -66,6 +69,7 @@ const AppContent = () => {
 	return (
 		<div className="flex h-screen w-full flex-col">
 			{showSettings && <SettingsView onDone={hideSettings} targetSection={settingsTargetSection} />}
+			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
 			{showHistory && <HistoryView onDone={hideHistory} />}
 			{showMcp && <McpView initialTab={mcpTab} onDone={closeMcpView} />}
 			{showAccount && (
@@ -80,7 +84,7 @@ const AppContent = () => {
 			{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
 			<ChatView
 				hideAnnouncement={hideAnnouncement}
-				isHidden={showSettings || showHistory || showMcp || showAccount || showWorktrees}
+				isHidden={showSettings || showVVSettings || showHistory || showMcp || showAccount || showWorktrees}
 				showAnnouncement={showAnnouncement}
 				showHistoryView={navigateToHistory}
 			/>
