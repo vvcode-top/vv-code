@@ -14,7 +14,7 @@ import type { Controller } from "@/core/controller"
 export async function vvUpdateCompletionSettings(controller: Controller, request: VvCompletionSettings): Promise<Empty> {
 	const stateManager = controller.stateManager
 
-	// Update global state
+	// Update settings
 	stateManager.setGlobalState("vvInlineCompletionEnabled", request.enabled)
 	stateManager.setGlobalState("vvInlineCompletionProvider", request.provider || "anthropic")
 	stateManager.setGlobalState("vvInlineCompletionModelId", request.modelId || "claude-3-5-haiku-20241022")

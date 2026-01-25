@@ -12,9 +12,9 @@ const ClineCommands = {
 	PlusButton: prefix + ".plusButtonClicked",
 	McpButton: prefix + ".mcpButtonClicked",
 	SettingsButton: prefix + ".settingsButtonClicked",
+	VVSettingsButton: prefix + ".vvSettingsButtonClicked", // VVCode Customization
 	HistoryButton: prefix + ".historyButtonClicked",
-	// AccountButton: prefix + ".accountButtonClicked",  // Removed for VVCode
-	VVSettingsButton: prefix + ".vvSettingsButtonClicked",
+	AccountButton: prefix + ".accountButtonClicked",
 	WorktreesButton: prefix + ".worktreesButtonClicked",
 	TerminalOutput: prefix + ".addTerminalOutputToChat",
 	AddToChat: prefix + ".addToChat",
@@ -26,6 +26,10 @@ const ClineCommands = {
 	GenerateCommit: prefix + ".generateGitCommitMessage",
 	AbortCommit: prefix + ".abortGitCommitMessage",
 	ReconstructTaskHistory: prefix + ".reconstructTaskHistory",
+	// Jupyter Notebook commands
+	JupyterGenerateCell: prefix + ".jupyterGenerateCell",
+	JupyterExplainCell: prefix + ".jupyterExplainCell",
+	JupyterImproveCell: prefix + ".jupyterImproveCell",
 }
 
 /**

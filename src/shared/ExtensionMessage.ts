@@ -120,6 +120,7 @@ export interface ExtensionState {
 	vvSelectedGroupType?: string // 用户选中的分组类型
 	optOutOfRemoteConfig?: boolean
 	banners?: BannerCardData[]
+	openAiCodexIsAuthenticated?: boolean
 }
 
 export interface ClineMessage {

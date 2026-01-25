@@ -15,10 +15,10 @@ export async function vvGetCompletionSettings(controller: Controller, request: E
 	const stateManager = controller.stateManager
 
 	return VvCompletionSettings.create({
-		enabled: stateManager.getGlobalStateKey("vvInlineCompletionEnabled") ?? false,
-		provider: stateManager.getGlobalStateKey("vvInlineCompletionProvider") ?? "anthropic",
-		modelId: stateManager.getGlobalStateKey("vvInlineCompletionModelId") ?? "claude-3-5-haiku-20241022",
-		debounceMs: stateManager.getGlobalStateKey("vvInlineCompletionDebounceMs") ?? 400,
-		useGroupApiKey: stateManager.getGlobalStateKey("vvInlineCompletionUseGroupApiKey") ?? true,
+		enabled: stateManager.getGlobalSettingsKey("vvInlineCompletionEnabled") ?? false,
+		provider: stateManager.getGlobalSettingsKey("vvInlineCompletionProvider") ?? "anthropic",
+		modelId: stateManager.getGlobalSettingsKey("vvInlineCompletionModelId") ?? "claude-3-5-haiku-20241022",
+		debounceMs: stateManager.getGlobalSettingsKey("vvInlineCompletionDebounceMs") ?? 400,
+		useGroupApiKey: stateManager.getGlobalSettingsKey("vvInlineCompletionUseGroupApiKey") ?? true,
 	})
 }

@@ -6,7 +6,7 @@ import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
 import OnboardingView from "./components/onboarding/OnboardingView"
 import SettingsView from "./components/settings/SettingsView"
-import VvSettingsView from "./components/settings/VvSettingsView" // VVCode Customization: 添加 VV 设置页面
+import VvSettingsView from "./components/settings/VvSettingsView"
 import WelcomeView from "./components/welcome/WelcomeView"
 import WorktreesView from "./components/worktrees/WorktreesView"
 import { useClineAuth } from "./context/ClineAuthContext"
@@ -23,22 +23,22 @@ const AppContent = () => {
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
+		showVVSettings, // VVCode Customization
 		showHistory,
 		showAccount,
 		showWorktrees,
 		showAnnouncement,
-		showVVSettings, // VVCode Customization
 		onboardingModels,
 		setShowAnnouncement,
 		setShouldShowAnnouncement,
 		closeMcpView,
 		navigateToHistory,
 		hideSettings,
+		hideVVSettings, // VVCode Customization
 		hideHistory,
 		hideAccount,
 		hideWorktrees,
 		hideAnnouncement,
-		hideVVSettings, // VVCode Customization
 	} = useExtensionState()
 
 	const { clineUser, organizations, activeOrganization } = useClineAuth()
@@ -69,6 +69,7 @@ const AppContent = () => {
 	return (
 		<div className="flex h-screen w-full flex-col">
 			{showSettings && <SettingsView onDone={hideSettings} targetSection={settingsTargetSection} />}
+			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
 			{showHistory && <HistoryView onDone={hideHistory} />}
 			{showMcp && <McpView initialTab={mcpTab} onDone={closeMcpView} />}
 			{showAccount && (
@@ -80,12 +81,10 @@ const AppContent = () => {
 				/>
 			)}
 			{showWorktrees && <WorktreesView onDone={hideWorktrees} />}
-			{/* VVCode Customization: 添加 VV 设置页面 */}
-			{showVVSettings && <VvSettingsView onDone={hideVVSettings} />}
 			{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
 			<ChatView
 				hideAnnouncement={hideAnnouncement}
-				isHidden={showSettings || showHistory || showMcp || showAccount || showWorktrees || showVVSettings}
+				isHidden={showSettings || showVVSettings || showHistory || showMcp || showAccount || showWorktrees}
 				showAnnouncement={showAnnouncement}
 				showHistoryView={navigateToHistory}
 			/>

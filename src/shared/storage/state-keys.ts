@@ -20,8 +20,12 @@ import { Mode, OpenaiReasoningEffort } from "@shared/storage/types"
 import { TelemetrySetting } from "@shared/TelemetrySetting"
 import { UserInfo } from "@shared/UserInfo"
 import { LanguageModelChatSelector } from "vscode"
+import { BlobStoreSettings } from "./ClineBlobStorage"
 
-// VVCode Customization: VVCode 用户信息类型
+// ============================================================================
+// VVCode Customization: Type definitions
+// ============================================================================
+
 export interface VvUserInfo {
 	uid: string
 	username?: string
@@ -93,6 +97,7 @@ const REMOTE_CONFIG_EXTRA_FIELDS = {
 	remoteGlobalWorkflows: { default: undefined as GlobalInstructionsFile[] | undefined },
 	blockPersonalRemoteMCPServers: { default: false as boolean },
 	openTelemetryOtlpHeaders: { default: undefined as Record<string, string> | undefined },
+	blobStoreConfig: { default: undefined as BlobStoreSettings | undefined },
 } satisfies FieldDefinitions
 
 const GLOBAL_STATE_FIELDS = {
@@ -121,7 +126,7 @@ const GLOBAL_STATE_FIELDS = {
 	dismissedBanners: { default: [] as Array<{ bannerId: string; dismissedAt: number }> },
 	// Path to worktree that should auto-open Cline sidebar when launched
 	worktreeAutoOpenPath: { default: undefined as string | undefined },
-	// VVCode Customization: VVCode 用户信息
+	// VVCode Customization: VV state fields
 	vvUserInfo: { default: undefined as VvUserInfo | undefined },
 	vvUserConfig: { default: undefined as VvUserConfig | undefined },
 	vvGroupConfig: { default: undefined as VvGroupConfig | undefined }, // VVCode 分组配置
@@ -129,12 +134,6 @@ const GLOBAL_STATE_FIELDS = {
 	vvNeedsWebInit: { default: undefined as boolean | undefined }, // VVCode 需要去 web 端初始化配置
 	"vv:authState": { default: undefined as string | undefined },
 	"vv:codeVerifier": { default: undefined as string | undefined },
-	// VVCode Completion settings
-	vvInlineCompletionEnabled: { default: false as boolean },
-	vvInlineCompletionProvider: { default: "anthropic" as string },
-	vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
-	vvInlineCompletionDebounceMs: { default: 300 as number },
-	vvInlineCompletionUseGroupApiKey: { default: false as boolean },
 } satisfies FieldDefinitions
 
 // Fields that map directly to ApiHandlerOptions in @shared/api.ts
@@ -334,6 +333,13 @@ const USER_SETTINGS_FIELDS = {
 	openTelemetryLogBatchSize: { default: 512 as number | undefined },
 	openTelemetryLogBatchTimeout: { default: 5000 as number | undefined },
 	openTelemetryLogMaxQueueSize: { default: 2048 as number | undefined },
+
+	// VVCode Customization: Inline completion settings
+	vvInlineCompletionEnabled: { default: false as boolean },
+	vvInlineCompletionProvider: { default: "anthropic" as string },
+	vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
+	vvInlineCompletionDebounceMs: { default: 300 as number },
+	vvInlineCompletionUseGroupApiKey: { default: false as boolean },
 } satisfies FieldDefinitions
 
 const SETTINGS_FIELDS = { ...API_HANDLER_SETTINGS_FIELDS, ...USER_SETTINGS_FIELDS }
@@ -389,12 +395,10 @@ const SECRETS_KEYS = [
 	"ocaApiKey",
 	"ocaRefreshToken",
 	"mcpOAuthSecrets",
-	"vv:accessToken", // VVCode 访问令牌
-	"vv:refreshToken", // VVCode 刷新令牌
-	"vv:userId", // VVCode 用户 ID
-	"vv:authState", // CSRF 防护 state（临时）- 已迁移到 GlobalState
-	"vv:codeVerifier", // PKCE code_verifier（临时）- 已迁移到 GlobalState
-	"vv:completionApiKey",
+	// VVCode Customization: VV secrets
+	"vv:accessToken",
+	"vv:refreshToken",
+	"vv:userId",
 ] as const
 
 export const LocalStateKeys = [

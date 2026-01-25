@@ -54,13 +54,13 @@ export interface ExtensionStateContextType extends ExtensionState {
 	mcpTab?: McpViewTab
 	showSettings: boolean
 	settingsTargetSection?: string
+	showVVSettings: boolean // VVCode Customization
 	showHistory: boolean
 	showAccount: boolean
 	showWorktrees: boolean
 	showAnnouncement: boolean
 	showChatModelSelector: boolean
 	expandTaskHeader: boolean
-	showVVSettings: boolean // VVCode Customization: 添加 VV 设置页面状态
 
 	// Setters
 	setDictationSettings: (value: DictationSettings) => void
@@ -103,20 +103,20 @@ export interface ExtensionStateContextType extends ExtensionState {
 	// Navigation functions
 	navigateToMcp: (tab?: McpViewTab) => void
 	navigateToSettings: (targetSection?: string) => void
+	navigateToVVSettings: () => void // VVCode Customization
 	navigateToHistory: () => void
 	navigateToAccount: () => void
 	navigateToWorktrees: () => void
 	navigateToChat: () => void
-	navigateToVVSettings: () => void // VVCode Customization: 添加 VV 设置页面导航
 
 	// Hide functions
 	hideSettings: () => void
+	hideVVSettings: () => void // VVCode Customization
 	hideHistory: () => void
 	hideAccount: () => void
 	hideWorktrees: () => void
 	hideAnnouncement: () => void
 	hideChatModelSelector: () => void
-	hideVVSettings: () => void // VVCode Customization
 	closeMcpView: () => void
 
 	// Event callbacks
@@ -133,12 +133,12 @@ export const ExtensionStateContextProvider: React.FC<{
 	const [mcpTab, setMcpTab] = useState<McpViewTab | undefined>(undefined)
 	const [showSettings, setShowSettings] = useState(false)
 	const [settingsTargetSection, setSettingsTargetSection] = useState<string | undefined>(undefined)
+	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization
 	const [showHistory, setShowHistory] = useState(false)
 	const [showAccount, setShowAccount] = useState(false)
 	const [showWorktrees, setShowWorktrees] = useState(false)
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [showChatModelSelector, setShowChatModelSelector] = useState(false)
-	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization: 添加 VV 设置页面状态
 
 	// Helper for MCP view
 	const closeMcpView = useCallback(() => {
@@ -151,27 +151,27 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowSettings(false)
 		setSettingsTargetSection(undefined)
 	}, [])
+	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 	const hideHistory = useCallback(() => setShowHistory(false), [setShowHistory])
 	const hideAccount = useCallback(() => setShowAccount(false), [setShowAccount])
 	const hideWorktrees = useCallback(() => setShowWorktrees(false), [setShowWorktrees])
 	const hideAnnouncement = useCallback(() => setShowAnnouncement(false), [setShowAnnouncement])
 	const hideChatModelSelector = useCallback(() => setShowChatModelSelector(false), [setShowChatModelSelector])
-	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 
 	// Navigation functions
 	const navigateToMcp = useCallback(
 		(tab?: McpViewTab) => {
 			setShowSettings(false)
+			setShowVVSettings(false) // VVCode Customization
 			setShowHistory(false)
 			setShowAccount(false)
 			setShowWorktrees(false)
-			setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 			if (tab) {
 				setMcpTab(tab)
 			}
 			setShowMcp(true)
 		},
-		[setShowMcp, setMcpTab, setShowSettings, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings],
+		[setShowMcp, setMcpTab, setShowSettings, setShowVVSettings, setShowHistory, setShowAccount, setShowWorktrees],
 	)
 
 	const navigateToSettings = useCallback(
@@ -180,56 +180,58 @@ export const ExtensionStateContextProvider: React.FC<{
 			closeMcpView()
 			setShowAccount(false)
 			setShowWorktrees(false)
-			setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
+			setShowVVSettings(false) // VVCode Customization
 			setSettingsTargetSection(targetSection)
 			setShowSettings(true)
 		},
-		[closeMcpView, setShowVVSettings],
+		[closeMcpView],
 	)
 
 	const navigateToHistory = useCallback(() => {
 		setShowSettings(false)
+		setShowVVSettings(false) // VVCode Customization
 		closeMcpView()
 		setShowAccount(false)
 		setShowWorktrees(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowHistory(true)
-	}, [setShowSettings, closeMcpView, setShowAccount, setShowWorktrees, setShowHistory, setShowVVSettings])
+	}, [setShowSettings, setShowVVSettings, closeMcpView, setShowAccount, setShowWorktrees, setShowHistory])
 
 	const navigateToAccount = useCallback(() => {
 		setShowSettings(false)
+		setShowVVSettings(false) // VVCode Customization
 		closeMcpView()
 		setShowHistory(false)
 		setShowWorktrees(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowAccount(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowWorktrees, setShowAccount, setShowVVSettings])
+	}, [setShowSettings, setShowVVSettings, closeMcpView, setShowHistory, setShowWorktrees, setShowAccount])
 
 	const navigateToWorktrees = useCallback(() => {
 		setShowSettings(false)
+		setShowVVSettings(false) // VVCode Customization
 		closeMcpView()
 		setShowHistory(false)
 		setShowAccount(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowWorktrees(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings])
+	}, [setShowSettings, setShowVVSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
+
+	// VVCode Customization: Navigate to VV Settings
+	const navigateToVVSettings = useCallback(() => {
+		setShowSettings(false)
+		setShowHistory(false)
+		closeMcpView()
+		setShowAccount(false)
+		setShowWorktrees(false)
+		setShowVVSettings(true)
+	}, [closeMcpView])
 
 	const navigateToChat = useCallback(() => {
 		setShowSettings(false)
+		setShowVVSettings(false) // VVCode Customization
 		closeMcpView()
 		setShowHistory(false)
 		setShowAccount(false)
 		setShowWorktrees(false)
-		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings])
-
-	const navigateToVVSettings = useCallback(() => {
-		setShowSettings(false)
-		closeMcpView()
-		setShowHistory(false)
-		setShowAccount(false)
-		setShowVVSettings(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount])
+	}, [setShowSettings, setShowVVSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
 
 	const [state, setState] = useState<ExtensionState>({
 		version: "",
@@ -498,6 +500,8 @@ export const ExtensionStateContextProvider: React.FC<{
 			EmptyRequest.create({}),
 			{
 				onResponse: () => {
+					// When VV settings button is clicked, navigate to VV settings
+					console.log("[DEBUG] Received VV settings button clicked event from gRPC stream")
 					navigateToVVSettings()
 				},
 				onError: (error) => {
@@ -813,12 +817,12 @@ export const ExtensionStateContextProvider: React.FC<{
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
+		showVVSettings, // VVCode Customization
 		showHistory,
 		showAccount,
 		showWorktrees,
 		showAnnouncement,
 		showChatModelSelector,
-		showVVSettings, // VVCode Customization: 添加 VV 设置页面状态
 		globalClineRulesToggles: state.globalClineRulesToggles || {},
 		localClineRulesToggles: state.localClineRulesToggles || {},
 		localCursorRulesToggles: state.localCursorRulesToggles || {},
@@ -834,21 +838,21 @@ export const ExtensionStateContextProvider: React.FC<{
 		// Navigation functions
 		navigateToMcp,
 		navigateToSettings,
+		navigateToVVSettings, // VVCode Customization
 		navigateToHistory,
 		navigateToAccount,
 		navigateToWorktrees,
 		navigateToChat,
-		navigateToVVSettings, // VVCode Customization: 添加 VV 设置页面导航
 
 		// Hide functions
 		hideSettings,
+		hideVVSettings, // VVCode Customization
 		hideHistory,
 		hideAccount,
 		hideWorktrees,
 		hideAnnouncement,
 		setShowAnnouncement,
 		hideChatModelSelector,
-		hideVVSettings, // VVCode Customization
 		setShowWelcome,
 		setOnboardingModels,
 		setShowChatModelSelector,
