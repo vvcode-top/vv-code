@@ -23,6 +23,45 @@ import { LanguageModelChatSelector } from "vscode"
 import { BlobStoreSettings } from "./ClineBlobStorage"
 
 // ============================================================================
+// VVCode Customization: Type definitions
+// ============================================================================
+
+export interface VvUserInfo {
+	uid: string
+	username?: string
+	email?: string
+	avatarUrl?: string
+	createdAt?: number
+	quota?: number // 用户额度
+	usedQuota?: number // 已使用额度
+	vipLevel?: number // VIP 等级
+}
+
+// VVCode 用户配置类型
+export interface VvUserConfig {
+	settings?: Array<{ key: string; value: string }> // 改为数组形式
+	features?: string[]
+	apiBaseUrl?: string
+}
+
+// 分组类型枚举
+export type VvGroupType = "discount" | "daily" | "performance"
+
+// 分组配置项
+export interface VvGroupItem {
+	type: VvGroupType
+	name: string // 显示名称（中文）
+	defaultModelId: string // 默认模型 ID
+	apiProvider: string // API Provider（如 "ANTHROPIC"）
+	apiKey: string // API Key（未配置时为空字符串）
+	apiBaseUrl?: string // 可选：自定义端点
+	isDefault: boolean // 是否为默认分组
+}
+
+// 分组配置列表
+export type VvGroupConfig = VvGroupItem[]
+
+// ============================================================================
 // SINGLE SOURCE OF TRUTH FOR STORAGE KEYS
 //
 // Property definitions with types, default values, and metadata
@@ -87,6 +126,14 @@ const GLOBAL_STATE_FIELDS = {
 	dismissedBanners: { default: [] as Array<{ bannerId: string; dismissedAt: number }> },
 	// Path to worktree that should auto-open Cline sidebar when launched
 	worktreeAutoOpenPath: { default: undefined as string | undefined },
+	// VVCode Customization: VV state fields
+	vvUserInfo: { default: undefined as VvUserInfo | undefined },
+	vvUserConfig: { default: undefined as VvUserConfig | undefined },
+	vvGroupConfig: { default: undefined as VvGroupConfig | undefined }, // VVCode 分组配置
+	vvSelectedGroupType: { default: undefined as VvGroupType | undefined }, // VVCode 用户上次选中的分组类型
+	vvNeedsWebInit: { default: undefined as boolean | undefined }, // VVCode 需要去 web 端初始化配置
+	"vv:authState": { default: undefined as string | undefined },
+	"vv:codeVerifier": { default: undefined as string | undefined },
 } satisfies FieldDefinitions
 
 // Fields that map directly to ApiHandlerOptions in @shared/api.ts
@@ -286,6 +333,13 @@ const USER_SETTINGS_FIELDS = {
 	openTelemetryLogBatchSize: { default: 512 as number | undefined },
 	openTelemetryLogBatchTimeout: { default: 5000 as number | undefined },
 	openTelemetryLogMaxQueueSize: { default: 2048 as number | undefined },
+
+	// VVCode Customization: Inline completion settings
+	vvInlineCompletionEnabled: { default: false as boolean },
+	vvInlineCompletionProvider: { default: "anthropic" as string },
+	vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
+	vvInlineCompletionDebounceMs: { default: 300 as number },
+	vvInlineCompletionUseGroupApiKey: { default: false as boolean },
 } satisfies FieldDefinitions
 
 const SETTINGS_FIELDS = { ...API_HANDLER_SETTINGS_FIELDS, ...USER_SETTINGS_FIELDS }
@@ -341,6 +395,10 @@ const SECRETS_KEYS = [
 	"ocaApiKey",
 	"ocaRefreshToken",
 	"mcpOAuthSecrets",
+	// VVCode Customization: VV secrets
+	"vv:accessToken",
+	"vv:refreshToken",
+	"vv:userId",
 ] as const
 
 export const LocalStateKeys = [
