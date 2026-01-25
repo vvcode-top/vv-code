@@ -131,6 +131,14 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	// VVCode Customization: VV Settings Button
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
+			const { sendVVSettingsButtonClickedEvent } = require("./core/controller/ui/subscribeToVvSettingsButtonClicked")
+			sendVVSettingsButtonClickedEvent()
+		}),
+	)
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.HistoryButton, async () => {
 			// Send event to all subscribers using the gRPC streaming method
