@@ -1,5 +1,5 @@
 import { WebviewProvider } from "@/core/webview"
-import { Logger } from "../logging/Logger"
+import { Logger } from "@/shared/services/Logger"
 
 /**
  * Shared URI handler that processes both VSCode URI events and HTTP server callbacks
@@ -69,7 +69,7 @@ export class SharedUriHandler {
 					return false
 				}
 				case "/auth/oca": {
-					Logger.info("SharedUriHandler: Oca Auth callback received")
+					Logger.log("SharedUriHandler: Oca Auth callback received:", { path: path })
 
 					const code = query.get("code")
 					const state = query.get("state")
@@ -80,26 +80,6 @@ export class SharedUriHandler {
 					}
 					Logger.warn("SharedUriHandler: Missing code parameter for auth callback")
 					return false
-				}
-				// VVCode Customization: VVCode 认证回调
-				case "/vv-callback": {
-					Logger.info("SharedUriHandler: VVCode Auth callback received")
-
-					const code = query.get("code")
-					const state = query.get("state")
-
-					if (code && state) {
-						await visibleWebview.controller.handleVVAuthCallback(code, state)
-						return true
-					}
-					Logger.warn("SharedUriHandler: Missing code or state parameter for VVCode auth callback")
-					return false
-				}
-				// VVCode: 后台初始化完成回调，刷新分组配置
-				case "/init-complete": {
-					Logger.info("SharedUriHandler: VVCode init-complete callback received")
-					await visibleWebview.controller.handleVVInitComplete()
-					return true
 				}
 				case "/task": {
 					const prompt = query.get("prompt")

@@ -106,8 +106,6 @@ message Secrets {
 // in src/shared/storage/state-keys.ts and use the scripts/generate-state-proto.mjs
 // script to regenerate this list.
 message Settings {
-  reserved 152;  // was hooks_enabled (removed - now always enabled on macOS/Linux)
-
   optional string lite_llm_base_url = 1;
   optional bool lite_llm_use_prompt_cache = 2;
   optional string anthropic_base_url = 4;
@@ -279,11 +277,6 @@ message Settings {
   optional int32 open_telemetry_log_max_queue_size = 171;
   optional bool worktrees_enabled = 172;
   map<string, string> open_ai_headers = 173;
-  optional bool vv_inline_completion_enabled = 174;
-  optional string vv_inline_completion_provider = 175;
-  optional string vv_inline_completion_model_id = 176;
-  optional int32 vv_inline_completion_debounce_ms = 177;
-  optional bool vv_inline_completion_use_group_api_key = 178;
 }
 
 message DictationSettings {

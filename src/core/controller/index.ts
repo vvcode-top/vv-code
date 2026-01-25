@@ -36,11 +36,11 @@ import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
-import { Logger } from "@/services/logging/Logger"
 import { telemetryService } from "@/services/telemetry"
 import { BannerCardData } from "@/shared/cline/banner"
 import { getAxiosSettings } from "@/shared/net"
 import { ShowMessageType } from "@/shared/proto/host/window"
+import { Logger } from "@/shared/services/Logger"
 import { getLatestAnnouncementId } from "@/utils/announcements"
 import { getCwd, getDesktopDir } from "@/utils/path"
 import { PromptRegistry } from "../prompts/system-prompt"
@@ -99,7 +99,7 @@ export class Controller {
 					detectRoots: detectWorkspaceRoots,
 				})
 			} catch (error) {
-				console.error("[Controller] Failed to initialize workspace manager:", error)
+				Logger.error("[Controller] Failed to initialize workspace manager:", error)
 			}
 		}
 		return this.workspaceManager
@@ -155,7 +155,7 @@ export class Controller {
 
 		// Clean up legacy checkpoints
 		cleanupLegacyCheckpoints().catch((error) => {
-			console.error("Failed to cleanup legacy checkpoints:", error)
+			Logger.error("Failed to cleanup legacy checkpoints:", error)
 		})
 
 		// Check CLI installation status once on startup
@@ -177,7 +177,7 @@ export class Controller {
 		await this.clearTask()
 		this.mcpHub.dispose()
 
-		console.error("Controller disposed")
+		Logger.error("Controller disposed")
 	}
 
 	// Auth methods
@@ -297,9 +297,9 @@ export class Controller {
 
 		taskLockAcquired = lockResult.acquired
 		if (lockResult.acquired) {
-			console.debug(`[Task ${taskId}] Task lock acquired`)
+			Logger.debug(`[Task ${taskId}] Task lock acquired`)
 		} else {
-			console.debug(`[Task ${taskId}] Task lock skipped (VS Code)`)
+			Logger.debug(`[Task ${taskId}] Task lock skipped (VS Code)`)
 		}
 
 		await this.stateManager.loadTaskSettings(taskId)
@@ -416,7 +416,7 @@ export class Controller {
 	async cancelTask() {
 		// Prevent duplicate cancellations from spam clicking
 		if (this.cancelInProgress) {
-			console.log(`[Controller.cancelTask] Cancellation already in progress, ignoring duplicate request`)
+			Logger.log(`[Controller.cancelTask] Cancellation already in progress, ignoring duplicate request`)
 			return
 		}
 
@@ -433,7 +433,7 @@ export class Controller {
 			try {
 				await this.task.abortTask()
 			} catch (error) {
-				console.error("Failed to abort task", error)
+				Logger.error("Failed to abort task", error)
 			}
 
 			await pWaitFor(
@@ -446,7 +446,7 @@ export class Controller {
 					timeout: 3_000,
 				},
 			).catch(() => {
-				console.error("Failed to abort task")
+				Logger.error("Failed to abort task")
 			})
 
 			if (this.task) {
@@ -465,7 +465,7 @@ export class Controller {
 			} catch (error) {
 				// Task not in history yet (new task with no messages); catch the
 				// error to enable the agent to continue making progress.
-				console.log(`[Controller.cancelTask] Task not found in history: ${error}`)
+				Logger.log(`[Controller.cancelTask] Task not found in history: ${error}`)
 			}
 
 			// Only re-initialize if we found a history item, otherwise just clear
@@ -543,7 +543,7 @@ export class Controller {
 
 			await this.postStateToWebview()
 		} catch (error) {
-			console.error("Failed to handle auth callback:", error)
+			Logger.error("Failed to handle auth callback:", error)
 			HostProvider.window.showMessage({
 				type: ShowMessageType.ERROR,
 				message: "Failed to log in to Cline",
@@ -594,7 +594,7 @@ export class Controller {
 
 			await this.postStateToWebview()
 		} catch (error) {
-			console.error("Failed to handle auth callback:", error)
+			Logger.error("Failed to handle auth callback:", error)
 			HostProvider.window.showMessage({
 				type: ShowMessageType.ERROR,
 				message: "Failed to log in to OCA",
@@ -613,7 +613,7 @@ export class Controller {
 				message: `Successfully authenticated MCP server`,
 			})
 		} catch (error) {
-			console.error("Failed to complete MCP OAuth:", error)
+			Logger.error("Failed to complete MCP OAuth:", error)
 			HostProvider.window.showMessage({
 				type: ShowMessageType.ERROR,
 				message: `Failed to authenticate MCP server`,
@@ -671,7 +671,7 @@ export class Controller {
 			}
 			return catalog
 		} catch (error) {
-			console.error("Failed to refresh MCP marketplace:", error)
+			Logger.error("Failed to refresh MCP marketplace:", error)
 			return undefined
 		}
 	}
@@ -688,7 +688,7 @@ export class Controller {
 				throw new Error("Invalid response from OpenRouter API")
 			}
 		} catch (error) {
-			console.error("Error exchanging code for API key:", error)
+			Logger.error("Error exchanging code for API key:", error)
 			throw error
 		}
 
@@ -778,7 +778,7 @@ export class Controller {
 				return appendClineStealthModels(models)
 			}
 		} catch (error) {
-			console.error("Error reading cached OpenRouter models:", error)
+			Logger.error("Error reading cached OpenRouter models:", error)
 		}
 		return undefined
 	}
@@ -824,7 +824,7 @@ export class Controller {
 
 	async exportTaskWithId(id: string) {
 		const { taskDirPath } = await this.getTaskWithId(id)
-		console.log(`[EXPORT] Opening task directory: ${taskDirPath}`)
+		Logger.log(`[EXPORT] Opening task directory: ${taskDirPath}`)
 		await open(taskDirPath)
 	}
 
@@ -1066,7 +1066,7 @@ export class Controller {
 		try {
 			return BannerService.get().getActiveBanners()
 		} catch (err) {
-			console.log(err)
+			Logger.log(err)
 			return []
 		}
 	}
