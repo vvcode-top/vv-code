@@ -389,24 +389,33 @@ export class VvAuthService {
 			}
 		}
 
-		// 3. 清除所有本地存储
+		// 3. 清除所有本地存储（用户信息、认证令牌）
 		controller.stateManager.setSecret("vv:accessToken", undefined)
 		controller.stateManager.setSecret("vv:refreshToken", undefined)
+		controller.stateManager.setSecret("vv:userId", undefined)
 		controller.stateManager.setGlobalState("vvUserInfo", undefined)
 		controller.stateManager.setGlobalState("vvUserConfig", undefined)
 
-		// 4. 清理临时存储（globalState 中的临时认证数据）
+		// 4. 清除分组配置相关状态
+		controller.stateManager.setGlobalState("vvGroupConfig", undefined)
+		controller.stateManager.setGlobalState("vvSelectedGroupType", undefined)
+		controller.stateManager.setGlobalState("vvNeedsWebInit", undefined)
+
+		// 5. 清理临时存储（globalState 中的临时认证数据）
 		controller.stateManager.setGlobalState("vv:authState", undefined)
 		controller.stateManager.setGlobalState("vv:codeVerifier", undefined)
 
-		// 5. 立即持久化所有清理操作
+		// 6. 立即持久化所有清理操作
 		await controller.stateManager.flushPendingState()
 
-		// 6. 更新认证状态
+		// 7. 更新认证状态
 		this._authenticated = false
 
-		// 7. 广播状态更新
+		// 8. 广播状态更新到 WebView
 		this.sendAuthStatusUpdate()
+
+		// 9. 同步完整状态到 WebView（确保所有清除的状态都被更新到前端）
+		await controller.postStateToWebview()
 	}
 
 	/**
