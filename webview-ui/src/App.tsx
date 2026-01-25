@@ -22,6 +22,7 @@ const AppContent = () => {
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
+		showVVSettings, // VVCode Customization
 		showHistory,
 		showAccount,
 		showWorktrees,
@@ -32,6 +33,7 @@ const AppContent = () => {
 		closeMcpView,
 		navigateToHistory,
 		hideSettings,
+		hideVVSettings, // VVCode Customization
 		hideHistory,
 		hideAccount,
 		hideWorktrees,
@@ -66,6 +68,11 @@ const AppContent = () => {
 	return (
 		<div className="flex h-screen w-full flex-col">
 			{showSettings && <SettingsView onDone={hideSettings} targetSection={settingsTargetSection} />}
+			{showVVSettings &&
+				(() => {
+					const VvSettingsView = require("./components/settings/VvSettingsView").default
+					return <VvSettingsView onDone={hideVVSettings} />
+				})()}
 			{showHistory && <HistoryView onDone={hideHistory} />}
 			{showMcp && <McpView initialTab={mcpTab} onDone={closeMcpView} />}
 			{showAccount && (
@@ -80,7 +87,7 @@ const AppContent = () => {
 			{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
 			<ChatView
 				hideAnnouncement={hideAnnouncement}
-				isHidden={showSettings || showHistory || showMcp || showAccount || showWorktrees}
+				isHidden={showSettings || showVVSettings || showHistory || showMcp || showAccount || showWorktrees}
 				showAnnouncement={showAnnouncement}
 				showHistoryView={navigateToHistory}
 			/>

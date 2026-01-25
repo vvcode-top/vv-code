@@ -54,6 +54,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	mcpTab?: McpViewTab
 	showSettings: boolean
 	settingsTargetSection?: string
+	showVVSettings: boolean // VVCode Customization
 	showHistory: boolean
 	showAccount: boolean
 	showWorktrees: boolean
@@ -110,6 +111,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 
 	// Hide functions
 	hideSettings: () => void
+	hideVVSettings: () => void // VVCode Customization
 	hideHistory: () => void
 	hideAccount: () => void
 	hideWorktrees: () => void
@@ -131,6 +133,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const [mcpTab, setMcpTab] = useState<McpViewTab | undefined>(undefined)
 	const [showSettings, setShowSettings] = useState(false)
 	const [settingsTargetSection, setSettingsTargetSection] = useState<string | undefined>(undefined)
+	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization
 	const [showHistory, setShowHistory] = useState(false)
 	const [showAccount, setShowAccount] = useState(false)
 	const [showWorktrees, setShowWorktrees] = useState(false)
@@ -148,6 +151,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowSettings(false)
 		setSettingsTargetSection(undefined)
 	}, [])
+	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 	const hideHistory = useCallback(() => setShowHistory(false), [setShowHistory])
 	const hideAccount = useCallback(() => setShowAccount(false), [setShowAccount])
 	const hideWorktrees = useCallback(() => setShowWorktrees(false), [setShowWorktrees])
@@ -212,7 +216,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		closeMcpView()
 		setShowAccount(false)
 		setShowWorktrees(false)
-		// VV Settings 逻辑在 App.tsx 中单独处理
+		setShowVVSettings(true)
 	}, [closeMcpView])
 
 	const navigateToChat = useCallback(() => {
@@ -483,6 +487,24 @@ export const ExtensionStateContextProvider: React.FC<{
 				console.log("Settings button clicked subscription completed")
 			},
 		})
+
+		// VVCode Customization: Set up VV settings button clicked subscription
+		const vvSettingsButtonClickedSubscriptionRef = UiServiceClient.subscribeToVvSettingsButtonClicked(
+			EmptyRequest.create({}),
+			{
+				onResponse: () => {
+					// When VV settings button is clicked, navigate to VV settings
+					console.log("[DEBUG] Received VV settings button clicked event from gRPC stream")
+					navigateToVVSettings()
+				},
+				onError: (error) => {
+					console.error("Error in VV settings button clicked subscription:", error)
+				},
+				onComplete: () => {
+					console.log("VV settings button clicked subscription completed")
+				},
+			},
+		)
 
 		// Set up worktrees button clicked subscription
 		worktreesButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToWorktreesButtonClicked(
@@ -784,6 +806,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
+		showVVSettings, // VVCode Customization
 		showHistory,
 		showAccount,
 		showWorktrees,
@@ -812,6 +835,7 @@ export const ExtensionStateContextProvider: React.FC<{
 
 		// Hide functions
 		hideSettings,
+		hideVVSettings, // VVCode Customization
 		hideHistory,
 		hideAccount,
 		hideWorktrees,
