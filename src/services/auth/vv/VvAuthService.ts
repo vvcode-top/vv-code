@@ -5,6 +5,7 @@ import type { Controller } from "@/core/controller"
 import type { StreamingResponseHandler } from "@/core/controller/grpc-handler"
 import { AuthHandler } from "@/hosts/external/AuthHandler"
 import { HostProvider } from "@/hosts/host-provider"
+import { VvAuthState } from "@/shared/proto/cline/vv_account"
 import type { VvGroupConfig, VvGroupItem, VvGroupType, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
 import { generateCodeChallenge, generateCodeVerifier, generateState } from "@/shared/vv-crypto"
 import { openExternal } from "@/utils/env"
@@ -98,9 +99,9 @@ export class VvAuthService {
 		const controller = this.requireController()
 		const user = controller.stateManager.getGlobalStateKey("vvUserInfo")
 
-		return {
+		return VvAuthState.create({
 			user: user || undefined,
-		}
+		})
 	}
 
 	/**
@@ -707,11 +708,4 @@ export class VvAuthService {
 			}
 		}
 	}
-}
-
-/**
- * VVCode 认证状态
- */
-export interface VvAuthState {
-	user?: VvUserInfo
 }
