@@ -102,6 +102,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	// Navigation functions
 	navigateToMcp: (tab?: McpViewTab) => void
 	navigateToSettings: (targetSection?: string) => void
+	navigateToVVSettings: () => void // VVCode Customization
 	navigateToHistory: () => void
 	navigateToAccount: () => void
 	navigateToWorktrees: () => void
@@ -203,6 +204,16 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowAccount(false)
 		setShowWorktrees(true)
 	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
+
+	// VVCode Customization: Navigate to VV Settings
+	const navigateToVVSettings = useCallback(() => {
+		setShowSettings(false)
+		setShowHistory(false)
+		closeMcpView()
+		setShowAccount(false)
+		setShowWorktrees(false)
+		// VV Settings 逻辑在 App.tsx 中单独处理
+	}, [closeMcpView])
 
 	const navigateToChat = useCallback(() => {
 		setShowSettings(false)
@@ -793,6 +804,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		// Navigation functions
 		navigateToMcp,
 		navigateToSettings,
+		navigateToVVSettings, // VVCode Customization
 		navigateToHistory,
 		navigateToAccount,
 		navigateToWorktrees,
