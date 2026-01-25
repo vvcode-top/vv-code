@@ -30,7 +30,7 @@ export interface VvUserInfo {
 	createdAt?: number
 	quota?: number // 用户额度
 	usedQuota?: number // 已使用额度
-	vipLevel?: string // VIP 等级
+	vipLevel?: number // VIP 等级
 }
 
 // VVCode 用户配置类型
