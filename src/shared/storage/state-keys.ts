@@ -21,20 +21,16 @@ import { TelemetrySetting } from "@shared/TelemetrySetting"
 import { UserInfo } from "@shared/UserInfo"
 import { LanguageModelChatSelector } from "vscode"
 
-// ============================================================================
-// VVCode Customization: VVCode 类型定义
-// ============================================================================
-
-// VVCode 用户信息类型
+// VVCode Customization: VVCode 用户信息类型
 export interface VvUserInfo {
 	uid: string
 	username?: string
 	email?: string
 	avatarUrl?: string
 	createdAt?: number
-	quota?: number
-	usedQuota?: number
-	vipLevel?: number
+	quota?: number // 用户额度
+	usedQuota?: number // 已使用额度
+	vipLevel?: string // VIP 等级
 }
 
 // VVCode 用户配置类型
@@ -123,21 +119,22 @@ const GLOBAL_STATE_FIELDS = {
 	remoteRulesToggles: { default: {} as ClineRulesToggles },
 	remoteWorkflowToggles: { default: {} as ClineRulesToggles },
 	dismissedBanners: { default: [] as Array<{ bannerId: string; dismissedAt: number }> },
+	// Path to worktree that should auto-open Cline sidebar when launched
+	worktreeAutoOpenPath: { default: undefined as string | undefined },
 	// VVCode Customization: VVCode 用户信息
 	vvUserInfo: { default: undefined as VvUserInfo | undefined },
 	vvUserConfig: { default: undefined as VvUserConfig | undefined },
 	vvGroupConfig: { default: undefined as VvGroupConfig | undefined }, // VVCode 分组配置
 	vvSelectedGroupType: { default: undefined as VvGroupType | undefined }, // VVCode 用户上次选中的分组类型
 	vvNeedsWebInit: { default: undefined as boolean | undefined }, // VVCode 需要去 web 端初始化配置
-	// VVCode Customization: Inline completion settings
-	vvInlineCompletionEnabled: { default: undefined as boolean | undefined },
-	vvInlineCompletionProvider: { default: undefined as string | undefined },
-	vvInlineCompletionModelId: { default: undefined as string | undefined },
-	vvInlineCompletionDebounceMs: { default: undefined as number | undefined },
-	vvInlineCompletionUseGroupApiKey: { default: undefined as boolean | undefined },
-	// VVCode Customization: 临时认证数据（仅在认证流程中使用）
 	"vv:authState": { default: undefined as string | undefined },
 	"vv:codeVerifier": { default: undefined as string | undefined },
+	// VVCode Completion settings
+	vvInlineCompletionEnabled: { default: false as boolean },
+	vvInlineCompletionProvider: { default: "anthropic" as string },
+	vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
+	vvInlineCompletionDebounceMs: { default: 300 as number },
+	vvInlineCompletionUseGroupApiKey: { default: false as boolean },
 } satisfies FieldDefinitions
 
 // Fields that map directly to ApiHandlerOptions in @shared/api.ts
@@ -304,6 +301,7 @@ const USER_SETTINGS_FIELDS = {
 	yoloModeToggled: { default: false as boolean },
 	useAutoCondense: { default: false as boolean },
 	clineWebToolsEnabled: { default: true as boolean },
+	worktreesEnabled: { default: false as boolean },
 	preferredLanguage: { default: "English" as string },
 	openaiReasoningEffort: { default: "medium" as OpenaiReasoningEffort },
 	mode: { default: "act" as Mode },
@@ -318,7 +316,7 @@ const USER_SETTINGS_FIELDS = {
 	subagentsEnabled: { default: false as boolean },
 	enableParallelToolCalling: { default: false as boolean },
 	backgroundEditEnabled: { default: false as boolean },
-	skillsEnabled: { default: true as boolean },
+	skillsEnabled: { default: false as boolean },
 	optOutOfRemoteConfig: { default: false as boolean },
 
 	// OpenTelemetry configuration
@@ -391,13 +389,11 @@ const SECRETS_KEYS = [
 	"ocaApiKey",
 	"ocaRefreshToken",
 	"mcpOAuthSecrets",
-	// VVCode Customization: VVCode 认证相关密钥
 	"vv:accessToken", // VVCode 访问令牌
 	"vv:refreshToken", // VVCode 刷新令牌
 	"vv:userId", // VVCode 用户 ID
 	"vv:authState", // CSRF 防护 state（临时）- 已迁移到 GlobalState
 	"vv:codeVerifier", // PKCE code_verifier（临时）- 已迁移到 GlobalState
-	// VVCode Customization: Inline completion API key
 	"vv:completionApiKey",
 ] as const
 
