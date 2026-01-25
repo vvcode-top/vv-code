@@ -277,6 +277,11 @@ message Settings {
   optional int32 open_telemetry_log_max_queue_size = 171;
   optional bool worktrees_enabled = 172;
   map<string, string> open_ai_headers = 173;
+  optional bool vv_inline_completion_enabled = 174;
+  optional string vv_inline_completion_provider = 175;
+  optional string vv_inline_completion_model_id = 176;
+  optional int32 vv_inline_completion_debounce_ms = 177;
+  optional bool vv_inline_completion_use_group_api_key = 178;
 }
 
 message DictationSettings {
