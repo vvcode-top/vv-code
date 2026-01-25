@@ -164,10 +164,12 @@ const VvSettingsView = ({ onDone }: VvSettingsViewProps) => {
 						</div>
 					)}
 
-					{/* 代码补全设置 */}
-					<div className="mb-6">
-						<VvCompletionSettings />
-					</div>
+					{/* 代码补全设置 - 仅在已登录时显示 */}
+					{isAuthenticated && (
+						<div className="mb-6">
+							<VvCompletionSettings />
+						</div>
+					)}
 
 					<p
 						style={{
