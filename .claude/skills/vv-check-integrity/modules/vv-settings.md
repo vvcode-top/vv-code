@@ -91,9 +91,26 @@ VV设置页面的主视图组件。
 
 注册VV设置按钮命令。
 
-**必须包含**:
-- `commands.VVSettingsButton` - 命令ID
-- `sendVVSettingsButtonClickedEvent` - 发送点击事件
+**必须导入**:
+- `import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"`
+
+**必须注册命令**:
+```typescript
+context.subscriptions.push(
+    vscode.commands.registerCommand(commands.VVSettingsButton, () => {
+        sendVVSettingsButtonClickedEvent()
+    }),
+)
+```
+
+**检查方法**:
+```bash
+# 检查是否导入
+grep "sendVVSettingsButtonClickedEvent" src/extension.ts
+
+# 检查是否注册命令
+grep -A 3 "commands.VVSettingsButton" src/extension.ts | grep "sendVVSettingsButtonClickedEvent"
+```
 
 ### 应用主组件
 📁 `webview-ui/src/App.tsx`

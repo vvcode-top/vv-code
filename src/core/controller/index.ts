@@ -31,6 +31,8 @@ import { ExtensionRegistryInfo } from "@/registry"
 import { AuthService } from "@/services/auth/AuthService"
 import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
+// VVCode Customization: 导入 VvAuthService
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
@@ -73,6 +75,8 @@ export class Controller {
 	accountService: ClineAccountService
 	authService: AuthService
 	ocaAuthService: OcaAuthService
+	// VVCode Customization: VVCode 认证服务
+	vvAuthService: VvAuthService
 	readonly stateManager: StateManager
 
 	// NEW: Add workspace manager (optional initially)
@@ -133,6 +137,8 @@ export class Controller {
 		})
 		this.authService = AuthService.getInstance(this)
 		this.ocaAuthService = OcaAuthService.initialize(this)
+		// VVCode Customization: 初始化 VvAuthService
+		this.vvAuthService = VvAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
 
 		this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {
@@ -707,6 +713,46 @@ export class Controller {
 		// Dont send settingsButtonClicked because its bad ux if user is on welcome
 	}
 
+	// VVCode Customization: VVCode 认证回调处理
+	async handleVVAuthCallback(code: string, state: string) {
+		try {
+			await this.vvAuthService.handleAuthCallback(code, state)
+
+			// Mark welcome view as completed since user has successfully logged in
+			this.stateManager.setGlobalState("welcomeViewCompleted", true)
+
+			await this.postStateToWebview()
+
+			const userInfo = this.vvAuthService.getUserInfo()
+			HostProvider.window.showMessage({
+				type: ShowMessageType.INFORMATION,
+				message: `Successfully logged in to VVCode! Welcome, ${userInfo?.username || "User"}`,
+			})
+		} catch (error) {
+			Logger.error("Failed to handle VVCode auth callback:", error)
+			HostProvider.window.showMessage({
+				type: ShowMessageType.ERROR,
+				message: `Failed to log in to VVCode: ${error instanceof Error ? error.message : String(error)}`,
+			})
+		}
+	}
+
+	// VVCode Customization: VVCode 初始化完成回调
+	async handleVVInitComplete() {
+		try {
+			// 刷新分组配置
+			await this.vvAuthService.refreshGroupConfig()
+			await this.postStateToWebview()
+
+			HostProvider.window.showMessage({
+				type: ShowMessageType.INFORMATION,
+				message: "VVCode configuration initialized successfully!",
+			})
+		} catch (error) {
+			Logger.error("Failed to handle VVCode init complete:", error)
+		}
+	}
+
 	// Requesty
 
 	async handleRequestyCallback(code: string) {
@@ -859,6 +905,11 @@ export class Controller {
 		const workflowToggles = this.stateManager.getWorkspaceStateKey("workflowToggles")
 		const autoCondenseThreshold = this.stateManager.getGlobalSettingsKey("autoCondenseThreshold")
 
+		// VVCode Customization: 获取分组配置
+		const vvGroupConfig = this.stateManager.getGlobalStateKey("vvGroupConfig")
+		const vvNeedsWebInit = this.stateManager.getGlobalStateKey("vvNeedsWebInit")
+		const vvSelectedGroupType = this.stateManager.getGlobalStateKey("vvSelectedGroupType")
+
 		const currentTaskItem = this.task?.taskId ? (taskHistory || []).find((item) => item.id === this.task?.taskId) : undefined
 		const clineMessages = this.task?.messageStateHandler.getClineMessages() || []
 		const checkpointManagerErrorMessage = this.task?.taskState.checkpointManagerErrorMessage
@@ -968,6 +1019,10 @@ export class Controller {
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
 			skillsEnabled,
+			// VVCode Customization: 分组配置
+			vvGroupConfig,
+			vvNeedsWebInit,
+			vvSelectedGroupType,
 			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
 			banners,
 			openAiCodexIsAuthenticated,

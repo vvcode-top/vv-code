@@ -215,6 +215,16 @@ git show HEAD~1:$FILE > /tmp/vv-backup-$(basename $FILE)
 每次合并后必须验证：
 
 ```bash
+# 0. VVCode 功能完整性快速检查（新增！）
+.claude/skills/vv-check-integrity/quick-check.sh
+
+# 如果快速检查失败，终止并报告问题
+if [ $? -ne 0 ]; then
+    echo "❌ VVCode 功能完整性检查失败！"
+    echo "💡 请运行完整的 'vv-check-integrity' skill 获取详细诊断"
+    exit 1
+fi
+
 # 1. 如果有 proto 变更，重新生成
 if git diff HEAD~1 --name-only | grep -q "^proto/"; then
     npm run protos
@@ -228,7 +238,8 @@ npm run compile
 ```
 
 **验证失败处理：**
-- 🛑 立即停止
+- ❌ 快速检查失败 → 运行完整的 `vv-check-integrity` skill，定位缺失的集成点
+- 🛑 类型检查/编译失败 → 立即停止
 - 📝 记录错误信息
 - 🔧 修复后重新验证
 
@@ -276,8 +287,9 @@ fi
 
 ```bash
 # 完整验证
-npm run check-types
-npm run compile
+.claude/skills/vv-check-integrity/quick-check.sh  # 快速检查
+npm run check-types                                 # 类型检查
+npm run compile                                     # 编译验证
 
 # 显示合并统计
 echo "📊 合并统计："
@@ -286,7 +298,7 @@ git diff origin/main --stat | tail -1
 
 # 推送选项
 echo "
-✅ 合并完成！
+✅ 合并完成！VVCode 功能完整性已验证。
 
 下一步：
 1. git push origin HEAD         # 推送到远程

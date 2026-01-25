@@ -11,8 +11,6 @@
 
 - 📄 `docs/Vv_Auth_Implementation.md` - VV认证系统实现文档
 - 📄 `docs/Vv_Group_Policy.md` - VV分组策略说明
-- 📄 `docs/VVCode_Customizations.md` - VVCode定制功能总览
-- 📄 `README.vvcode.md` - VVCode项目说明文档
 - 📄 `.clinerules/fork-development.md` - 二次开发指南
 
 ---
@@ -48,16 +46,6 @@ VVCode专用的AI技能脚本：
 - 三种分组（discount/daily/performance）的区别
 - 分组切换和Token管理机制
 
-**VVCode_Customizations.md**
-- VVCode所有定制功能的汇总
-- 与原版Cline的差异对比
-- 定制功能的使用说明
-
-**README.vvcode.md**
-- 项目介绍和快速开始
-- 安装配置指南
-- 常见问题解答
-
 **.clinerules/fork-development.md**
 - 二次开发的最佳实践
 - 如何保持与上游Cline的同步
@@ -86,11 +74,12 @@ VVCode专用的AI技能脚本：
 
 ## 完整性检查
 
-这些文件应该在VVCode代码库中完整存在：
+必须存在的文件：
 
-✅ 所有文档文件都应该存在并保持最新  
-✅ 资源文件应该存在且格式正确  
-✅ Skills文件应该可执行且功能完整  
+- ✅ `docs/Vv_Auth_Implementation.md` - 认证系统文档
+- ✅ `docs/Vv_Group_Policy.md` - 分组策略文档
+- ✅ `.clinerules/fork-development.md` - 二次开发指南
+- ✅ `assets/qq.jpg` - QQ群二维码
 
 如果缺失任何文件，可能影响：
 - 开发者理解VVCode架构

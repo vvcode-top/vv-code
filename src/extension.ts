@@ -10,6 +10,8 @@ import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChat
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
+// VVCode Customization: Import VV settings button event
+import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
@@ -93,6 +95,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	// VVCode Customization: Initialize balance status bar
 	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
 	const balanceStatusBar = VvBalanceStatusBar.getInstance()
+	balanceStatusBar.initialize(context)
 
 	// VVCode Customization: Initialize inline completion provider
 	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
@@ -150,6 +153,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.SettingsButton, () => {
 			sendSettingsButtonClickedEvent()
+		}),
+	)
+
+	// VVCode Customization: Register VV settings button command
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
+			sendVVSettingsButtonClickedEvent()
 		}),
 	)
 

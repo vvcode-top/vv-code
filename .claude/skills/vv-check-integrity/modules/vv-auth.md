@@ -64,8 +64,37 @@ OAuth2 PKCE流程需要的加密工具函数。
 **必须包含**:
 - `class SharedUriHandler`
 - `handleUri` - URI处理方法
-- `/vv-callback` - 登录回调路由
-- `/init-complete` - 初始化完成路由
+
+**必须包含路由处理**（关键！）:
+```typescript
+case "/vv-callback": {
+    Logger.log("SharedUriHandler: VVCode Auth callback received")
+
+    const code = query.get("code")
+    const state = query.get("state")
+
+    if (code && state) {
+        await visibleWebview.controller.handleVVAuthCallback(code, state)
+        return true
+    }
+    // ...
+}
+
+case "/init-complete": {
+    Logger.log("SharedUriHandler: VVCode init-complete callback received")
+    await visibleWebview.controller.handleVVInitComplete()
+    return true
+}
+```
+
+**检查方法**:
+```bash
+# 检查是否有 /vv-callback 路由
+grep -A 10 'case "/vv-callback"' src/services/uri/SharedUriHandler.ts | grep "handleVVAuthCallback"
+
+# 检查是否有 /init-complete 路由
+grep -A 5 'case "/init-complete"' src/services/uri/SharedUriHandler.ts | grep "handleVVInitComplete"
+```
 
 ### HTTP认证处理器
 📁 `src/hosts/external/AuthHandler.ts`
@@ -120,12 +149,55 @@ VSCode状态栏显示余额和选中代码提示。
 - **vvSwitchGroup.ts** - 切换分组（discount/daily/performance）
 - **vvGetSystemStatus.ts** - 获取系统状态和公告
 
-### Controller回调
+### Controller集成
 📁 `src/core/controller/index.ts`
 
-**必须包含的方法**:
-- `handleVVAuthCallback` - 处理URI/HTTP回调
-- `handleVVInitComplete` - 处理初始化完成
+**必须包含的字段和初始化**:
+- `vvAuthService: VvAuthService` - VvAuthService 字段声明（在类定义中）
+- `import { VvAuthService }` - 导入 VvAuthService
+- `this.vvAuthService = VvAuthService.initialize(this)` - 在构造函数中初始化（关键！）
+
+**必须包含的回调方法**（关键！）:
+```typescript
+async handleVVAuthCallback(code: string, state: string) {
+    await this.vvAuthService.handleAuthCallback(code, state)
+    this.stateManager.setGlobalState("welcomeViewCompleted", true)
+    await this.postStateToWebview()
+    // 显示成功消息
+}
+
+async handleVVInitComplete() {
+    await this.vvAuthService.refreshGroupConfig()
+    await this.postStateToWebview()
+    // 显示成功消息
+}
+```
+
+**检查方法**:
+```bash
+# 检查 VvAuthService 初始化
+grep "VvAuthService.initialize" src/core/controller/index.ts
+
+# 检查 handleVVAuthCallback 方法
+grep -A 5 "async handleVVAuthCallback" src/core/controller/index.ts
+
+# 检查 handleVVInitComplete 方法
+grep -A 5 "async handleVVInitComplete" src/core/controller/index.ts
+```
+
+**必须在 getStateToPostToWebview() 返回对象中包含**:
+- `vvGroupConfig` - 分组配置
+- `vvNeedsWebInit` - Web初始化标记
+- `vvSelectedGroupType` - 选中的分组类型
+
+**检查方法**:
+```bash
+# 检查状态读取
+grep "vvGroupConfig.*getGlobalStateKey" src/core/controller/index.ts
+
+# 检查状态返回
+grep -A 100 "return {" src/core/controller/index.ts | grep "vvGroupConfig"
+```
 
 ---
 

@@ -19,6 +19,42 @@
 - `vvInlineCompletionModelId` - 补全模型ID（如"qwen2.5-coder"）
 - `vvInlineCompletionDebounceMs` - 防抖延迟（毫秒）
 - `vvInlineCompletionUseGroupApiKey` - 是否使用分组API密钥（布尔值）
+- `vvUserInfo` - VV用户信息
+- `vvUserConfig` - VV用户配置
+- `vvGroupConfig` - VV分组配置
+- `vvSelectedGroupType` - 选中的分组类型
+- `vvNeedsWebInit` - 需要Web初始化标记
+
+### Controller 状态推送
+📁 `src/core/controller/index.ts`
+
+**必须在 getStateToPostToWebview() 方法中读取并返回所有 VV 状态**:
+
+在方法体中读取状态：
+```typescript
+const vvGroupConfig = this.stateManager.getGlobalStateKey("vvGroupConfig")
+const vvNeedsWebInit = this.stateManager.getGlobalStateKey("vvNeedsWebInit")
+const vvSelectedGroupType = this.stateManager.getGlobalStateKey("vvSelectedGroupType")
+```
+
+在返回对象中包含：
+```typescript
+return {
+    // ... 其他状态
+    vvGroupConfig,
+    vvNeedsWebInit,
+    vvSelectedGroupType,
+}
+```
+
+**检查方法**:
+```bash
+# 检查是否读取状态
+grep "vvGroupConfig.*getGlobalStateKey" src/core/controller/index.ts
+
+# 检查是否在返回对象中
+grep -A 100 "return {" src/core/controller/index.ts | grep "vvGroupConfig"
+```
 
 ---
 
