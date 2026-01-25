@@ -38,7 +38,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// ====================================================================
 
 			// Check if completion is enabled
-			const enabled = this.controller.stateManager.getGlobalStateKey("vvInlineCompletionEnabled")
+			const enabled = this.controller.stateManager.getGlobalSettingsKey("vvInlineCompletionEnabled")
 			if (!enabled || token.isCancellationRequested) {
 				return null
 			}
