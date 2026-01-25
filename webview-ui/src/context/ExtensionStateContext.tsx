@@ -165,12 +165,13 @@ export const ExtensionStateContextProvider: React.FC<{
 			setShowHistory(false)
 			setShowAccount(false)
 			setShowWorktrees(false)
+			setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 			if (tab) {
 				setMcpTab(tab)
 			}
 			setShowMcp(true)
 		},
-		[setShowMcp, setMcpTab, setShowSettings, setShowHistory, setShowAccount, setShowWorktrees],
+		[setShowMcp, setMcpTab, setShowSettings, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings],
 	)
 
 	const navigateToSettings = useCallback(
@@ -179,10 +180,11 @@ export const ExtensionStateContextProvider: React.FC<{
 			closeMcpView()
 			setShowAccount(false)
 			setShowWorktrees(false)
+			setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 			setSettingsTargetSection(targetSection)
 			setShowSettings(true)
 		},
-		[closeMcpView],
+		[closeMcpView, setShowVVSettings],
 	)
 
 	const navigateToHistory = useCallback(() => {
@@ -190,24 +192,27 @@ export const ExtensionStateContextProvider: React.FC<{
 		closeMcpView()
 		setShowAccount(false)
 		setShowWorktrees(false)
+		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowHistory(true)
-	}, [setShowSettings, closeMcpView, setShowAccount, setShowWorktrees, setShowHistory])
+	}, [setShowSettings, closeMcpView, setShowAccount, setShowWorktrees, setShowHistory, setShowVVSettings])
 
 	const navigateToAccount = useCallback(() => {
 		setShowSettings(false)
 		closeMcpView()
 		setShowHistory(false)
 		setShowWorktrees(false)
+		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowAccount(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowWorktrees, setShowAccount])
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowWorktrees, setShowAccount, setShowVVSettings])
 
 	const navigateToWorktrees = useCallback(() => {
 		setShowSettings(false)
 		closeMcpView()
 		setShowHistory(false)
 		setShowAccount(false)
+		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
 		setShowWorktrees(true)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings])
 
 	const navigateToChat = useCallback(() => {
 		setShowSettings(false)
@@ -215,7 +220,8 @@ export const ExtensionStateContextProvider: React.FC<{
 		setShowHistory(false)
 		setShowAccount(false)
 		setShowWorktrees(false)
-	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees])
+		setShowVVSettings(false) // VVCode Customization: 关闭 VV 设置页面
+	}, [setShowSettings, closeMcpView, setShowHistory, setShowAccount, setShowWorktrees, setShowVVSettings])
 
 	const navigateToVVSettings = useCallback(() => {
 		setShowSettings(false)
