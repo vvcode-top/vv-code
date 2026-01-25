@@ -2,6 +2,7 @@
 // Ported from Continue's StreamTransformPipeline
 // Applies all stream filters in sequence
 
+import { Logger } from "@shared/services/Logger"
 import { VvHelperVars } from "../vvHelperVars"
 import { noFirstCharNewline, stopAtStartOf, stopAtStopTokens } from "./charStream"
 import {
@@ -37,8 +38,8 @@ export class VvStreamTransformPipeline {
 		fullStop: () => void,
 		helper: VvHelperVars,
 	): AsyncGenerator<string> {
-		console.log("[VvCompletion] StreamTransformPipeline 开始")
-		console.log("[VvCompletion]   stopTokens:", stopTokens)
+		Logger.log("[VvCompletion] StreamTransformPipeline 开始")
+		Logger.log("[VvCompletion]   stopTokens:", stopTokens)
 
 		// Character-level filters
 		let charGenerator = stopAtStopTokens(generator, stopTokens)
@@ -64,6 +65,6 @@ export class VvStreamTransformPipeline {
 			yield update
 		}
 
-		console.log("[VvCompletion] StreamTransformPipeline 完成，总共 yield:", totalYielded, "字符")
+		Logger.log("[VvCompletion] StreamTransformPipeline 完成，总共 yield:", totalYielded, "字符")
 	}
 }

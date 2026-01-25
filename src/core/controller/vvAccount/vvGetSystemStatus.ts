@@ -3,6 +3,7 @@
 
 import { EmptyRequest } from "@shared/proto/cline/common"
 import { VvAnnouncement, VvSystemStatus } from "@shared/proto/cline/vv_account"
+import { Logger } from "@shared/services/Logger"
 import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { Controller } from "../index"
 
@@ -31,7 +32,7 @@ export async function vvGetSystemStatus(_controller: Controller, _: EmptyRequest
 			systemName: systemStatus.system_name,
 		})
 	} catch (error) {
-		console.error("[VVAuth] Failed to get system status in handler:", error)
+		Logger.error("[VVAuth] Failed to get system status in handler:", error)
 		// 返回默认值
 		return VvSystemStatus.create({
 			announcementsEnabled: false,

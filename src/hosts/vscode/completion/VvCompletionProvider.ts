@@ -2,6 +2,7 @@
 // Completely refactored based on Continue's architecture
 // Implements standard FIM model completion flow
 
+import { Logger } from "@shared/services/Logger"
 import OpenAI from "openai"
 import { v4 as uuidv4 } from "uuid"
 import * as vscode from "vscode"
@@ -43,7 +44,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				return null
 			}
 
-			console.log("[VvCompletion] 触发补全", document.fileName, `行 ${position.line + 1}, 列 ${position.character + 1}`)
+			Logger.log("[VvCompletion] 触发补全", document.fileName, `行 ${position.line + 1}, 列 ${position.character + 1}`)
 
 			// Skip for certain schemes
 			if (document.uri.scheme === "vscode-scm" || document.uri.scheme === "output") {
@@ -61,7 +62,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// ====================================================================
 
 			if (shouldSkipCompletion(document, position)) {
-				console.log("[VvCompletion] ⏭️  跳过：预过滤")
+				Logger.log("[VvCompletion] ⏭️  跳过：预过滤")
 				return null
 			}
 
@@ -72,13 +73,13 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// Get VV group configuration
 			const vvGroupConfig = this.controller.stateManager.getGlobalStateKey("vvGroupConfig")
 			if (!vvGroupConfig || vvGroupConfig.length === 0) {
-				console.error("[VvCompletion] 未找到 VV 组配置")
+				Logger.error("[VvCompletion] 未找到 VV 组配置")
 				return null
 			}
 
 			const defaultGroup = vvGroupConfig.find((group) => group.isDefault)
 			if (!defaultGroup) {
-				console.error("[VvCompletion] 未找到默认组")
+				Logger.error("[VvCompletion] 未找到默认组")
 				return null
 			}
 
@@ -91,7 +92,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// Use actualModelType for template selection
 			const helper = VvHelperVars.create(document, position, context.selectedCompletionInfo, actualModelType)
 
-			console.log("[VvCompletion] 前缀长度:", helper.prunedPrefix.length, "后缀长度:", helper.prunedSuffix.length)
+			Logger.log("[VvCompletion] 前缀长度:", helper.prunedPrefix.length, "后缀长度:", helper.prunedSuffix.length)
 
 			// ====================================================================
 			// MULTILINE CLASSIFICATION (Continue's shouldCompleteMultiline)
@@ -99,7 +100,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 
 			const multilineMode: MultilineCompletionMode = "auto" // Could be made configurable
 			const isMultiline = shouldCompleteMultiline(helper, multilineMode)
-			console.log("[VvCompletion] 多行模式:", isMultiline)
+			Logger.log("[VvCompletion] 多行模式:", isMultiline)
 
 			// ====================================================================
 			// TEMPLATE RENDERING (Continue's renderPromptWithTokenLimit)
@@ -108,8 +109,8 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// Get FIM template for model
 			const template = getTemplateForModel(helper.modelName)
 
-			console.log("[VvCompletion] 使用模板:", template.template.substring(0, 50))
-			console.log("[VvCompletion] 停止令牌:", template.stopTokens)
+			Logger.log("[VvCompletion] 使用模板:", template.template.substring(0, 50))
+			Logger.log("[VvCompletion] 停止令牌:", template.stopTokens)
 
 			// ====================================================================
 			// LLM PREPARATION (Continue's _prepareLlm)
@@ -119,7 +120,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			let baseUrl = defaultGroup.apiBaseUrl || ""
 
 			if (!apiKey) {
-				console.error("[VvCompletion] 未配置 API key")
+				Logger.error("[VvCompletion] 未配置 API key")
 				return null
 			}
 
@@ -128,7 +129,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				baseUrl = baseUrl.replace(/\/+$/, "") + "/v1"
 			}
 
-			console.log("[VvCompletion] ", {
+			Logger.log("[VvCompletion] ", {
 				apiKey,
 				baseUrl,
 			})
@@ -174,14 +175,14 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 
 			// Check if aborted
 			if (token.isCancellationRequested) {
-				console.log("[VvCompletion] 请求已取消")
+				Logger.log("[VvCompletion] 请求已取消")
 				return null
 			}
 
-			console.log("[VvCompletion] 流式生成完成，长度:", rawCompletion.length)
+			Logger.log("[VvCompletion] 流式生成完成，长度:", rawCompletion.length)
 
 			if (!rawCompletion) {
-				console.log("[VvCompletion] 没有返回补全")
+				Logger.log("[VvCompletion] 没有返回补全")
 				return null
 			}
 
@@ -192,11 +193,11 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			const processed = postprocessCompletion(rawCompletion, helper.prunedPrefix, helper.prunedSuffix)
 
 			if (!processed) {
-				console.log("[VvCompletion] ⛔ 补全被后处理过滤")
+				Logger.log("[VvCompletion] ⛔ 补全被后处理过滤")
 				return null
 			}
 
-			console.log("[VvCompletion] 后处理通过，长度:", processed.length)
+			Logger.log("[VvCompletion] 后处理通过，长度:", processed.length)
 
 			// ====================================================================
 			// RENDERING BLOCK (VSCode-specific, from original Continue)
@@ -206,7 +207,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			let completionText = processed
 			if (context.selectedCompletionInfo) {
 				completionText = context.selectedCompletionInfo.text + completionText
-				console.log("[VvCompletion] 添加 selectedCompletionInfo:", context.selectedCompletionInfo.text)
+				Logger.log("[VvCompletion] 添加 selectedCompletionInfo:", context.selectedCompletionInfo.text)
 			}
 
 			// Use selectedCompletionInfo's range start if available, otherwise use cursor position
@@ -215,7 +216,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 
 			const isSingleLineCompletion = completionText.split("\n").length <= 1
 
-			console.log("[VvCompletion] 是否单行补全:", isSingleLineCompletion)
+			Logger.log("[VvCompletion] 是否单行补全:", isSingleLineCompletion)
 
 			if (isSingleLineCompletion) {
 				// Single-line completion processing (using diff algorithm)
@@ -225,7 +226,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				const result = processSingleLineCompletion(lastLineOfCompletionText, currentText, startPos.character)
 
 				if (result === undefined) {
-					console.log("[VvCompletion] 单行处理返回 undefined")
+					Logger.log("[VvCompletion] 单行处理返回 undefined")
 					return null
 				}
 
@@ -262,19 +263,19 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// Enable bracket pair completion
 			;(item as any).completeBracketPairs = true
 
-			console.log("[VvCompletion] ✅ 成功生成补全")
-			console.log("[VvCompletion]    补全文本完整长度:", completionText.length)
-			console.log("[VvCompletion]    补全文本前50字符:", JSON.stringify(completionText.substring(0, 50)))
-			console.log("[VvCompletion]    补全文本完整内容:", JSON.stringify(completionText))
-			console.log(
+			Logger.log("[VvCompletion] ✅ 成功生成补全")
+			Logger.log("[VvCompletion]    补全文本完整长度:", completionText.length)
+			Logger.log("[VvCompletion]    补全文本前50字符:", JSON.stringify(completionText.substring(0, 50)))
+			Logger.log("[VvCompletion]    补全文本完整内容:", JSON.stringify(completionText))
+			Logger.log(
 				"[VvCompletion]    替换范围:",
 				`行 ${range.start.line}:${range.start.character} 到 行 ${range.end.line}:${range.end.character}`,
 			)
-			console.log("[VvCompletion]    当前光标位置:", `行 ${position.line}:${position.character}`)
+			Logger.log("[VvCompletion]    当前光标位置:", `行 ${position.line}:${position.character}`)
 
 			return [item]
 		} catch (error) {
-			console.error("[VvCompletion] 补全错误:", error)
+			Logger.error("[VvCompletion] 补全错误:", error)
 			return null
 		}
 	}
@@ -282,7 +283,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 	public acceptCompletion(completionId: string) {
 		const outcome = this.displayedCompletions.get(completionId)
 		if (outcome) {
-			console.log("[VvCompletion] 接受补全:", completionId)
+			Logger.log("[VvCompletion] 接受补全:", completionId)
 			this.displayedCompletions.delete(completionId)
 		}
 	}

@@ -1,6 +1,7 @@
 // VVCode Customization: VVCode 认证服务
 // Created: 2025-12-20
 
+import { Logger } from "@shared/services/Logger"
 import type { Controller } from "@/core/controller"
 import type { StreamingResponseHandler } from "@/core/controller/grpc-handler"
 import { AuthHandler } from "@/hosts/external/AuthHandler"
@@ -125,7 +126,7 @@ export class VvAuthService {
 		try {
 			await this.refreshGroupConfig()
 		} catch (error) {
-			console.warn("[VVAuth] Failed to init group config on startup:", error)
+			Logger.warn("[VVAuth] Failed to init group config on startup:", error)
 		}
 	}
 
@@ -278,7 +279,7 @@ export class VvAuthService {
 				const userConfig = await this._provider.getUserConfig(authInfo.accessToken, authInfo.userId)
 				controller.stateManager.setGlobalState("vvUserConfig", userConfig)
 			} catch (error) {
-				console.warn("[VVAuth] Failed to fetch user config:", error)
+				Logger.warn("[VVAuth] Failed to fetch user config:", error)
 			}
 
 			// 7. 清除旧的 API 配置，获取分组配置并自动应用默认分组
@@ -294,12 +295,12 @@ export class VvAuthService {
 				// 检查是否有分组没有 apiKey，如果有则调用初始化接口
 				const hasEmptyApiKey = groupConfig.some((g) => !g.apiKey)
 				if (hasEmptyApiKey) {
-					console.log("[VVAuth] Some groups have no API key, initializing...")
+					Logger.log("[VVAuth] Some groups have no API key, initializing...")
 					try {
 						groupConfig = await this._provider.initGroupTokens(authInfo.accessToken, authInfo.userId)
 					} catch (initError) {
 						// 初始化失败，引导用户去 web 端
-						console.warn("[VVAuth] Failed to init group tokens, need web init:", initError)
+						Logger.warn("[VVAuth] Failed to init group tokens, need web init:", initError)
 						controller.stateManager.setGlobalState("vvGroupConfig", groupConfig)
 						controller.stateManager.setGlobalState("vvNeedsWebInit", true)
 						// 继续执行后续流程，不抛出错误
@@ -308,8 +309,8 @@ export class VvAuthService {
 
 				// 再次检查是否还有空的 apiKey
 				const stillHasEmptyApiKey = groupConfig.some((g) => !g.apiKey)
-				console.log("[VVAuth] After init, groupConfig:", JSON.stringify(groupConfig, null, 2))
-				console.log("[VVAuth] stillHasEmptyApiKey:", stillHasEmptyApiKey)
+				Logger.log("[VVAuth] After init, groupConfig:", JSON.stringify(groupConfig, null, 2))
+				Logger.log("[VVAuth] stillHasEmptyApiKey:", stillHasEmptyApiKey)
 				if (stillHasEmptyApiKey) {
 					controller.stateManager.setGlobalState("vvNeedsWebInit", true)
 				}
@@ -328,7 +329,7 @@ export class VvAuthService {
 					}
 				}
 			} catch (error) {
-				console.warn("[VVAuth] Failed to fetch group config:", error)
+				Logger.warn("[VVAuth] Failed to fetch group config:", error)
 				// 获取分组配置失败，引导用户去 web 端
 				controller.stateManager.setGlobalState("vvNeedsWebInit", true)
 			}
@@ -384,7 +385,7 @@ export class VvAuthService {
 			try {
 				await this._provider.logout(accessToken)
 			} catch (error) {
-				console.warn("Logout API call failed:", error)
+				Logger.warn("Logout API call failed:", error)
 			}
 		}
 
@@ -421,7 +422,7 @@ export class VvAuthService {
 
 		// 立即发送当前状态
 		responseStream(this.getInfo(), false).catch((error) => {
-			console.error("Failed to send initial auth status:", error)
+			Logger.error("Failed to send initial auth status:", error)
 		})
 
 		// 返回取消订阅函数
@@ -439,11 +440,11 @@ export class VvAuthService {
 		for (const subscription of this._activeAuthStatusUpdateSubscriptions) {
 			try {
 				subscription.responseStream(authState, false).catch((error) => {
-					console.error("Failed to send auth status update:", error)
+					Logger.error("Failed to send auth status update:", error)
 					this._activeAuthStatusUpdateSubscriptions.delete(subscription)
 				})
 			} catch (error) {
-				console.error("Failed to send auth status update:", error)
+				Logger.error("Failed to send auth status update:", error)
 				this._activeAuthStatusUpdateSubscriptions.delete(subscription)
 			}
 		}
@@ -620,7 +621,7 @@ export class VvAuthService {
 			this.sendAuthStatusUpdate()
 			return groupConfig
 		} catch (error) {
-			console.error("[VVAuth] Failed to refresh group config:", error)
+			Logger.error("[VVAuth] Failed to refresh group config:", error)
 			// API 调用失败时设置为空数组，避免一直显示"正在加载"
 			controller.stateManager.setGlobalState("vvGroupConfig", [])
 			await controller.stateManager.flushPendingState()
@@ -646,7 +647,7 @@ export class VvAuthService {
 		// 2. 重新获取最新分组配置
 		await this.refreshGroupConfig()
 
-		console.log("[VVAuth] Config reset and refreshed")
+		Logger.log("[VVAuth] Config reset and refreshed")
 	}
 
 	/**
@@ -669,7 +670,7 @@ export class VvAuthService {
 			this.updateBalanceStatusBar()
 			return userInfo
 		} catch (error) {
-			console.error("[VVAuth] Failed to refresh user info:", error)
+			Logger.error("[VVAuth] Failed to refresh user info:", error)
 			return undefined
 		}
 	}
@@ -685,10 +686,10 @@ export class VvAuthService {
 					VvBalanceStatusBar.getInstance().updateDisplay()
 				})
 				.catch((error) => {
-					console.error("[VVAuth] Failed to update balance status bar:", error)
+					Logger.error("[VVAuth] Failed to update balance status bar:", error)
 				})
 		} catch (error) {
-			console.error("[VVAuth] Failed to update balance status bar:", error)
+			Logger.error("[VVAuth] Failed to update balance status bar:", error)
 		}
 	}
 
@@ -700,7 +701,7 @@ export class VvAuthService {
 		try {
 			return await this._provider.getSystemStatus()
 		} catch (error) {
-			console.error("[VVAuth] Failed to get system status:", error)
+			Logger.error("[VVAuth] Failed to get system status:", error)
 			// 返回默认值，避免前端报错
 			return {
 				announcements_enabled: false,

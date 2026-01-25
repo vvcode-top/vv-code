@@ -1,5 +1,12 @@
 # VVCode Changelog
 
+## [1.2.5] - 2026-01-25
+
+### Added
+- 新增 vv-check-integrity skill，用于验证 VVCode 定制功能的完整性
+- 新增 vv-merge-cline skill，支持智能化的上游代码合并
+- 新增 vv-release skill，简化发版流程
+
 ## [1.2.4] - 2026-01-18
 
 ### Added
