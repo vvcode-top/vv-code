@@ -130,6 +130,8 @@ const GLOBAL_STATE_FIELDS = {
 	vvGroupConfig: { default: undefined as VvGroupConfig | undefined }, // VVCode 分组配置
 	vvSelectedGroupType: { default: undefined as VvGroupType | undefined }, // VVCode 用户上次选中的分组类型
 	vvNeedsWebInit: { default: undefined as boolean | undefined }, // VVCode 需要去 web 端初始化配置
+	"vv:authState": { default: undefined as string | undefined },
+	"vv:codeVerifier": { default: undefined as string | undefined },
 } satisfies FieldDefinitions
 
 // Fields that map directly to ApiHandlerOptions in @shared/api.ts
@@ -314,6 +316,13 @@ const USER_SETTINGS_FIELDS = {
 	skillsEnabled: { default: false as boolean },
 	optOutOfRemoteConfig: { default: false as boolean },
 
+	// VVCode Customization: Inline completion settings
+	vvInlineCompletionEnabled: { default: false as boolean },
+	vvInlineCompletionProvider: { default: "anthropic" as string },
+	vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
+	vvInlineCompletionDebounceMs: { default: 300 as number },
+	vvInlineCompletionUseGroupApiKey: { default: false as boolean },
+
 	// OpenTelemetry configuration
 	openTelemetryEnabled: { default: true as boolean },
 	openTelemetryMetricsExporter: { default: undefined as string | undefined },
@@ -390,6 +399,7 @@ const SECRETS_KEYS = [
 	"vv:userId",
 	"vv:authState",
 	"vv:codeVerifier",
+	"vv:completionApiKey",
 ] as const
 
 export const LocalStateKeys = [
