@@ -111,6 +111,16 @@ const VvSettingsView = ({ onDone }: VvSettingsViewProps) => {
 			{/* Content */}
 			<div style={{ padding: "5px 17px 6px 20px", flex: 1, overflow: "auto" }}>
 				<div style={{ maxWidth: "600px" }}>
+					{/* 未登录状态 */}
+					{!isAuthenticated && (
+						<div className="mb-6">
+							<h4 className="text-sm font-medium mb-3">账户</h4>
+							<div className="p-4 border border-input-border rounded bg-input-background">
+								<p className="text-sm text-description">请先登录 VVCode 账户</p>
+							</div>
+						</div>
+					)}
+
 					{/* 账户信息 */}
 					{isAuthenticated && user && (
 						<div className="mb-6">
