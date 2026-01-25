@@ -34,6 +34,7 @@ import { HookProcessRegistry } from "./core/hooks/HookProcessRegistry"
 import { workspaceResolver } from "./core/workspace"
 import { findMatchingNotebookCell, getContextForCommand, showWebview } from "./hosts/vscode/commandUtils"
 import { abortCommitGeneration, generateCommitMsg } from "./hosts/vscode/commit-message-generator"
+import { registerClineOutputChannel } from "./hosts/vscode/hostbridge/env/debugLog"
 import {
 	disposeVscodeCommentReviewController,
 	getVscodeCommentReviewController,
@@ -98,30 +99,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Initialize test mode and add disposables to context
 	context.subscriptions.push(...testModeWatchers)
 
-	// VVCode Customization: Initialize balance status bar
-	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
-	const balanceStatusBar = VvBalanceStatusBar.getInstance()
-	balanceStatusBar.initialize(context)
-
-	// VVCode Customization: Initialize inline completion provider
-	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
-	const completionProvider = new VvCompletionProvider(webview.controller)
-	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{ pattern: "**" }], completionProvider))
-
-	// Register accept completion command
-	context.subscriptions.push(
-		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {
-			completionProvider.acceptCompletion(completionId)
-		}),
-	)
-
-	// Register refresh balance command
-	context.subscriptions.push(
-		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
-			await balanceStatusBar.refreshBalance()
-		}),
-	)
-
 	vscode.commands.executeCommand("setContext", "cline.isDevMode", IS_DEV && IS_DEV === "true")
 
 	context.subscriptions.push(
@@ -152,14 +129,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.SettingsButton, () => {
 			sendSettingsButtonClickedEvent()
-		}),
-	)
-
-	// VVCode Customization: VV Settings Button
-	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
-			const { sendVVSettingsButtonClickedEvent } = require("./core/controller/ui/subscribeToVvSettingsButtonClicked")
-			sendVVSettingsButtonClickedEvent()
 		}),
 	)
 
@@ -625,14 +594,13 @@ async function showJupyterPromptInput(title: string, placeholder: string): Promi
 }
 
 function setupHostProvider(context: ExtensionContext) {
-	Logger.log("Setting up vscode host providers...")
+	const outputChannel = registerClineOutputChannel(context)
+	outputChannel.appendLine("Setting up vscode host providers...")
 
 	const createWebview = () => new VscodeWebviewProvider(context)
 	const createDiffView = () => new VscodeDiffViewProvider()
 	const createCommentReview = () => getVscodeCommentReviewController()
 	const createTerminalManager = () => new VscodeTerminalManager()
-	const outputChannel = vscode.window.createOutputChannel("Cline")
-	context.subscriptions.push(outputChannel)
 
 	const getCallbackUrl = async () => `${vscode.env.uriScheme || "vscode"}://${context.extension.id}`
 	HostProvider.initialize(
@@ -641,7 +609,7 @@ function setupHostProvider(context: ExtensionContext) {
 		createCommentReview,
 		createTerminalManager,
 		vscodeHostBridgeClient,
-		outputChannel.appendLine,
+		() => {}, // No-op logger, logging is handled via HostProvider.env.debugLog
 		getCallbackUrl,
 		getBinaryLocation,
 		context.extensionUri.fsPath,

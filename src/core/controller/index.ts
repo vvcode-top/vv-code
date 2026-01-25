@@ -31,8 +31,6 @@ import { ExtensionRegistryInfo } from "@/registry"
 import { AuthService } from "@/services/auth/AuthService"
 import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
-// VVCode Customization: 导入 VvAuthService
-import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
@@ -75,8 +73,6 @@ export class Controller {
 	accountService: ClineAccountService
 	authService: AuthService
 	ocaAuthService: OcaAuthService
-	// VVCode Customization: VVCode 认证服务
-	vvAuthService: import("@/services/auth/vv/VvAuthService").VvAuthService
 	readonly stateManager: StateManager
 
 	// NEW: Add workspace manager (optional initially)
@@ -123,7 +119,6 @@ export class Controller {
 
 	constructor(readonly context: vscode.ExtensionContext) {
 		PromptRegistry.getInstance() // Ensure prompts and tools are registered
-		HostProvider.get().logToChannel("ClineProvider instantiated")
 		this.stateManager = StateManager.get()
 		StateManager.get().registerCallbacks({
 			onPersistenceError: async ({ error }: PersistenceErrorEvent) => {
@@ -138,8 +133,6 @@ export class Controller {
 		})
 		this.authService = AuthService.getInstance(this)
 		this.ocaAuthService = OcaAuthService.initialize(this)
-		// VVCode Customization: 初始化 VvAuthService
-		this.vvAuthService = VvAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
 
 		this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {
@@ -160,6 +153,8 @@ export class Controller {
 
 		// Check CLI installation status once on startup
 		checkCliInstallation(this)
+
+		Logger.log("[Controller] ClineProvider instantiated")
 	}
 
 	/*
@@ -191,8 +186,8 @@ export class Controller {
 			const apiConfiguration = this.stateManager.getApiConfiguration()
 			const updatedConfig = {
 				...apiConfiguration,
-				planModeApiProvider: "anthropic" as ApiProvider,
-				actModeApiProvider: "anthropic" as ApiProvider,
+				planModeApiProvider: "openrouter" as ApiProvider,
+				actModeApiProvider: "openrouter" as ApiProvider,
 			}
 			this.stateManager.setApiConfiguration(updatedConfig)
 
@@ -712,42 +707,6 @@ export class Controller {
 		// Dont send settingsButtonClicked because its bad ux if user is on welcome
 	}
 
-	// VVCode Customization: VVCode 认证回调处理
-	async handleVVAuthCallback(code: string, state: string) {
-		try {
-			await this.vvAuthService.handleAuthCallback(code, state)
-
-			// Mark welcome view as completed since user has successfully logged in
-			this.stateManager.setGlobalState("welcomeViewCompleted", true)
-
-			await this.postStateToWebview()
-
-			const userInfo = this.vvAuthService.getUserInfo()
-			HostProvider.window.showMessage({
-				type: ShowMessageType.INFORMATION,
-				message: `Successfully logged in to VVCode! Welcome, ${userInfo?.username || "User"}`,
-			})
-		} catch (error) {
-			console.error("Failed to handle VVCode auth callback:", error)
-			HostProvider.window.showMessage({
-				type: ShowMessageType.ERROR,
-				message: `Failed to log in to VVCode: ${error instanceof Error ? error.message : String(error)}`,
-			})
-		}
-	}
-
-	// VVCode: 后台初始化完成回调，刷新分组配置
-	async handleVVInitComplete() {
-		try {
-			console.log("[VVCode] Init complete callback received, refreshing group config...")
-			await this.vvAuthService.refreshGroupConfig()
-			await this.postStateToWebview()
-			console.log("[VVCode] Group config refreshed successfully")
-		} catch (error) {
-			console.error("[VVCode] Failed to refresh group config:", error)
-		}
-	}
-
 	// Requesty
 
 	async handleRequestyCallback(code: string) {
@@ -871,10 +830,6 @@ export class Controller {
 		const globalWorkflowToggles = this.stateManager.getGlobalSettingsKey("globalWorkflowToggles")
 		const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles")
 		const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles")
-
-		// Get available skills metadata for slash command autocomplete
-		const availableSkills = await this.getAvailableSkillsMetadata()
-
 		const remoteRulesToggles = this.stateManager.getGlobalStateKey("remoteRulesToggles")
 		const remoteWorkflowToggles = this.stateManager.getGlobalStateKey("remoteWorkflowToggles")
 		const shellIntegrationTimeout = this.stateManager.getGlobalSettingsKey("shellIntegrationTimeout")
@@ -918,7 +873,8 @@ export class Controller {
 		const platform = process.platform as Platform
 		const distinctId = getDistinctId()
 		const version = ExtensionRegistryInfo.version
-		const environment = ClineEnv.config().environment
+		const clineConfig = ClineEnv.config()
+		const environment = clineConfig.environment
 		const banners = await this.getBanners()
 
 		// Check OpenAI Codex authentication status
@@ -1011,12 +967,7 @@ export class Controller {
 			nativeToolCallSetting: this.stateManager.getGlobalStateKey("nativeToolCallEnabled"),
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
-			// VVCode Customization: 分组配置
-			vvGroupConfig: this.stateManager.getGlobalStateKey("vvGroupConfig"),
-			vvNeedsWebInit: this.stateManager.getGlobalStateKey("vvNeedsWebInit"),
-			vvSelectedGroupType: this.stateManager.getGlobalStateKey("vvSelectedGroupType"),
 			skillsEnabled,
-			availableSkills,
 			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
 			banners,
 			openAiCodexIsAuthenticated,
@@ -1067,35 +1018,6 @@ export class Controller {
 			return BannerService.get().getActiveBanners()
 		} catch (err) {
 			Logger.log(err)
-			return []
-		}
-	}
-
-	/**
-	 * Get available skills metadata for slash command autocomplete
-	 */
-	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
-		try {
-			const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
-			if (!skillsEnabled) {
-				return []
-			}
-
-			const { discoverSkills, getAvailableSkills } = await import("../context/instructions/user-instructions/skills")
-			const cwd = this.workspaceManager?.getPrimaryRoot()?.path || (await getCwd(getDesktopDir()))
-			const allSkills = await discoverSkills(cwd)
-			const resolvedSkills = getAvailableSkills(allSkills)
-
-			// Filter by toggle state
-			const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles") || {}
-			const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles") || {}
-
-			return resolvedSkills.filter((skill) => {
-				const toggles = skill.source === "global" ? globalSkillsToggles : localSkillsToggles
-				return toggles[skill.path] !== false
-			})
-		} catch (error) {
-			console.error("Failed to get skills metadata:", error)
 			return []
 		}
 	}

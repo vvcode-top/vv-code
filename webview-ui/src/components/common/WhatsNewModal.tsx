@@ -75,7 +75,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ open, onClose, ver
 			<div className="flex gap-2 flex-wrap">{children}</div>
 		) : (
 			<Button className="my-1" onClick={handleShowAccount} size="sm">
-				Sign Up with VVCode
+				Sign Up with Cline
 			</Button>
 		)
 
@@ -114,7 +114,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ open, onClose, ver
 							</a>
 						</li>
 						<li>
-							<strong>Grok Code Fast 1: </strong> is saying goodbye (to free) this Friday at 11:00 am PT.
+							<strong>Grok Code Fast 1: </strong> is no longer free to use.
 						</li>
 					</ul>
 				</div>
