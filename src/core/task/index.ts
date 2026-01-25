@@ -3044,9 +3044,6 @@ export class Task {
 				this.workspaceManager,
 			)
 
-			// Get available skills for slash command autocomplete
-			const availableSkills = (await this.controller.getAvailableSkillsMetadata?.()) || []
-
 			const { processedText, needsClinerulesFileCheck: needsCheck } = await parseSlashCommands(
 				parsedText,
 				localWorkflowToggles,
@@ -3055,7 +3052,6 @@ export class Task {
 				focusChainSettings,
 				useNativeToolCalls,
 				providerInfo,
-				availableSkills,
 			)
 
 			if (needsCheck) {
