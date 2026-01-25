@@ -332,6 +332,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const chatButtonUnsubscribeRef = useRef<(() => void) | null>(null)
 	const accountButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const settingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
+	const vvSettingsButtonClickedSubscriptionRef = useRef<(() => void) | null>(null) // VVCode Customization
 	const worktreesButtonClickedSubscriptionRef = useRef<(() => void) | null>(null)
 	const partialMessageUnsubscribeRef = useRef<(() => void) | null>(null)
 	const mcpMarketplaceUnsubscribeRef = useRef<(() => void) | null>(null)
@@ -489,7 +490,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		})
 
 		// VVCode Customization: Set up VV settings button clicked subscription
-		const vvSettingsButtonClickedSubscriptionRef = UiServiceClient.subscribeToVvSettingsButtonClicked(
+		vvSettingsButtonClickedSubscriptionRef.current = UiServiceClient.subscribeToVvSettingsButtonClicked(
 			EmptyRequest.create({}),
 			{
 				onResponse: () => {
@@ -673,6 +674,10 @@ export const ExtensionStateContextProvider: React.FC<{
 			if (settingsButtonClickedSubscriptionRef.current) {
 				settingsButtonClickedSubscriptionRef.current()
 				settingsButtonClickedSubscriptionRef.current = null
+			}
+			if (vvSettingsButtonClickedSubscriptionRef.current) {
+				vvSettingsButtonClickedSubscriptionRef.current()
+				vvSettingsButtonClickedSubscriptionRef.current = null
 			}
 			if (worktreesButtonClickedSubscriptionRef.current) {
 				worktreesButtonClickedSubscriptionRef.current()
