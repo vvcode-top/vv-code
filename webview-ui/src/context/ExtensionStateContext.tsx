@@ -116,6 +116,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	hideWorktrees: () => void
 	hideAnnouncement: () => void
 	hideChatModelSelector: () => void
+	hideVVSettings: () => void // VVCode Customization
 	closeMcpView: () => void
 
 	// Event callbacks
@@ -155,6 +156,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const hideWorktrees = useCallback(() => setShowWorktrees(false), [setShowWorktrees])
 	const hideAnnouncement = useCallback(() => setShowAnnouncement(false), [setShowAnnouncement])
 	const hideChatModelSelector = useCallback(() => setShowChatModelSelector(false), [setShowChatModelSelector])
+	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 
 	// Navigation functions
 	const navigateToMcp = useCallback(
@@ -840,6 +842,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		hideAnnouncement,
 		setShowAnnouncement,
 		hideChatModelSelector,
+		hideVVSettings, // VVCode Customization
 		setShowWelcome,
 		setOnboardingModels,
 		setShowChatModelSelector,
