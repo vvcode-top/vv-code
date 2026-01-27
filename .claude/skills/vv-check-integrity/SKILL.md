@@ -47,7 +47,9 @@ description: 检查 VVCode 定制功能的完整性。验证核心模块（认�
 | `vv-balance.md` | 余额系统 - 状态栏、余额刷新 | ⚠️ Critical |
 | `vv-group.md` | 分组系统 - 分组切换、配置管理 | ⚠️ Critical |
 | `vv-completion.md` | 代码补全 - 智能补全提供器 | ⚠️ Critical |
+| `vv-skills.md` | Skills系统 - Slash command 集成 | ⚠️ Critical |
 | `vv-state.md` | 状态管理 - GlobalState 键定义 | ⚠️ Critical |
+| `vv-ui-customization.md` | 界面自定义 - TaskHeader折叠、VV组件 | ⚠️ Critical |
 | `global-config.md` | 全局配置 - 品牌、网络、构建配置 | ⚠️ Critical |
 
 ## 检查流程
@@ -191,7 +193,7 @@ fi
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 检查时间: 2026-01-25 19:30:00
-检查范围: 全部模块 (7个)
+检查范围: 全部模块 (9个)
 
 总体状态: ⚠️ 发现问题
 
@@ -200,7 +202,9 @@ fi
   ✅ vv-balance (完整)
   ✅ vv-group (完整)
   ✅ vv-completion (完整)
+  ✅ vv-skills (完整)
   ✅ vv-state (完整)
+  ✅ vv-ui-customization (完整)
   ✅ global-config (完整)
   ❌ vv-auth (2个问题)
 
@@ -226,7 +230,7 @@ fi
 按关键性级别排序：
 
 1. **⚠️ Critical** - 影响核心功能，必须立即修复
-   - vv-auth, vv-settings, vv-balance, vv-group, vv-completion, vv-state, global-config
+   - vv-auth, vv-settings, vv-balance, vv-group, vv-completion, vv-skills, vv-state, vv-ui-customization, global-config
 
 ## 重要说明：命名格式差异
 

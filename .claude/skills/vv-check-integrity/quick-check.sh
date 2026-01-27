@@ -80,8 +80,53 @@ check_exists "initialize(context)" "src/extension.ts" "  - balanceStatusBar.init
 check_exists "vvcode.refreshBalance" "src/extension.ts" "  - refreshBalance 命令注册"
 echo ""
 
-# 7. 核心服务文件存在性检查
-echo "📁 7. 核心服务文件"
+# 7. Skills 功能检查
+echo "🔧 7. Skills 功能"
+check_exists "getAvailableSkillsMetadata" "src/core/controller/index.ts" "  - getAvailableSkillsMetadata 方法"
+if grep -A 100 "return {" "src/core/controller/index.ts" | grep -q "availableSkills"; then
+    echo -e "${GREEN}✅${NC}   - availableSkills 在状态中"
+else
+    echo -e "${RED}❌${NC}   - availableSkills 在状态中"
+    ERRORS=$((ERRORS + 1))
+fi
+COUNT=$(grep -A 6 "validateSlashCommand" "webview-ui/src/components/chat/ChatTextArea.tsx" 2>/dev/null | grep -c "availableSkills" || echo 0)
+if [ "$COUNT" -ge 2 ]; then
+    echo -e "${GREEN}✅${NC}   - 前端集成 ($COUNT/2)"
+else
+    echo -e "${RED}❌${NC}   - 前端集成 ($COUNT/2)"
+    ERRORS=$((ERRORS + 1))
+fi
+echo ""
+
+# 8. UI 自定义检查
+echo "🎨 8. UI 自定义"
+check_exists "expandTaskHeader.*useState(false)" "webview-ui/src/context/ExtensionStateContext.tsx" "  - TaskHeader 默认折叠状态"
+check_exists "showVVSettings.*boolean" "webview-ui/src/context/ExtensionStateContext.tsx" "  - showVVSettings 状态定义"
+check_exists "navigateToVVSettings" "webview-ui/src/context/ExtensionStateContext.tsx" "  - navigateToVVSettings 方法"
+check_exists "showVVSettings.*VvSettingsView" "webview-ui/src/App.tsx" "  - VV设置路由集成"
+echo ""
+
+# 9. VV自定义组件文件
+echo "📁 9. VV自定义组件文件"
+ui_files_to_check=(
+    "webview-ui/src/components/settings/VvSettingsView.tsx"
+    "webview-ui/src/components/settings/VvAccountInfoCard.tsx"
+    "webview-ui/src/components/settings/VvCompletionSettings.tsx"
+    "webview-ui/src/components/chat/VvGroupSelector.tsx"
+)
+
+for file in "${ui_files_to_check[@]}"; do
+    if [ -f "$file" ]; then
+        echo -e "${GREEN}✅${NC}   - $file"
+    else
+        echo -e "${RED}❌${NC}   - $file"
+        ERRORS=$((ERRORS + 1))
+    fi
+done
+echo ""
+
+# 10. 核心服务文件存在性检查
+echo "📁 10. 核心服务文件"
 files_to_check=(
     "src/services/auth/vv/VvAuthService.ts"
     "src/services/auth/vv/providers/VvAuthProvider.ts"
