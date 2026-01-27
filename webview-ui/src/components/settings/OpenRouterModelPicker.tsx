@@ -43,7 +43,6 @@ export interface OpenRouterModelPickerProps {
 	isPopup?: boolean
 	currentMode: Mode
 	showProviderRouting?: boolean
-	initialTab?: "recommended" | "free"
 }
 
 // Featured models for Cline provider organized by tabs
@@ -81,26 +80,11 @@ export const freeModels = [
 		description: "KwaiKAT's most advanced agentic coding model in the KAT-Coder series",
 		label: "FREE",
 	},
-	{
-		id: "arcee-ai/trinity-large-preview:free",
-		description: "Arcee AI's advanced large preview model in the Trinity series",
-		label: "FREE",
-	},
-	{
-		id: "stealth/giga-potato",
-		description: "A stealth model for coding(may underperform in quality and have longer latency)",
-		label: "FREE",
-	},
 ]
 
 const FREE_CLINE_MODELS = freeModels.map((m) => m.id)
 
-const OpenRouterModelPicker: React.FC<OpenRouterModelPickerProps> = ({
-	isPopup,
-	currentMode,
-	showProviderRouting,
-	initialTab,
-}) => {
+const OpenRouterModelPicker: React.FC<OpenRouterModelPickerProps> = ({ isPopup, currentMode, showProviderRouting }) => {
 	const { handleModeFieldChange, handleModeFieldsChange, handleFieldChange } = useApiConfigurationHandlers()
 	const { apiConfiguration, favoritedModelIds, openRouterModels, refreshOpenRouterModels } = useExtensionState()
 	const modeFields = getModeSpecificFields(apiConfiguration, currentMode)
@@ -108,19 +92,9 @@ const OpenRouterModelPicker: React.FC<OpenRouterModelPickerProps> = ({
 	const [isDropdownVisible, setIsDropdownVisible] = useState(false)
 	const [selectedIndex, setSelectedIndex] = useState(-1)
 	const [activeTab, setActiveTab] = useState<"recommended" | "free">(() => {
-		if (initialTab) {
-			return initialTab
-		}
 		const currentModelId = modeFields.openRouterModelId || openRouterDefaultModelId
 		return freeModels.some((m) => m.id === currentModelId) ? "free" : "recommended"
 	})
-
-	// If a caller wants to deep-link to the Free tab (or Recommended), honor that.
-	useEffect(() => {
-		if (initialTab) {
-			setActiveTab(initialTab)
-		}
-	}, [initialTab])
 	const dropdownRef = useRef<HTMLDivElement>(null)
 	const itemRefs = useRef<(HTMLDivElement | null)[]>([])
 	const dropdownListRef = useRef<HTMLDivElement>(null)
