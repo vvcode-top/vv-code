@@ -898,6 +898,8 @@ export class Controller {
 		const subagentsEnabled = this.stateManager.getGlobalSettingsKey("subagentsEnabled")
 		const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
 
+		const availableSkills = await this.getAvailableSkillsMetadata()
+
 		const localClineRulesToggles = this.stateManager.getWorkspaceStateKey("localClineRulesToggles")
 		const localWindsurfRulesToggles = this.stateManager.getWorkspaceStateKey("localWindsurfRulesToggles")
 		const localCursorRulesToggles = this.stateManager.getWorkspaceStateKey("localCursorRulesToggles")
@@ -1019,6 +1021,7 @@ export class Controller {
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
 			skillsEnabled,
+			availableSkills,
 			// VVCode Customization: 分组配置
 			vvGroupConfig,
 			vvNeedsWebInit,
@@ -1036,6 +1039,32 @@ export class Controller {
 		}
 		await this.task?.abortTask()
 		this.task = undefined // removes reference to it, so once promises end it will be garbage collected
+	}
+
+	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
+		try {
+			const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
+			if (!skillsEnabled) {
+				return []
+			}
+
+			const { discoverSkills, getAvailableSkills } = await import("../context/instructions/user-instructions/skills")
+			const cwd = this.workspaceManager?.getPrimaryRoot()?.path || (await getCwd(getDesktopDir()))
+			const allSkills = await discoverSkills(cwd)
+			const resolvedSkills = getAvailableSkills(allSkills)
+
+			// Filter by toggle state
+			const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles") || {}
+			const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles") || {}
+
+			return resolvedSkills.filter((skill) => {
+				const toggles = skill.source === "global" ? globalSkillsToggles : localSkillsToggles
+				return toggles[skill.path] !== false
+			})
+		} catch (error) {
+			Logger.error("Failed to get skills metadata:", error)
+			return []
+		}
 	}
 
 	// Caching mechanism to keep track of webview messages + API conversation history per provider instance

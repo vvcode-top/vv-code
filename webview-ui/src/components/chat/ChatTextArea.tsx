@@ -1018,6 +1018,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					globalWorkflowToggles,
 					remoteWorkflowToggles,
 					remoteConfigSettings?.remoteGlobalWorkflows,
+					availableSkills,
 				)
 
 				if (isValidCommand) {
