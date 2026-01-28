@@ -81,6 +81,11 @@ export const freeModels = [
 		description: "KwaiKAT's most advanced agentic coding model in the KAT-Coder series",
 		label: "FREE",
 	},
+	{
+		id: "arcee-ai/trinity-large-preview:free",
+		description: "Arcee AI's advanced large preview model in the Trinity series",
+		label: "FREE",
+	},
 ]
 
 const FREE_CLINE_MODELS = freeModels.map((m) => m.id)
@@ -105,6 +110,7 @@ const OpenRouterModelPicker: React.FC<OpenRouterModelPickerProps> = ({
 		return freeModels.some((m) => m.id === currentModelId) ? "free" : "recommended"
 	})
 
+	// If a caller wants to deep-link to the Free tab (or Recommended), honor that.
 	useEffect(() => {
 		if (initialTab) {
 			setActiveTab(initialTab)
