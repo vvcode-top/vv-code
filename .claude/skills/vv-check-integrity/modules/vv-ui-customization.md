@@ -73,7 +73,24 @@ grep "showVVSettings.*VvSettingsView" webview-ui/src/App.tsx
 
 ---
 
-### 5. Navbar 自定义
+### 5. App.tsx 新用户默认进入 VV 欢迎页
+📁 `webview-ui/src/App.tsx`
+
+**风险点（不应存在）**:
+- `showWelcome` 分支
+- `OnboardingView` 导入或渲染
+- `WelcomeView` 导入或渲染
+
+**检查命令**:
+```bash
+! grep -q "showWelcome" webview-ui/src/App.tsx
+! grep -q "OnboardingView" webview-ui/src/App.tsx
+! grep -q "WelcomeView" webview-ui/src/App.tsx
+```
+
+---
+
+### 6. Navbar 自定义
 📁 `webview-ui/src/components/menu/Navbar.tsx`
 
 **必须包含**:

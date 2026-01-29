@@ -104,6 +104,24 @@ check_exists "expandTaskHeader.*useState(false)" "webview-ui/src/context/Extensi
 check_exists "showVVSettings.*boolean" "webview-ui/src/context/ExtensionStateContext.tsx" "  - showVVSettings 状态定义"
 check_exists "navigateToVVSettings" "webview-ui/src/context/ExtensionStateContext.tsx" "  - navigateToVVSettings 方法"
 check_exists "showVVSettings.*VvSettingsView" "webview-ui/src/App.tsx" "  - VV设置路由集成"
+if ! grep -q "showWelcome" "webview-ui/src/App.tsx" 2>/dev/null; then
+    echo -e "${GREEN}✅${NC}   - App.tsx 无 showWelcome 分支"
+else
+    echo -e "${RED}❌${NC}   - App.tsx 仍存在 showWelcome 分支"
+    ERRORS=$((ERRORS + 1))
+fi
+if ! grep -q "OnboardingView" "webview-ui/src/App.tsx" 2>/dev/null; then
+    echo -e "${GREEN}✅${NC}   - App.tsx 无 OnboardingView"
+else
+    echo -e "${RED}❌${NC}   - App.tsx 仍导入/渲染 OnboardingView"
+    ERRORS=$((ERRORS + 1))
+fi
+if ! grep -q "WelcomeView" "webview-ui/src/App.tsx" 2>/dev/null; then
+    echo -e "${GREEN}✅${NC}   - App.tsx 无 WelcomeView"
+else
+    echo -e "${RED}❌${NC}   - App.tsx 仍导入/渲染 WelcomeView"
+    ERRORS=$((ERRORS + 1))
+fi
 echo ""
 
 # 9. VV自定义组件文件

@@ -4,10 +4,8 @@ import AccountView from "./components/account/AccountView"
 import ChatView from "./components/chat/ChatView"
 import HistoryView from "./components/history/HistoryView"
 import McpView from "./components/mcp/configuration/McpConfigurationView"
-import OnboardingView from "./components/onboarding/OnboardingView"
 import SettingsView from "./components/settings/SettingsView"
 import VvSettingsView from "./components/settings/VvSettingsView"
-import WelcomeView from "./components/welcome/WelcomeView"
 import WorktreesView from "./components/worktrees/WorktreesView"
 import { useClineAuth } from "./context/ClineAuthContext"
 import { useExtensionState } from "./context/ExtensionStateContext"
@@ -17,7 +15,6 @@ import { UiServiceClient } from "./services/grpc-client"
 const AppContent = () => {
 	const {
 		didHydrateState,
-		showWelcome,
 		shouldShowAnnouncement,
 		showMcp,
 		mcpTab,
@@ -28,7 +25,6 @@ const AppContent = () => {
 		showAccount,
 		showWorktrees,
 		showAnnouncement,
-		onboardingModels,
 		setShowAnnouncement,
 		setShouldShowAnnouncement,
 		closeMcpView,
@@ -60,10 +56,6 @@ const AppContent = () => {
 
 	if (!didHydrateState) {
 		return null
-	}
-
-	if (showWelcome) {
-		return onboardingModels ? <OnboardingView onboardingModels={onboardingModels} /> : <WelcomeView />
 	}
 
 	return (
