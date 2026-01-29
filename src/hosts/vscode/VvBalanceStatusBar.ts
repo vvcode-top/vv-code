@@ -3,6 +3,7 @@
 // Updated: 2025-12-28 - 整合选中代码提示功能
 
 import { VvAuthService } from "@services/auth/vv/VvAuthService"
+import { Logger } from "@shared/services/Logger"
 import * as vscode from "vscode"
 
 /**
@@ -119,7 +120,7 @@ export class VvBalanceStatusBar {
 			this.statusBarItem.command = "vvcode.refreshBalance"
 			this.statusBarItem.show()
 		} catch (error) {
-			console.error("[VvBalanceStatusBar] Failed to update display:", error)
+			Logger.error("[VvBalanceStatusBar] Failed to update display:", error)
 			this.statusBarItem.hide()
 		}
 	}
@@ -131,7 +132,7 @@ export class VvBalanceStatusBar {
 		// 节流：5秒内只允许刷新一次
 		const now = Date.now()
 		if (this.isRefreshing || now - this.lastRefreshTime < 5000) {
-			console.log("[VvBalanceStatusBar] Refresh throttled")
+			Logger.log("[VvBalanceStatusBar] Refresh throttled")
 			return
 		}
 
@@ -143,7 +144,7 @@ export class VvBalanceStatusBar {
 			await authService.refreshUserInfo()
 			this.updateDisplay()
 		} catch (error) {
-			console.error("[VvBalanceStatusBar] Failed to refresh balance:", error)
+			Logger.error("[VvBalanceStatusBar] Failed to refresh balance:", error)
 		} finally {
 			this.isRefreshing = false
 		}

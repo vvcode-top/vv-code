@@ -1,6 +1,7 @@
 // VVCode Customization: VVCode 认证提供商
 // Created: 2025-12-20
 
+import { Logger } from "@shared/services/Logger"
 import { fetch } from "@/shared/net"
 import type { VvGroupConfig, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
 
@@ -41,7 +42,7 @@ export class VvAuthProvider {
 
 			if (!response.ok) {
 				const errorText = await response.text()
-				console.error("[VVAuth] Token exchange error response:", errorText)
+				Logger.error("[VVAuth] Token exchange error response:", errorText)
 
 				let errorData: any = {}
 				try {
@@ -206,7 +207,7 @@ export class VvAuthProvider {
 			})
 		} catch (error) {
 			// 登出失败不阻塞流程
-			console.error("Logout API call failed:", error)
+			Logger.error("Logout API call failed:", error)
 		}
 	}
 
@@ -218,7 +219,7 @@ export class VvAuthProvider {
 	 */
 	async getGroupTokens(accessToken: string, userId: number): Promise<VvGroupConfig> {
 		const url = `${this.apiBaseUrl}/oauth/vscode/group_tokens`
-		console.log("[VVAuth] getGroupTokens request:", { url, userId })
+		Logger.log("[VVAuth] getGroupTokens request:", { url, userId })
 
 		try {
 			const response = await fetch(url, {
@@ -229,11 +230,11 @@ export class VvAuthProvider {
 				},
 			})
 
-			console.log("[VVAuth] getGroupTokens response status:", response.status)
+			Logger.log("[VVAuth] getGroupTokens response status:", response.status)
 
 			if (!response.ok) {
 				const errorText = await response.text()
-				console.error("[VVAuth] getGroupTokens error response:", errorText)
+				Logger.error("[VVAuth] getGroupTokens error response:", errorText)
 				throw new Error(`Failed to get group tokens: ${errorText}`)
 			}
 
@@ -245,7 +246,7 @@ export class VvAuthProvider {
 			// 将服务器返回的字段映射为前端期望的格式
 			return this.mapGroupTokensResponse(result.data)
 		} catch (error) {
-			console.error("[VVAuth] getGroupTokens fetch error:", error)
+			Logger.error("[VVAuth] getGroupTokens fetch error:", error)
 			throw error
 		}
 	}
@@ -258,7 +259,7 @@ export class VvAuthProvider {
 	 */
 	async initGroupTokens(accessToken: string, userId: number): Promise<VvGroupConfig> {
 		const url = `${this.apiBaseUrl}/oauth/vscode/init_group_tokens`
-		console.log("[VVAuth] initGroupTokens request:", { url, userId })
+		Logger.log("[VVAuth] initGroupTokens request:", { url, userId })
 
 		try {
 			const response = await fetch(url, {
@@ -271,16 +272,16 @@ export class VvAuthProvider {
 				},
 			})
 
-			console.log("[VVAuth] initGroupTokens response status:", response.status)
+			Logger.log("[VVAuth] initGroupTokens response status:", response.status)
 
 			if (!response.ok) {
 				const errorText = await response.text()
-				console.error("[VVAuth] initGroupTokens error response:", errorText)
+				Logger.error("[VVAuth] initGroupTokens error response:", errorText)
 				throw new Error(`Failed to init group tokens: ${errorText}`)
 			}
 
 			const result = await response.json()
-			console.log("[VVAuth] initGroupTokens result:", JSON.stringify(result, null, 2))
+			Logger.log("[VVAuth] initGroupTokens result:", JSON.stringify(result, null, 2))
 			if (!result.success) {
 				throw new Error(result.message || "Failed to init group tokens")
 			}
@@ -288,7 +289,7 @@ export class VvAuthProvider {
 			// 将服务器返回的字段映射为前端期望的格式
 			return this.mapGroupTokensResponse(result.data)
 		} catch (error) {
-			console.error("[VVAuth] initGroupTokens fetch error:", error)
+			Logger.error("[VVAuth] initGroupTokens fetch error:", error)
 			throw error
 		}
 	}

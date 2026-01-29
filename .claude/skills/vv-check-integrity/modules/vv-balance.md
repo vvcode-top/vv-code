@@ -28,10 +28,32 @@
 
 扩展激活时必须初始化状态栏并注册刷新命令。
 
-**必须包含**:
-- `VvBalanceStatusBar` - 导入状态栏类
-- `balanceStatusBar.initialize` - 初始化状态栏
-- `vvcode.refreshBalance` - 注册刷新余额命令
+**必须导入**:
+- `const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")`
+
+**必须初始化**（关键！）:
+```typescript
+const balanceStatusBar = VvBalanceStatusBar.getInstance()
+balanceStatusBar.initialize(context)  // ⚠️ 必须调用 initialize
+```
+
+**必须注册刷新命令**:
+```typescript
+context.subscriptions.push(
+    vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
+        await balanceStatusBar.refreshBalance()
+    }),
+)
+```
+
+**检查方法**:
+```bash
+# 检查是否调用 initialize
+grep -A 2 "VvBalanceStatusBar.getInstance()" src/extension.ts | grep "initialize(context)"
+
+# 检查是否注册命令
+grep "vvcode.refreshBalance" src/extension.ts
+```
 
 ---
 

@@ -5,6 +5,7 @@
  * IMPORTANT: No local fallback values - all configuration must come from API.
  */
 
+import { Logger } from "@shared/services/Logger"
 import axios from "axios"
 import { getAxiosSettings } from "@/shared/net"
 import { API_BASE_URL, CONFIG_ENDPOINT, CONFIG_FETCH_TIMEOUT } from "./config"
@@ -50,17 +51,17 @@ async function fetchRemoteConfig(): Promise<DynamicConfigResponse | null> {
 		})
 
 		if (response.status === 200 && response.data) {
-			console.log("[Config Fetcher] Successfully fetched remote configuration")
+			Logger.log("[Config Fetcher] Successfully fetched remote configuration")
 			return response.data
 		}
 
-		console.warn("[Config Fetcher] Invalid response from config endpoint")
+		Logger.warn("[Config Fetcher] Invalid response from config endpoint")
 		return null
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
-			console.warn(`[Config Fetcher] Failed to fetch remote config: ${error.message}`)
+			Logger.warn(`[Config Fetcher] Failed to fetch remote config: ${error.message}`)
 		} else {
-			console.warn("[Config Fetcher] Unexpected error fetching remote config:", error)
+			Logger.warn("[Config Fetcher] Unexpected error fetching remote config:", error)
 		}
 		return null
 	}

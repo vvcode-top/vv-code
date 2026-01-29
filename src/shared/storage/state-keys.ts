@@ -311,11 +311,10 @@ const USER_SETTINGS_FIELDS = {
 	focusChainSettings: { default: DEFAULT_FOCUS_CHAIN_SETTINGS as FocusChainSettings },
 	customPrompt: { default: undefined as "compact" | undefined },
 	autoCondenseThreshold: { default: 0.75 as number }, // number from 0 to 1
-	hooksEnabled: { default: false as boolean },
 	subagentsEnabled: { default: false as boolean },
 	enableParallelToolCalling: { default: false as boolean },
 	backgroundEditEnabled: { default: false as boolean },
-	skillsEnabled: { default: false as boolean },
+	skillsEnabled: { default: true as boolean },
 	optOutOfRemoteConfig: { default: false as boolean },
 
 	// OpenTelemetry configuration

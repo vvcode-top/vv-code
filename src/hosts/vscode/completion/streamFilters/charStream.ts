@@ -2,6 +2,8 @@
 // Ported from Continue's charStream.ts
 // Filters completion stream at character level
 
+import { Logger } from "@shared/services/Logger"
+
 /**
  * Stop generation when encountering any stop token
  */
@@ -86,7 +88,7 @@ export async function* stopAtStartOf(stream: AsyncGenerator<string>, suffix: str
 		}
 	}
 
-	console.log("[VvCompletion] stopAtStartOf 完成，yield buffer 长度:", buffer.length)
+	Logger.log("[VvCompletion] stopAtStartOf 完成，yield buffer 长度:", buffer.length)
 	yield buffer
 }
 
@@ -99,7 +101,7 @@ export async function* noFirstCharNewline(stream: AsyncGenerator<string>): Async
 		if (first) {
 			first = false
 			if (char.startsWith("\n") || char.startsWith("\r")) {
-				console.log("[VvCompletion] noFirstCharNewline 拦截! 第一个字符是换行")
+				Logger.log("[VvCompletion] noFirstCharNewline 拦截! 第一个字符是换行")
 				return
 			}
 		}

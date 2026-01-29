@@ -2,6 +2,7 @@
 // Ported from Continue's CompletionStreamer
 // Coordinates LLM streaming and filter application
 
+import { Logger } from "@shared/services/Logger"
 import OpenAI from "openai"
 import { VvStreamTransformPipeline } from "./streamFilters/VvStreamTransformPipeline"
 import { VvHelperVars } from "./vvHelperVars"
@@ -94,28 +95,28 @@ export class VvCompletionStreamer {
 			}
 
 			// Log request parameters
-			console.log("[VvCompletion] LLM 请求参数:")
-			console.log("[VvCompletion]   model:", requestParams.model)
-			console.log("[VvCompletion]   prompt (前缀) 长度:", requestParams.prompt.length)
-			console.log("[VvCompletion]   prompt (前缀) 最后 100 字符:", requestParams.prompt.slice(-100))
-			console.log("[VvCompletion]   suffix (后缀) 长度:", requestParams.suffix.length)
-			console.log("[VvCompletion]   suffix (后缀) 前 100 字符:", requestParams.suffix.slice(0, 100))
-			console.log("[VvCompletion]   max_tokens:", requestParams.max_tokens)
-			console.log("[VvCompletion]   temperature:", requestParams.temperature)
+			Logger.log("[VvCompletion] LLM 请求参数:")
+			Logger.log("[VvCompletion]   model:", requestParams.model)
+			Logger.log("[VvCompletion]   prompt (前缀) 长度:", requestParams.prompt.length)
+			Logger.log("[VvCompletion]   prompt (前缀) 最后 100 字符:", requestParams.prompt.slice(-100))
+			Logger.log("[VvCompletion]   suffix (后缀) 长度:", requestParams.suffix.length)
+			Logger.log("[VvCompletion]   suffix (后缀) 前 100 字符:", requestParams.suffix.slice(0, 100))
+			Logger.log("[VvCompletion]   max_tokens:", requestParams.max_tokens)
+			Logger.log("[VvCompletion]   temperature:", requestParams.temperature)
 
 			// Call API with non-streaming
 			const response = await client.completions.create(requestParams, {
 				signal,
 			})
 
-			console.log("[VvCompletion] LLM 响应完成")
-			console.log("[VvCompletion]   完整响应:", JSON.stringify(response, null, 2))
+			Logger.log("[VvCompletion] LLM 响应完成")
+			Logger.log("[VvCompletion]   完整响应:", JSON.stringify(response, null, 2))
 
 			const text = response.choices?.[0]?.text || ""
 
-			console.log("[VvCompletion] 从 LLM 获取的原始文本:")
-			console.log("[VvCompletion]   长度:", text.length)
-			console.log("[VvCompletion]   前 200 字符:", text.slice(0, 200))
+			Logger.log("[VvCompletion] 从 LLM 获取的原始文本:")
+			Logger.log("[VvCompletion]   长度:", text.length)
+			Logger.log("[VvCompletion]   前 200 字符:", text.slice(0, 200))
 
 			// Yield the complete text at once
 			if (text) {
@@ -123,11 +124,11 @@ export class VvCompletionStreamer {
 			}
 		} catch (error: any) {
 			if (error.name === "AbortError" || signal.aborted) {
-				console.log("[VvCompletion] 请求被取消（正常）")
+				Logger.log("[VvCompletion] 请求被取消（正常）")
 				return // Normal cancellation
 			}
-			console.error("[VvCompletion] LLM 请求错误:", error)
-			console.error("[VvCompletion] 错误详情:", {
+			Logger.error("[VvCompletion] LLM 请求错误:", error)
+			Logger.error("[VvCompletion] 错误详情:", {
 				name: error.name,
 				message: error.message,
 				stack: error.stack,

@@ -4,15 +4,17 @@
 import assert from "node:assert"
 import { DIFF_VIEW_URI_SCHEME } from "@hosts/vscode/VscodeDiffViewProvider"
 import * as vscode from "vscode"
+import { Logger } from "@/shared/services/Logger"
 import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
 import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChatButtonClicked"
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
+// VVCode Customization: Import VV settings button event
+import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
-import { Logger } from "./services/logging/Logger"
 import { cleanupTestMode, initializeTestMode } from "./services/test/TestMode"
 import "./utils/path" // necessary to have access to String.prototype.toPosix
 
@@ -34,6 +36,7 @@ import { HookProcessRegistry } from "./core/hooks/HookProcessRegistry"
 import { workspaceResolver } from "./core/workspace"
 import { findMatchingNotebookCell, getContextForCommand, showWebview } from "./hosts/vscode/commandUtils"
 import { abortCommitGeneration, generateCommitMsg } from "./hosts/vscode/commit-message-generator"
+import { registerClineOutputChannel } from "./hosts/vscode/hostbridge/env/debugLog"
 import {
 	disposeVscodeCommentReviewController,
 	getVscodeCommentReviewController,
@@ -89,15 +92,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const webview = (await initialize(context)) as VscodeWebviewProvider
 
-	// Clean up old temp files in background (non-blocking) and start periodic cleanup every 24 hours
-	ClineTempManager.startPeriodicCleanup()
-
-	Logger.log("Cline extension activated")
-
-	const testModeWatchers = await initializeTestMode(webview)
-	// Initialize test mode and add disposables to context
-	context.subscriptions.push(...testModeWatchers)
-
 	// VVCode Customization: Initialize balance status bar
 	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
 	const balanceStatusBar = VvBalanceStatusBar.getInstance()
@@ -106,21 +100,28 @@ export async function activate(context: vscode.ExtensionContext) {
 	// VVCode Customization: Initialize inline completion provider
 	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
 	const completionProvider = new VvCompletionProvider(webview.controller)
-	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider([{ pattern: "**" }], completionProvider))
+	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: "**" }, completionProvider))
 
-	// Register accept completion command
 	context.subscriptions.push(
 		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {
 			completionProvider.acceptCompletion(completionId)
 		}),
 	)
 
-	// Register refresh balance command
 	context.subscriptions.push(
 		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
 			await balanceStatusBar.refreshBalance()
 		}),
 	)
+
+	// Clean up old temp files in background (non-blocking) and start periodic cleanup every 24 hours
+	ClineTempManager.startPeriodicCleanup()
+
+	Logger.log("Cline extension activated")
+
+	const testModeWatchers = await initializeTestMode(webview)
+	// Initialize test mode and add disposables to context
+	context.subscriptions.push(...testModeWatchers)
 
 	vscode.commands.executeCommand("setContext", "cline.isDevMode", IS_DEV && IS_DEV === "true")
 
@@ -134,7 +135,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.PlusButton, async () => {
-			console.log("[DEBUG] plusButtonClicked")
+			Logger.log("[DEBUG] plusButtonClicked")
 
 			const sidebarInstance = WebviewProvider.getInstance()
 			await sidebarInstance.controller.clearTask()
@@ -155,10 +156,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// VVCode Customization: VV Settings Button
+	// VVCode Customization: Register VV settings button command
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.VVSettingsButton, () => {
-			const { sendVVSettingsButtonClickedEvent } = require("./core/controller/ui/subscribeToVvSettingsButtonClicked")
 			sendVVSettingsButtonClickedEvent()
 		}),
 	)
@@ -208,7 +208,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		const url = decodeURIComponent(uri.toString())
 		const success = await SharedUriHandler.handleUri(url)
 		if (!success) {
-			console.warn("Extension URI handler: Failed to process URI:", uri.toString())
+			Logger.warn("Extension URI handler: Failed to process URI:", uri.toString())
 		}
 	}
 	context.subscriptions.push(vscode.window.registerUriHandler({ handleUri }))
@@ -256,11 +256,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
 				await sendAddToInputEvent(`Terminal output:\n\`\`\`\n${terminalContents}\n\`\`\``)
 
-				console.log("addSelectedTerminalOutputToChat", terminalContents, terminal.name)
+				Logger.log("addSelectedTerminalOutputToChat", terminalContents, terminal.name)
 			} catch (error) {
 				// Ensure clipboard is restored even if an error occurs
 				await writeTextToClipboard(tempCopyBuffer)
-				console.error("Error getting terminal contents:", error)
+				Logger.error("Error getting terminal contents:", error)
 				HostProvider.window.showMessage({
 					type: ShowMessageType.ERROR,
 					message: "Failed to get terminal contents",
@@ -625,14 +625,13 @@ async function showJupyterPromptInput(title: string, placeholder: string): Promi
 }
 
 function setupHostProvider(context: ExtensionContext) {
-	console.log("Setting up vscode host providers...")
+	const outputChannel = registerClineOutputChannel(context)
+	outputChannel.appendLine("Setting up vscode host providers...")
 
 	const createWebview = () => new VscodeWebviewProvider(context)
 	const createDiffView = () => new VscodeDiffViewProvider()
 	const createCommentReview = () => getVscodeCommentReviewController()
 	const createTerminalManager = () => new VscodeTerminalManager()
-	const outputChannel = vscode.window.createOutputChannel("Cline")
-	context.subscriptions.push(outputChannel)
 
 	const getCallbackUrl = async () => `${vscode.env.uriScheme || "vscode"}://${context.extension.id}`
 	HostProvider.initialize(
@@ -641,7 +640,7 @@ function setupHostProvider(context: ExtensionContext) {
 		createCommentReview,
 		createTerminalManager,
 		vscodeHostBridgeClient,
-		outputChannel.appendLine,
+		() => {}, // No-op logger, logging is handled via HostProvider.env.debugLog
 		getCallbackUrl,
 		getBinaryLocation,
 		context.extensionUri.fsPath,
@@ -717,7 +716,7 @@ if (IS_DEV && IS_DEV !== "false") {
 	const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(DEV_WORKSPACE_FOLDER, "src/**/*"))
 
 	watcher.onDidChange(({ scheme, path }) => {
-		console.info(`${scheme} ${path} changed. Reloading VSCode...`)
+		Logger.info(`${scheme} ${path} changed. Reloading VSCode...`)
 
 		vscode.commands.executeCommand("workbench.action.reloadWindow")
 	})

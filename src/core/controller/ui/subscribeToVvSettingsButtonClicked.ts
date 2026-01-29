@@ -3,6 +3,7 @@
 // Modified: 2025-12-20
 
 import { Empty, EmptyRequest } from "@shared/proto/cline/common"
+import { Logger } from "@shared/services/Logger"
 import { getRequestRegistry, StreamingResponseHandler } from "../grpc-handler"
 import type { Controller } from "../index"
 
@@ -51,7 +52,7 @@ export async function sendVVSettingsButtonClickedEvent(): Promise<void> {
 			const event = Empty.create({})
 			await responseStream(event, false) // Not the last message
 		} catch (error) {
-			console.error("Error sending VV settings button clicked event:", error)
+			Logger.error("Error sending VV settings button clicked event:", error)
 			activeVVSettingsButtonClickedSubscriptions.delete(responseStream)
 		}
 	})

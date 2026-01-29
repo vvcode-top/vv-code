@@ -48,7 +48,9 @@ export class OpenAiCodexHandler implements ApiHandler {
 	}
 
 	private normalizeUsage(usage: any, model: { id: string; info: ModelInfo }): ApiStreamUsageChunk | undefined {
-		if (!usage) return undefined
+		if (!usage) {
+			return undefined
+		}
 
 		const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details
 
@@ -155,7 +157,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 		// Pass through strict value from tool (MCP/custom tools have strict: false, built-in tools default to true)
 		if (tools && tools.length > 0) {
 			body.tools = tools
-				.filter((tool: any) => tool.type === "function")
+				.filter((tool: any) => tool?.type === "function")
 				.map((tool: any) => ({
 					type: "function",
 					name: tool.function.name,
@@ -295,7 +297,9 @@ export class OpenAiCodexHandler implements ApiHandler {
 				}
 
 				const { done, value } = await reader.read()
-				if (done) break
+				if (done) {
+					break
+				}
 
 				buffer += decoder.decode(value, { stream: true })
 				const lines = buffer.split("\n")

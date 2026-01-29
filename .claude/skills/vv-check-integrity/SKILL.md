@@ -16,11 +16,25 @@ description: 检查 VVCode 定制功能的完整性。验证核心模块（认�
 
 ## 使用方式
 
+**优先使用快速检查** → 失败时才用详细检查：
+
+```bash
+# 1. 快速检查（2-3 秒）
+.claude/skills/vv-check-integrity/quick-check.sh
+
+# 2. 如果失败，调用 AI 做详细诊断
+检查 VVCode 功能完整性
 ```
-检查 VVCode 功能完整性          # 全面检查所有模块
-验证 vv-auth 模块               # 检查特定模块
-检查认证系统是否完整             # 按功能描述检查
-```
+
+**使用场景：**
+
+| 场景 | 使用工具 |
+|------|---------|
+| 合并后验证 | `quick-check.sh` |
+| 开发中自测 | `quick-check.sh` |
+| CI/CD 集成 | `quick-check.sh` |
+| 问题诊断 | `vv-check-integrity` skill |
+| 理解架构 | `vv-check-integrity` skill |
 
 ## 核心模块清单
 
@@ -33,19 +47,61 @@ description: 检查 VVCode 定制功能的完整性。验证核心模块（认�
 | `vv-balance.md` | 余额系统 - 状态栏、余额刷新 | ⚠️ Critical |
 | `vv-group.md` | 分组系统 - 分组切换、配置管理 | ⚠️ Critical |
 | `vv-completion.md` | 代码补全 - 智能补全提供器 | ⚠️ Critical |
+| `vv-skills.md` | Skills系统 - Slash command 集成 | ⚠️ Critical |
 | `vv-state.md` | 状态管理 - GlobalState 键定义 | ⚠️ Critical |
+| `vv-ui-customization.md` | 界面自定义 - TaskHeader折叠、VV组件 | ⚠️ Critical |
 | `global-config.md` | 全局配置 - 品牌、网络、构建配置 | ⚠️ Critical |
 
 ## 检查流程
 
-### Step 1: 选择检查模块
+### 自动化流程（推荐）
 
-根据用户需求确定检查范围：
+当调用 `vv-check-integrity` skill 时，AI 会自动执行以下流程：
+
+```bash
+# Step 1: 先运行快速检查（快速失败）
+.claude/skills/vv-check-integrity/quick-check.sh
+
+# Step 2: 如果快速检查通过
+if [ $? -eq 0 ]; then
+    echo "✅ 快速检查通过！关键集成点完整。"
+    # 可选：是否继续详细检查？
+    询问用户："快速检查已通过，是否需要详细的完整性验证？"
+else
+    echo "❌ 快速检查失败，开始详细诊断..."
+    # 进入详细检查流程（Step 3-6）
+fi
+```
+
+### Step 1: 快速检查（新增）
+
+使用 bash 脚本快速验证关键集成点：
+
+```bash
+.claude/skills/vv-check-integrity/quick-check.sh
+```
+
+**检查内容**：
+- VvAuthService 初始化
+- URI 回调路由（`/vv-callback`, `/init-complete`）
+- Controller 回调方法
+- 状态推送配置
+- VV Settings 按钮注册
+- 余额状态栏初始化
+- 核心服务文件存在性
+
+**结果判断**：
+- ✅ 全部通过 → 询问是否需要详细检查
+- ❌ 有失败 → 自动进入详细检查流程
+
+### Step 2: 选择检查模块
+
+根据用户需求或快速检查失败的结果，确定检查范围：
 - 全面检查：所有模块
 - 特定模块：用户指定的模块（如 vv-auth）
-- 功能相关：根据功能描述匹配模块（如"认证" → vv-auth）
+- 问题相关：根据快速检查失败的项目，选择相关模块
 
-### Step 2: 读取模块清单
+### Step 3: 读取模块清单
 
 从 `modules/` 目录读取对应的 `.md` 文件，获取：
 - 模块ID和描述
@@ -53,7 +109,7 @@ description: 检查 VVCode 定制功能的完整性。验证核心模块（认�
 - 必需的文件列表
 - 必需的代码元素（类、方法、变量等）
 
-### Step 3: 文件存在性检查
+### Step 4: 文件存在性检查
 
 对清单中列出的每个文件：
 
@@ -66,7 +122,7 @@ else
 fi
 ```
 
-### Step 4: 代码元素检查
+### Step 5: 代码元素检查
 
 对每个文件，检查必需的代码元素：
 
@@ -82,7 +138,9 @@ fi
 - **导入/导出** - 检查 `import/export` 语句
 - **Proto定义** - 检查 `service/rpc/message` 关键字
 
-### Step 5: 生成检查报告
+⚠️ **命名格式注意**：Proto 文件使用 `snake_case`（如 `vv_inline_completion_enabled`），TypeScript 使用 `camelCase`（如 `vvInlineCompletionEnabled`）。检查时必须使用正确的格式，否则会误报缺失。
+
+### Step 6: 生成检查报告
 
 为每个模块生成检查结果：
 
@@ -126,7 +184,7 @@ fi
   3. 参考模块清单重新实现
 ```
 
-### Step 6: 总结和建议
+### Step 7: 总结和建议
 
 生成总体报告：
 
@@ -135,7 +193,7 @@ fi
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 检查时间: 2026-01-25 19:30:00
-检查范围: 全部模块 (7个)
+检查范围: 全部模块 (9个)
 
 总体状态: ⚠️ 发现问题
 
@@ -144,7 +202,9 @@ fi
   ✅ vv-balance (完整)
   ✅ vv-group (完整)
   ✅ vv-completion (完整)
+  ✅ vv-skills (完整)
   ✅ vv-state (完整)
+  ✅ vv-ui-customization (完整)
   ✅ global-config (完整)
   ❌ vv-auth (2个问题)
 
@@ -170,7 +230,78 @@ fi
 按关键性级别排序：
 
 1. **⚠️ Critical** - 影响核心功能，必须立即修复
-   - vv-auth, vv-settings, vv-balance, vv-group, vv-completion, vv-state, global-config
+   - vv-auth, vv-settings, vv-balance, vv-group, vv-completion, vv-skills, vv-state, vv-ui-customization, global-config
+
+## 重要说明：命名格式差异
+
+### Proto 和 TypeScript 命名转换
+
+VVCode 中存在两种命名格式，**检查时必须注意**：
+
+**Proto 文件（.proto）使用 snake_case：**
+```protobuf
+// proto/cline/state.proto
+optional bool vv_inline_completion_enabled = 174;
+optional string vv_inline_completion_provider = 175;
+optional string vv_inline_completion_model_id = 176;
+optional int32 vv_inline_completion_debounce_ms = 177;
+optional bool vv_inline_completion_use_group_api_key = 178;
+```
+
+**TypeScript 文件（.ts）使用 camelCase：**
+```typescript
+// src/shared/storage/state-keys.ts
+vvInlineCompletionEnabled: { default: false as boolean },
+vvInlineCompletionProvider: { default: "anthropic" as string },
+vvInlineCompletionModelId: { default: "claude-3-5-sonnet-20241022" as string },
+vvInlineCompletionDebounceMs: { default: 300 as number },
+vvInlineCompletionUseGroupApiKey: { default: false as boolean },
+```
+
+### 命名转换规则
+
+1. **Proto → TypeScript**: `snake_case` → `camelCase`
+   - `vv_inline_completion_enabled` → `vvInlineCompletionEnabled`
+   - `vv_user_info` → `vvUserInfo`
+   
+2. **字段映射**: 通过 `scripts/generate-state-proto.mjs` 自动生成
+
+### 检查注意事项
+
+❌ **错误检查方式**：
+```bash
+# 在 TypeScript 文件中搜索 snake_case（会误报缺失）
+grep "vv_inline_completion_enabled" src/shared/storage/state-keys.ts
+```
+
+✅ **正确检查方式**：
+```bash
+# 在 TypeScript 文件中搜索 camelCase
+grep "vvInlineCompletionEnabled" src/shared/storage/state-keys.ts
+
+# 在 Proto 文件中搜索 snake_case
+grep "vv_inline_completion_enabled" proto/cline/state.proto
+```
+
+### 验证方法
+
+检查字段是否完整时，应该：
+1. 在 Proto 文件中搜索 `snake_case` 格式
+2. 在 TypeScript 文件中搜索 `camelCase` 格式
+3. 确认两者数量和类型一致
+
+**示例验证脚本**：
+```bash
+# 统计 Proto 中的 VV 字段数量
+grep -c "vv_inline_completion" proto/cline/state.proto
+# 输出: 5
+
+# 统计 TypeScript 中的 VV 字段数量
+grep -c "vvInlineCompletion" src/shared/storage/state-keys.ts
+# 输出: 5
+
+# 两者相等则完整 ✅
+```
 
 ## 常见问题
 
