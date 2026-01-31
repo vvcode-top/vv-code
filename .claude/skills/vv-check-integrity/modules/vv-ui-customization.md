@@ -120,6 +120,22 @@ grep "VVCode Customization" webview-ui/src/components/menu/Navbar.tsx
 
 ---
 
+### 7. 未登录隐藏输入框
+📁 `webview-ui/src/components/chat/ChatView.tsx`
+
+**必须包含**:
+- `useVvAuth` 用于判断登录态
+- 未登录或需要 Web 初始化时不渲染输入区
+
+**检查命令**:
+```bash
+grep "useVvAuth" webview-ui/src/components/chat/ChatView.tsx
+grep "isAuthenticated" webview-ui/src/components/chat/ChatView.tsx
+grep "vvNeedsWebInit" webview-ui/src/components/chat/ChatView.tsx
+```
+
+---
+
 ## 合并上游高风险文件
 
 以下文件在合并时容易被覆盖，需要特别注意：

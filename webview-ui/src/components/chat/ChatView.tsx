@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo } from "react"
 import { useMount } from "react-use"
 import { normalizeApiConfiguration } from "@/components/settings/utils/providerUtils"
 import { useExtensionState } from "@/context/ExtensionStateContext"
+import { useVvAuth } from "@/hooks/useVvAuth"
 import { FileServiceClient, UiServiceClient } from "@/services/grpc-client"
 import VvWelcomeView from "../onboarding/VvWelcomeView"
 import AutoApproveBar from "./auto-approve-menu/AutoApproveBar"
@@ -48,10 +49,13 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		currentFocusChainChecklist,
 		hooksEnabled,
 		vvGroupConfig,
+		vvNeedsWebInit,
 	} = useExtensionState()
+	const { isAuthenticated: isVvAuthenticated } = useVvAuth()
 
-	// 检查是否有可用的分组（有 apiKey 的分组）
-	const hasAvailableGroup = vvGroupConfig?.some((g) => g.apiKey) ?? false
+	// 仅已登录且分组可用时允许聊天
+	const canChat =
+		isVvAuthenticated && !vvNeedsWebInit && (vvGroupConfig?.some((g) => g.apiKey && g.apiKey.trim() !== "") ?? false)
 
 	//const task = messages.length > 0 ? (messages[0].say === "task" ? messages[0] : undefined) : undefined) : undefined
 	const task = useMemo(() => messages.at(0), [messages]) // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
@@ -334,7 +338,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	}, [task])
 
 	// 没有可用分组时，显示欢迎页
-	if (!hasAvailableGroup) {
+	if (!canChat) {
 		return (
 			<ChatLayout isHidden={isHidden}>
 				<VvWelcomeView />

@@ -38,6 +38,14 @@ check_exists "vvAuthService.*VvAuthService" "src/core/controller/index.ts" "  - 
 check_exists "VvAuthService.initialize(this)" "src/core/controller/index.ts" "  - VvAuthService.initialize 调用"
 echo ""
 
+# 1.5 登出清理检查
+echo "🧹 1.5 登出清理"
+check_exists "clearTask" "src/services/auth/vv/VvAuthService.ts" "  - 登出时清空任务"
+check_exists "taskHistory\\\".*, \\[\\]" "src/services/auth/vv/VvAuthService.ts" "  - 登出时清空 taskHistory"
+check_exists "vvGroupConfig\\\".*, \\[\\]" "src/services/auth/vv/VvAuthService.ts" "  - 登出时清空 vvGroupConfig"
+check_exists "vvNeedsWebInit\\\".*, false" "src/services/auth/vv/VvAuthService.ts" "  - 登出时重置 vvNeedsWebInit"
+echo ""
+
 # 2. URI 回调路由检查
 echo "🌐 2. URI 回调路由"
 check_exists 'case "/vv-callback"' "src/services/uri/SharedUriHandler.ts" "  - /vv-callback 路由"
@@ -106,6 +114,9 @@ check_exists "absolute top-0 right-0" "webview-ui/src/components/chat/auto-appro
 check_exists "showVVSettings.*boolean" "webview-ui/src/context/ExtensionStateContext.tsx" "  - showVVSettings 状态定义"
 check_exists "navigateToVVSettings" "webview-ui/src/context/ExtensionStateContext.tsx" "  - navigateToVVSettings 方法"
 check_exists "showVVSettings.*VvSettingsView" "webview-ui/src/App.tsx" "  - VV设置路由集成"
+check_exists "useVvAuth" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 登录态判断"
+check_exists "isAuthenticated" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 使用 isAuthenticated"
+check_exists "vvNeedsWebInit" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 检查 vvNeedsWebInit"
 if ! grep -q "showWelcome" "webview-ui/src/App.tsx" 2>/dev/null; then
     echo -e "${GREEN}✅${NC}   - App.tsx 无 showWelcome 分支"
 else
