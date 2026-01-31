@@ -108,7 +108,6 @@ export interface ExtensionState {
 	hooksEnabled?: boolean
 	remoteConfigSettings?: Partial<RemoteConfigFields>
 	subagentsEnabled?: boolean
-	skillsEnabled?: boolean
 	globalSkillsToggles?: Record<string, boolean>
 	localSkillsToggles?: Record<string, boolean>
 	availableSkills?: SkillMetadata[] // Skills metadata for slash command autocomplete

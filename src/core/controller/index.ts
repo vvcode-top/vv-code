@@ -897,7 +897,6 @@ export class Controller {
 		const lastDismissedCliBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedCliBannerVersion") || 0
 		const dismissedBanners = this.stateManager.getGlobalStateKey("dismissedBanners")
 		const subagentsEnabled = this.stateManager.getGlobalSettingsKey("subagentsEnabled")
-		const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
 
 		const availableSkills = await this.getAvailableSkillsMetadata()
 
@@ -1022,7 +1021,6 @@ export class Controller {
 			nativeToolCallSetting: this.stateManager.getGlobalStateKey("nativeToolCallEnabled"),
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
-			skillsEnabled,
 			availableSkills,
 			// VVCode Customization: 分组配置
 			vvGroupConfig,
