@@ -1044,7 +1044,7 @@ export class Controller {
 	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
 		try {
 			const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
-			if (!skillsEnabled) {
+			if (skillsEnabled === false) {
 				return []
 			}
 

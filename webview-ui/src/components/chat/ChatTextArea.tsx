@@ -782,7 +782,26 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					const slashIndex = beforeCursor.lastIndexOf("/")
 					const query = newValue.slice(slashIndex + 1, newCursorPosition)
 					setSlashCommandsQuery(query)
-					setSelectedSlashCommandsIndex(0)
+
+					const slashCommandValidation = validateSlashCommand(
+						query,
+						localWorkflowToggles,
+						globalWorkflowToggles,
+						remoteWorkflowToggles,
+						remoteConfigSettings?.remoteGlobalWorkflows,
+						availableSkills,
+						mcpServers,
+					)
+					const matchingSlashCommands = getMatchingSlashCommands(
+						query,
+						localWorkflowToggles,
+						globalWorkflowToggles,
+						remoteWorkflowToggles,
+						remoteConfigSettings?.remoteGlobalWorkflows,
+						availableSkills,
+						mcpServers,
+					)
+					setSelectedSlashCommandsIndex(matchingSlashCommands.length > 0 && slashCommandValidation ? 0 : -1)
 				} else {
 					setSlashCommandsQuery("")
 					setSelectedSlashCommandsIndex(0)
@@ -849,7 +868,17 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					setFileSearchResults([])
 				}
 			},
-			[setInputValue, setFileSearchResults, selectedType],
+			[
+				availableSkills,
+				globalWorkflowToggles,
+				localWorkflowToggles,
+				mcpServers,
+				remoteConfigSettings,
+				remoteWorkflowToggles,
+				selectedType,
+				setFileSearchResults,
+				setInputValue,
+			],
 		)
 
 		useEffect(() => {
@@ -1021,6 +1050,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					remoteWorkflowToggles,
 					remoteConfigSettings?.remoteGlobalWorkflows,
 					availableSkills,
+					mcpServers,
 				)
 
 				if (isValidCommand) {
