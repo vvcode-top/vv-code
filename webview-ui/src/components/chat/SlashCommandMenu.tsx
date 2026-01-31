@@ -154,6 +154,8 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 							"Workflows",
 							defaultCommands.length + skillCommands.length,
 							false,
+						)}
+						{renderCommandSection(
 							mcpCommands,
 							"MCP Prompts",
 							defaultCommands.length + skillCommands.length + workflowCommands.length,

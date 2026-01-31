@@ -17,7 +17,8 @@ public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").Ski
 ```
 
 **必须包含的逻辑**:
-- 检查 `skillsEnabled` 设置
+- 若存在 `skillsEnabled` 且显式为 `false`，返回空（兼容旧版本）
+- 否则默认启用 Skills
 - 调用 `discoverSkills(cwd)` 发现 skills
 - 调用 `getAvailableSkills()` 解析 skills
 - 根据 toggle 状态过滤
@@ -41,7 +42,6 @@ const availableSkills = await this.getAvailableSkillsMetadata()
 
 // 返回对象中包含
 return {
-    skillsEnabled,
     availableSkills,  // ← 必须
 }
 ```
@@ -109,22 +109,6 @@ grep "availableSkills" webview-ui/src/utils/slash-commands.ts | wc -l  # 应该 
 
 ---
 
-## 状态管理
-
-### Skills 默认启用
-📁 `src/shared/storage/state-keys.ts`
-
-```typescript
-skillsEnabled: { default: true as boolean },  // ← 必须为 true
-```
-
-**检查方法**:
-```bash
-grep "skillsEnabled" src/shared/storage/state-keys.ts | grep -q "default: true"
-```
-
----
-
 ## 快速检查清单
 
 运行以下命令验证所有集成点：
@@ -144,8 +128,8 @@ COUNT=$(grep -A 6 "validateSlashCommand" webview-ui/src/components/chat/ChatText
 COUNT=$(grep -A 6 "getMatchingSlashCommands" webview-ui/src/components/chat/ChatTextArea.tsx | grep -c "availableSkills")
 [ $COUNT -ge 3 ] && echo "✅ ($COUNT/3)" || echo "❌ ($COUNT/3)"
 
-# 5. Skills 默认启用
-grep "skillsEnabled" src/shared/storage/state-keys.ts | grep -q "default: true" && echo "✅" || echo "❌"
+# 5. Slash command 工具函数
+grep "getSkillCommands" webview-ui/src/utils/slash-commands.ts && echo "✅" || echo "❌"
 ```
 
 ---
@@ -156,15 +140,14 @@ grep "skillsEnabled" src/shared/storage/state-keys.ts | grep -q "default: true" 
 **原因**: `availableSkills` 未传递给相关函数
 **检查**: 运行上面的快速检查清单
 
-### Skills 默认禁用
-**原因**: `state-keys.ts` 中 `skillsEnabled` 默认值为 `false`
-**修复**: 改为 `default: true`
+### Skills 不显示（新版本）
+**原因**: `skillsEnabled` 已移除或不再作为默认开关；需检查 Skills 元数据获取与前端传递链路
+**修复**: 确认 `getAvailableSkillsMetadata` 返回值与前端 `availableSkills` 透传
 
 ---
 
 ## 依赖关系
 
 - 依赖 Skills 发现系统 (`discoverSkills`, `getAvailableSkills`)
-- 依赖 StateManager (`skillsEnabled` 设置)
 - 依赖 ExtensionState (前后端同步)
 - 被 Slash Command 系统使用

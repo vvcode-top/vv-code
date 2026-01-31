@@ -1043,11 +1043,6 @@ export class Controller {
 
 	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
 		try {
-			const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
-			if (skillsEnabled === false) {
-				return []
-			}
-
 			const { discoverSkills, getAvailableSkills } = await import("../context/instructions/user-instructions/skills")
 			const cwd = this.workspaceManager?.getPrimaryRoot()?.path || (await getCwd(getDesktopDir()))
 			const allSkills = await discoverSkills(cwd)

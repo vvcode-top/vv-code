@@ -23,6 +23,21 @@ grep "expandTaskHeader.*useState(false)" webview-ui/src/context/ExtensionStateCo
 
 ---
 
+### 1.5. 输入框上方浮动 Auto-Approve 按钮
+📁 `webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx`
+
+**必须包含浮动折叠按钮**（VVCode 自定义）:
+- 折叠状态时使用 `absolute` 浮动定位
+- 使用 `codicon-fold-up` 作为折叠按钮图标
+
+**检查命令**:
+```bash
+grep "codicon-fold-up" webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx
+grep "absolute top-0 right-0" webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx
+```
+
+---
+
 ### 2. VV状态管理
 📁 `webview-ui/src/context/ExtensionStateContext.tsx`
 

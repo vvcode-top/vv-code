@@ -79,6 +79,22 @@ message VvConfigEntry {
   string value = 2;
 }
 
+// VVCode 分组配置项
+message VvGroupItem {
+  string type = 1;
+  string name = 2;
+  string default_model_id = 3;
+  string api_provider = 4;
+  string api_key = 5;
+  optional string api_base_url = 6;
+  bool is_default = 7;
+}
+
+// VVCode 分组配置列表
+message VvGroupConfig {
+  repeated VvGroupItem groups = 1;
+}
+
 // VVCode 系统状态
 message VvSystemStatus {
   bool announcements_enabled = 1; // 是否启用公告功能

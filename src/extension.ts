@@ -129,8 +129,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
-	// Clean up old temp files in background (non-blocking) and start periodic cleanup every 24 hours
-	ClineTempManager.startPeriodicCleanup()
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(VscodeWebviewProvider.SIDEBAR_ID, webview, {
 			webviewOptions: { retainContextWhenHidden: true },

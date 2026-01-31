@@ -1,4 +1,3 @@
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react"
 import { useRef, useState } from "react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { getAsVar, VSC_TITLEBAR_INACTIVE_FOREGROUND } from "@/utils/vscStyles"
@@ -62,9 +61,13 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 		)
 	}
 
+	const toggleModal = () => {
+		setIsModalVisible((prev) => !prev)
+	}
+
 	const borderColor = `color-mix(in srgb, ${getAsVar(VSC_TITLEBAR_INACTIVE_FOREGROUND)} 20%, transparent)`
 	const borderGradient = `linear-gradient(to bottom, ${borderColor} 0%, transparent 50%)`
-	const bgGradient = `linear-gradient(to bottom, color-mix(in srgb, var(--vscode-sideBar-background) 96%, white) 0%, transparent 80%)`
+	const bgColor = `color-mix(in srgb, var(--vscode-sideBar-background) 98%, white)`
 
 	// If YOLO mode is enabled, show disabled message
 	if (yoloModeToggled) {
@@ -74,7 +77,7 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 				style={{
 					borderTop: `0.5px solid ${borderColor}`,
 					borderRadius: "4px 4px 0 0",
-					background: bgGradient,
+					background: bgColor,
 					opacity: 0.5,
 					...style,
 				}}>
@@ -113,13 +116,58 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 		)
 	}
 
+	// Collapsed state - show only icon on the right (floating)
+	if (!isModalVisible) {
+		return (
+			<div
+				className="absolute top-0 right-0 z-10 pointer-events-none"
+				style={{ transform: "translateY(-100%)", paddingRight: "14px", paddingBottom: "1px", ...style }}>
+				<div
+					aria-label="Open auto-approve settings"
+					className="cursor-pointer rounded hover:opacity-100 transition-all pointer-events-auto"
+					onClick={toggleModal}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault()
+							e.stopPropagation()
+							toggleModal()
+						}
+					}}
+					ref={buttonRef}
+					style={{
+						display: "inline-flex",
+						alignItems: "center",
+						justifyContent: "center",
+						padding: "6px 8px",
+						minWidth: "32px",
+						minHeight: "28px",
+						color: "var(--vscode-foreground)",
+						backgroundColor: bgColor,
+						opacity: 0.95,
+						boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+					}}
+					tabIndex={0}>
+					<span className="codicon codicon-fold-up" style={{ fontSize: "16px" }} />
+				</div>
+
+				<AutoApproveModal
+					ACTION_METADATA={ACTION_METADATA}
+					buttonRef={buttonRef}
+					isVisible={isModalVisible}
+					setIsVisible={setIsModalVisible}
+				/>
+			</div>
+		)
+	}
+
+	// Expanded state - show full bar with actions
 	return (
 		<div
 			className="mx-3.5 select-none break-words relative"
 			style={{
 				borderTop: `0.5px solid ${borderColor}`,
 				borderRadius: "4px 4px 0 0",
-				background: bgGradient,
+				background: bgColor,
 				...style,
 			}}>
 			{/* Left border gradient */}
@@ -144,16 +192,14 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 			/>
 
 			<div
-				aria-label={isModalVisible ? "Close auto-approve settings" : "Open auto-approve settings"}
+				aria-label="Close auto-approve settings"
 				className="group cursor-pointer pt-3 pb-3.5 pr-2 px-3.5 flex items-center justify-between gap-0"
-				onClick={() => {
-					setIsModalVisible((prev) => !prev)
-				}}
+				onClick={toggleModal}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
 						e.preventDefault()
 						e.stopPropagation()
-						setIsModalVisible((prev) => !prev)
+						toggleModal()
 					}
 				}}
 				ref={buttonRef}
@@ -162,7 +208,7 @@ const AutoApproveBar = ({ style }: AutoApproveBarProps) => {
 					<span className="whitespace-nowrap">Auto-approve:</span>
 					{getEnabledActionsText()}
 				</div>
-				{isModalVisible ? <ChevronDownIcon size={16} /> : <ChevronRightIcon size={16} />}
+				<span className="codicon codicon-chevron-down" />
 			</div>
 
 			<AutoApproveModal
