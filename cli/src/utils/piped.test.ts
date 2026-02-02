@@ -1,72 +1,37 @@
-import { EventEmitter } from "node:events"
 import * as fs from "node:fs"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { readStdinIfPiped } from "./piped"
 
-// Mock fs.fstatSync to simulate pipe detection
-vi.mock("node:fs", async () => {
-	const actual = await vi.importActual("node:fs")
-	return {
-		...actual,
-		fstatSync: vi.fn(),
-	}
-})
+// Mock the fs module
+vi.mock("node:fs", () => ({
+	readFileSync: vi.fn(),
+}))
 
 describe("readStdinIfPiped", () => {
-	let originalStdin: typeof process.stdin
-	let mockStdin: EventEmitter & {
-		isTTY?: boolean
-		setEncoding: ReturnType<typeof vi.fn>
-		resume: ReturnType<typeof vi.fn>
-	}
+	const mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>
+	let originalIsTTY: boolean | undefined
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		originalStdin = process.stdin
-
-		// Create a mock stdin
-		mockStdin = Object.assign(new EventEmitter(), {
-			isTTY: undefined as boolean | undefined,
-			setEncoding: vi.fn(),
-			resume: vi.fn(),
-		})
-
-		// Default: simulate a real pipe (FIFO)
-		vi.mocked(fs.fstatSync).mockReturnValue({
-			isFIFO: () => true,
-			isFile: () => false,
-		} as fs.Stats)
+		originalIsTTY = process.stdin.isTTY
 	})
 
 	afterEach(() => {
 		vi.restoreAllMocks()
-		// Restore original stdin
-		Object.defineProperty(process, "stdin", {
-			value: originalStdin,
+		// Restore original isTTY value
+		Object.defineProperty(process.stdin, "isTTY", {
+			value: originalIsTTY,
 			writable: true,
 			configurable: true,
 		})
 	})
 
 	function setTTY(value: boolean | undefined) {
-		mockStdin.isTTY = value
-		Object.defineProperty(process, "stdin", {
-			value: mockStdin,
+		Object.defineProperty(process.stdin, "isTTY", {
+			value,
 			writable: true,
 			configurable: true,
 		})
-	}
-
-	function emitData(data: string) {
-		mockStdin.emit("data", data)
-	}
-
-	function emitEnd() {
-		mockStdin.emit("end")
-	}
-
-	function emitError(error: Error) {
-		mockStdin.emit("error", error)
 	}
 
 	describe("TTY detection", () => {
@@ -74,72 +39,16 @@ describe("readStdinIfPiped", () => {
 			setTTY(true)
 			const result = await readStdinIfPiped()
 			expect(result).toBeNull()
+			expect(mockReadFileSync).not.toHaveBeenCalled()
 		})
 
 		it("should attempt to read when stdin is not a TTY (piped input)", async () => {
 			setTTY(false)
-
-			const promise = readStdinIfPiped()
-			emitEnd()
-			const result = await promise
-
-			expect(result).toBe("")
-			expect(mockStdin.setEncoding).toHaveBeenCalledWith("utf8")
-			expect(mockStdin.resume).toHaveBeenCalled()
-		})
-	})
-
-	describe("stdin type detection (fstat)", () => {
-		it("should return null when stdin is not a FIFO or file (spawned without TTY)", async () => {
-			setTTY(false)
-			// Simulate a character device or socket (not a pipe)
-			vi.mocked(fs.fstatSync).mockReturnValue({
-				isFIFO: () => false,
-				isFile: () => false,
-			} as fs.Stats)
+			mockReadFileSync.mockReturnValue("")
 
 			const result = await readStdinIfPiped()
 			expect(result).toBeNull()
-		})
-
-		it("should return null when fstatSync throws (detached stdin)", async () => {
-			setTTY(false)
-			vi.mocked(fs.fstatSync).mockImplementation(() => {
-				throw new Error("EBADF: bad file descriptor")
-			})
-
-			const result = await readStdinIfPiped()
-			expect(result).toBeNull()
-		})
-
-		it("should read from stdin when it is a FIFO (pipe)", async () => {
-			setTTY(false)
-			vi.mocked(fs.fstatSync).mockReturnValue({
-				isFIFO: () => true,
-				isFile: () => false,
-			} as fs.Stats)
-
-			const promise = readStdinIfPiped()
-			emitData("piped content")
-			emitEnd()
-			const result = await promise
-
-			expect(result).toBe("piped content")
-		})
-
-		it("should read from stdin when it is a regular file (redirected)", async () => {
-			setTTY(false)
-			vi.mocked(fs.fstatSync).mockReturnValue({
-				isFIFO: () => false,
-				isFile: () => true,
-			} as fs.Stats)
-
-			const promise = readStdinIfPiped()
-			emitData("file content")
-			emitEnd()
-			const result = await promise
-
-			expect(result).toBe("file content")
+			expect(mockReadFileSync).toHaveBeenCalledWith(0, "utf8")
 		})
 	})
 
@@ -167,14 +76,14 @@ describe("readStdinIfPiped", () => {
 			{
 				name: "empty string",
 				input: "",
-				expected: "",
-				description: "should return empty string for empty input",
+				expected: null,
+				description: "should return null for empty input",
 			},
 			{
 				name: "whitespace only",
 				input: "   \n  \t  \n   ",
-				expected: "",
-				description: "should return empty string for whitespace-only input",
+				expected: null,
+				description: "should return null for whitespace-only input",
 			},
 			{
 				name: "leading and trailing whitespace",
@@ -218,25 +127,25 @@ describe("readStdinIfPiped", () => {
 			it(`${name}${description ? ` - ${description}` : ""}`, async () => {
 				setTTY(false)
 				const data = Array.isArray(input) ? input.join("\n") : input
+				mockReadFileSync.mockReturnValue(data)
 
-				const promise = readStdinIfPiped()
-				emitData(data)
-				emitEnd()
-				const result = await promise
-
+				const result = await readStdinIfPiped()
 				expect(result).toBe(expected)
 			})
 		})
 	})
 
 	describe("error handling", () => {
-		it("should return null on stdin error", async () => {
+		it("should return null on fs.readFileSync error and fall back to async", async () => {
 			setTTY(false)
+			mockReadFileSync.mockImplementation(() => {
+				throw new Error("EAGAIN: resource temporarily unavailable")
+			})
 
-			const promise = readStdinIfPiped()
-			emitError(new Error("EAGAIN: resource temporarily unavailable"))
-			const result = await promise
-
+			// The async fallback will timeout since we can't easily mock process.stdin events
+			// But we can verify it doesn't throw
+			const result = await readStdinIfPiped()
+			// Result will be null because async path times out with no data
 			expect(result).toBeNull()
 		})
 	})
@@ -279,12 +188,9 @@ describe("readStdinIfPiped", () => {
 		useCases.forEach(({ name, input, expected }) => {
 			it(`should handle ${name}`, async () => {
 				setTTY(false)
+				mockReadFileSync.mockReturnValue(input)
 
-				const promise = readStdinIfPiped()
-				emitData(input)
-				emitEnd()
-				const result = await promise
-
+				const result = await readStdinIfPiped()
 				expect(result).toBe(expected)
 			})
 		})

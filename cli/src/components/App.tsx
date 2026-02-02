@@ -81,6 +81,13 @@ interface AppProps {
 	globalSkills?: SkillInfo[]
 	localSkills?: SkillInfo[]
 	onToggleSkill?: (isGlobal: boolean, skillPath: string, enabled: boolean) => void
+	// For auth view
+	authQuickSetup?: {
+		provider?: string
+		apikey?: string
+		modelid?: string
+		baseurl?: string
+	}
 	// For welcome view
 	onWelcomeSubmit?: (prompt: string, imagePaths: string[]) => void
 	onWelcomeExit?: () => void
@@ -126,6 +133,7 @@ export const App: React.FC<AppProps> = ({
 	globalSkills,
 	localSkills,
 	onToggleSkill,
+	authQuickSetup,
 	onWelcomeSubmit,
 	onWelcomeExit,
 	initialPrompt,
@@ -229,6 +237,7 @@ export const App: React.FC<AppProps> = ({
 					onComplete={onComplete}
 					onError={onError}
 					onNavigateToWelcome={handleNavigateToWelcome}
+					quickSetup={authQuickSetup}
 				/>
 			)
 			break

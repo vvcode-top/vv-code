@@ -10,7 +10,6 @@ import { CLINE_ACCOUNT_AUTH_ERROR_MESSAGE } from "@shared/ClineAccount"
 import { COMMAND_OUTPUT_STRING } from "@shared/combineCommandSequences"
 import type { ClineAskUseMcpServer, ClineMessage } from "@shared/ExtensionMessage"
 import { Box, Text } from "ink"
-import Spinner from "ink-spinner"
 import React from "react"
 import { COLORS } from "../constants/colors"
 import { useTerminalSize } from "../hooks/useTerminalSize"
@@ -19,14 +18,12 @@ import { getToolDescription, isFileEditTool, parseToolFromMessage } from "../uti
 import { DiffView } from "./DiffView"
 
 /**
- * Add "(Tab)" hint after "Act mode" mentions.
+ * Add "(Tab)" hint after "to Act Mode" mentions.
  * Case-insensitive, avoids double-adding if already present.
- * Matches just "Act mode" without requiring "to " prefix because markdown
- * processing may split "toggle to **Act mode**" into separate text chunks.
  */
 function addActModeHint(text: string): React.ReactNode[] {
-	// Match "Act mode" in various capitalizations, but not if already followed by (Tab)
-	const actModeRegex = /\bact\s+mode\b(?!\s*\(tab\))/gi
+	// Match "to Act Mode" in various capitalizations, but not if already followed by (Tab)
+	const actModeRegex = /\bto\s+Act\s+Mode\b(?!\s*\(Tab\))/gi
 	const parts = text.split(actModeRegex)
 	const matches = text.match(actModeRegex)
 
@@ -54,7 +51,7 @@ function addActModeHint(text: string): React.ReactNode[] {
 
 /**
  * Render inline markdown: **bold**, *italic*, `code`
- * Also adds "(Tab)" hints after "Act mode" mentions.
+ * Also adds "(Tab)" hints after "to Act Mode" mentions.
  * Returns array of React nodes with appropriate styling
  */
 function renderInlineMarkdown(text: string): React.ReactNode[] {
@@ -127,20 +124,10 @@ interface ChatMessageProps {
  * For this to work properly, parent containers must have width="100%"
  * so flexGrow={1} on the content box has a reference width to fill.
  */
-const DotRow: React.FC<{ children: React.ReactNode; color?: string; flashing?: boolean }> = ({
-	children,
-	color,
-	flashing = false,
-}) => (
+const DotRow: React.FC<{ children: React.ReactNode; color?: string }> = ({ children, color }) => (
 	<Box flexDirection="row">
 		<Box width={2}>
-			{flashing ? (
-				<Text color={color}>
-					<Spinner type="toggle8" />
-				</Text>
-			) : (
-				<Text color={color}>⏺</Text>
-			)}
+			<Text color={color}>⏺</Text>
 		</Box>
 		<Box flexGrow={1}>{children}</Box>
 	</Box>
@@ -234,8 +221,8 @@ function formatToolResult(result: string, maxLines: number = 5): string[] {
 	return displayLines
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStreaming }) => {
-	const { type, ask, say, text, partial } = message
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
+	const { type, ask, say, text } = message
 	const toolColor = mode === "plan" ? "yellow" : COLORS.primaryBlue
 	const { columns: terminalWidth } = useTerminalSize()
 
@@ -291,11 +278,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 			if (isFileEditTool(toolInfo.toolName) && filePath && toolInfo.args.content) {
 				return (
 					<Box flexDirection="column" marginBottom={1} width="100%">
-						<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+						<DotRow color={toolColor}>
 							<ToolCallText args={toolInfo.args} isAsk={isToolAsk} mode={mode} toolName={toolInfo.toolName} />
 						</DotRow>
 						<Box marginLeft={2}>
-							<DiffView content={toolInfo.args.content as string} filePath={filePath as string | undefined} />
+							<DiffView content={toolInfo.args.content} filePath={filePath as string | undefined} />
 						</Box>
 					</Box>
 				)
@@ -310,7 +297,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 
 			return (
 				<Box flexDirection="column" marginBottom={1} width="100%">
-					<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+					<DotRow color={toolColor}>
 						<ToolCallText args={toolInfo.args} isAsk={isToolAsk} mode={mode} toolName={toolInfo.toolName} />
 					</DotRow>
 					{contentLines.length > 0 && (
@@ -329,7 +316,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 		if (isToolSay) {
 			return (
 				<Box flexDirection="column" marginBottom={1} width="100%">
-					<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+					<DotRow color={toolColor}>
 						<Text color={toolColor}>{truncate(text, 100)}</Text>
 					</DotRow>
 				</Box>
@@ -351,7 +338,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+				<DotRow color={toolColor}>
 					<Text>
 						<Text color={toolColor}>{label}</Text>
 						<Text>{truncate(command, 120)}</Text>
@@ -390,12 +377,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 	if ((type === "ask" && ask === "use_mcp_server") || say === "use_mcp_server") {
 		const isAsk = type === "ask"
 		const parsed = text
-			? jsonParseSafe<Partial<ClineAskUseMcpServer> & { serverName: string }>(text, {
-					type: undefined,
+			? jsonParseSafe<ClineAskUseMcpServer>(text, {
+					type: undefined as ClineAskUseMcpServer["type"] | undefined,
 					serverName: "unknown server",
-					toolName: undefined,
-					arguments: undefined,
-					uri: undefined,
+					toolName: undefined as string | undefined,
+					arguments: undefined as string | undefined,
+					uri: undefined as string | undefined,
 				})
 			: undefined
 
@@ -421,7 +408,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+				<DotRow color={toolColor}>
 					<Text>
 						<Text color={toolColor}>{actionLabel}</Text>
 						<Text>{`: ${serverName}`}</Text>
@@ -451,7 +438,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 		const lines = formatToolResult(text, 8)
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+				<DotRow color={toolColor}>
 					<Text color={toolColor}>MCP response</Text>
 				</DotRow>
 				<Box flexDirection="column" marginLeft={2} width="100%">
@@ -592,7 +579,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 	if (say === "browser_action" || say === "browser_action_launch") {
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+				<DotRow color={toolColor}>
 					<Text>
 						<Text color={toolColor}>Cline used the browser</Text>
 						{text && (
@@ -611,7 +598,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 	if (say === "mcp_server_request_started") {
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={toolColor} flashing={partial === true && isStreaming}>
+				<DotRow color={toolColor}>
 					<Text>
 						<Text color={toolColor}>Cline is using an MCP tool</Text>
 						{text && (
@@ -739,7 +726,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 	if (type === "ask" && ask === "condense" && text) {
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={COLORS.primaryBlue} flashing={partial === true && isStreaming}>
+				<DotRow color={COLORS.primaryBlue}>
 					<Text bold color={COLORS.primaryBlue}>
 						Cline wants to condense your conversation:
 					</Text>
@@ -755,7 +742,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 	if (type === "ask" && ask === "summarize_task" && text) {
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={COLORS.primaryBlue} flashing={partial === true && isStreaming}>
+				<DotRow color={COLORS.primaryBlue}>
 					<Text bold color={COLORS.primaryBlue}>
 						Cline wants to summarize the task:
 					</Text>
@@ -771,7 +758,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode, isStrea
 	if (type === "ask" && ask === "report_bug" && text) {
 		return (
 			<Box flexDirection="column" marginBottom={1} width="100%">
-				<DotRow color={COLORS.primaryBlue} flashing={partial === true && isStreaming}>
+				<DotRow color={COLORS.primaryBlue}>
 					<Text bold color={COLORS.primaryBlue}>
 						Cline wants to create a Github issue:
 					</Text>

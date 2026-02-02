@@ -20,13 +20,11 @@ interface PanelProps {
 	tabs?: PanelTab[]
 	/** Current tab key - required when tabs are provided */
 	currentTab?: string
-	/** Whether currently in a subpage (shows "Esc to go back" and hides arrow key hint) */
-	isSubpage?: boolean
 	/** Panel content */
 	children: ReactNode
 }
 
-export const Panel: React.FC<PanelProps> = ({ label, tabs, currentTab, isSubpage, children }) => {
+export const Panel: React.FC<PanelProps> = ({ label, tabs, currentTab, children }) => {
 	const { columns } = useTerminalSize()
 	const currentTabIndex = currentTab && tabs ? tabs.findIndex((t) => t.key === currentTab) : 0
 
@@ -37,7 +35,7 @@ export const Panel: React.FC<PanelProps> = ({ label, tabs, currentTab, isSubpage
 				<Text bold color={COLORS.primaryBlue}>
 					{label}
 				</Text>
-				<Text color="gray"> (Esc to {isSubpage ? "go back" : "close"})</Text>
+				<Text color="gray"> (Esc to close)</Text>
 			</Box>
 
 			{/* Tab bar if tabs are provided */}
@@ -55,7 +53,7 @@ export const Panel: React.FC<PanelProps> = ({ label, tabs, currentTab, isSubpage
 							</Text>
 						)
 					})}
-					{!isSubpage && <Text color="gray"> (←/→)</Text>}
+					<Text color="gray"> (←/→)</Text>
 				</Box>
 			)}
 

@@ -337,7 +337,9 @@ export class ClineAgent implements acp.Agent {
 
 		// Use provider-specific model ID key (e.g., cline uses actModeOpenRouterModelId)
 		const modelKey = currentProvider ? getProviderModelIdKey(currentProvider, mode) : null
-		const currentModelId = modelKey ? stateManager.getGlobalSettingsKey(modelKey) : undefined
+		const currentModelId = modelKey
+			? (stateManager.getGlobalSettingsKey(modelKey as string) as string | undefined)
+			: undefined
 
 		// Build the current model ID in provider/model format
 		const currentFullModelId =
@@ -1158,8 +1160,8 @@ export class ClineAgent implements acp.Agent {
 
 		if (currentProvider === "cline") {
 			// For Cline provider, check if we have stored auth data
-			const values = await Promise.all(["clineApiKey", "clineAccountId"].map((key) => secretStorage.get(key)))
-			return values.some(Boolean)
+			const authData = await secretStorage.get("cline:clineAccountId")
+			return !!authData
 		}
 
 		// For OpenAI Codex provider, check OAuth credentials

@@ -9,16 +9,16 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { StateManager } from "@/core/storage/StateManager"
 import { openAiCodexOAuthManager } from "@/integrations/openai-codex/oauth"
 import { AuthService } from "@/services/auth/AuthService"
-import { liteLlmDefaultModelId, openAiCodexDefaultModelId, openRouterDefaultModelId } from "@/shared/api"
+import type { ApiProvider } from "@/shared/api"
+import { openAiCodexDefaultModelId, openRouterDefaultModelId } from "@/shared/api"
+import { getProviderModelIdKey, ProviderToApiKeyMap } from "@/shared/storage"
 import { openExternal } from "@/utils/env"
 import { COLORS } from "../constants/colors"
 import { getAllFeaturedModels } from "../constants/featured-models"
 import { useStdinContext } from "../context/StdinContext"
-import { useOcaAuth } from "../hooks/useOcaAuth"
 import { useScrollableList } from "../hooks/useScrollableList"
 import { type DetectedSources, detectImportSources, type ImportSource } from "../utils/import-configs"
 import { isMouseEscapeSequence } from "../utils/input"
-import { applyBedrockConfig, applyProviderConfig } from "../utils/provider-config"
 import { ApiKeyInput } from "./ApiKeyInput"
 import { StaticRobotFrame } from "./AsciiMotionCli"
 import { type BedrockConfig, BedrockSetup } from "./BedrockSetup"
@@ -42,7 +42,6 @@ type AuthStep =
 	| "success"
 	| "error"
 	| "cline_auth"
-	| "oca_auth"
 	| "cline_model"
 	| "openai_codex_auth"
 	| "bedrock"
@@ -56,6 +55,13 @@ interface AuthViewProps {
 	onComplete?: () => void
 	onError?: () => void
 	onNavigateToWelcome?: () => void
+	// Quick setup options
+	quickSetup?: {
+		provider?: string
+		apikey?: string
+		modelid?: string
+		baseurl?: string
+	}
 }
 
 interface SelectItem {
@@ -147,9 +153,9 @@ const TextInput: React.FC<{
 	)
 }
 
-export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onError, onNavigateToWelcome }) => {
+export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onError, onNavigateToWelcome, quickSetup }) => {
 	const { exit } = useApp()
-	const [step, setStep] = useState<AuthStep>("menu")
+	const [step, setStep] = useState<AuthStep>(quickSetup ? "saving" : "menu")
 	const [selectedProvider, setSelectedProvider] = useState<string>(
 		StateManager.get().getApiConfiguration().actModeApiProvider ||
 			StateManager.get().getApiConfiguration().planModeApiProvider ||
@@ -166,29 +172,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 	const [importSources, setImportSources] = useState<DetectedSources>({ codex: false, opencode: false })
 	const [importSource, setImportSource] = useState<ImportSource | null>(null)
 	const [bedrockConfig, setBedrockConfig] = useState<BedrockConfig | null>(null)
-
-	// OCA auth hook - enabled when step is oca_auth
-	const handleOcaAuthSuccess = useCallback(async () => {
-		await applyProviderConfig({ providerId: "oca", controller })
-		const stateManager = StateManager.get()
-		stateManager.setGlobalState("welcomeViewCompleted", true)
-		await stateManager.flushPendingState()
-		setSelectedProvider("oca")
-		setModelId(liteLlmDefaultModelId)
-		setStep("success")
-	}, [controller])
-
-	const handleOcaAuthError = useCallback((error: Error) => {
-		setErrorMessage(error.message)
-		setStep("error")
-	}, [])
-
-	const { startAuth: initiateOcaAuth } = useOcaAuth({
-		controller,
-		enabled: step === "oca_auth",
-		onSuccess: handleOcaAuthSuccess,
-		onError: handleOcaAuthError,
-	})
 
 	// Use providers.json order, filtered to exclude CLI-incompatible providers
 	const sortedProviders = useMemo(() => {
@@ -260,6 +243,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 		}
 	}, [step, selectedProvider])
 
+	// Handle quick setup
+	useEffect(() => {
+		if (quickSetup && step === "saving") {
+			handleQuickSetup()
+		}
+	}, [quickSetup, step])
+
 	// Subscribe to auth status updates when in cline_auth step
 	useEffect(() => {
 		if (step !== "cline_auth") {
@@ -275,8 +265,22 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 			}
 
 			if (authState.user && authState.user.email) {
-				// Auth succeeded - save configuration and transition to model selection
-				await applyProviderConfig({ providerId: "cline", controller })
+				// Auth succeeded - save configuration and transition to success
+				const stateManager = StateManager.get()
+				const mode = stateManager.getGlobalSettingsKey("mode") || "act"
+				const providerKey = mode === "act" ? "actModeApiProvider" : "planModeApiProvider"
+				// Use provider-specific model ID key (cline uses OpenRouterModelId)
+				const modelIdKey = getProviderModelIdKey("cline" as ApiProvider, mode as "act" | "plan")
+				const config: Record<string, string> = {
+					actModeApiProvider: "cline",
+					[providerKey]: "cline",
+				}
+				if (modelIdKey) {
+					config[modelIdKey] = openRouterDefaultModelId
+				}
+				stateManager.setApiConfiguration(config)
+				stateManager.flushPendingState()
+
 				setSelectedProvider("cline")
 				setModelId(openRouterDefaultModelId)
 				setStep("cline_model")
@@ -292,6 +296,84 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 		}
 	}, [step, controller])
 
+	const handleQuickSetup = async () => {
+		if (!quickSetup) {
+			return
+		}
+
+		try {
+			const { provider, apikey, modelid, baseurl } = quickSetup
+
+			// Validate required parameters
+			if (!provider || !apikey || !modelid) {
+				setErrorMessage("Quick setup requires --provider, --apikey, and --modelid flags")
+				setStep("error")
+				return
+			}
+
+			const normalizedProvider = provider.toLowerCase().trim()
+
+			if (!sortedProviders.includes(normalizedProvider)) {
+				setErrorMessage(`Invalid provider '${provider}'. Supported providers: ${sortedProviders.join(", ")}`)
+				setStep("error")
+				return
+			}
+
+			if (normalizedProvider === "bedrock") {
+				setErrorMessage(
+					"Bedrock provider is not supported for quick setup due to complex authentication requirements. Please use interactive setup.",
+				)
+				setStep("error")
+				return
+			}
+
+			if (baseurl && !["openai", "openai-native"].includes(normalizedProvider)) {
+				setErrorMessage("Base URL is only supported for OpenAI and OpenAI-compatible providers")
+				setStep("error")
+				return
+			}
+
+			// Save configuration
+			const stateManager = StateManager.get()
+			// Use provider-specific model ID keys (e.g., cline uses actModeOpenRouterModelId)
+			const actModelKey = getProviderModelIdKey(normalizedProvider as ApiProvider, "act")
+			const planModelKey = getProviderModelIdKey(normalizedProvider as ApiProvider, "plan")
+			const config: Record<string, string> = {
+				actModeApiProvider: normalizedProvider,
+				planModeApiProvider: normalizedProvider,
+			}
+			if (actModelKey) config[actModelKey] = modelid
+			if (planModelKey) config[planModelKey] = modelid
+
+			// Use provider-specific API key field
+			const keyField = ProviderToApiKeyMap[normalizedProvider]
+			if (keyField) {
+				const fields = Array.isArray(keyField) ? keyField : [keyField]
+				// Set the first key field for the provider
+				config[fields[0]] = apikey
+			} else {
+				// Fallback to generic apiKey
+				config.apiKey = apikey
+			}
+
+			if (baseurl) {
+				config.openAiBaseUrl = baseurl
+			}
+
+			stateManager.setApiConfiguration(config)
+			stateManager.setGlobalState("welcomeViewCompleted", true)
+
+			await stateManager.flushPendingState()
+			setSelectedProvider(normalizedProvider)
+			setModelId(modelid)
+			setBaseUrl(baseurl || "")
+			setStep("success")
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : String(error))
+			setStep("error")
+		}
+	}
+
 	// Start OpenAI Codex OAuth flow
 	const startOpenAiCodexAuth = useCallback(async () => {
 		try {
@@ -305,10 +387,23 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 			await openAiCodexOAuthManager.waitForCallback()
 
 			// Success - save configuration
-			await applyProviderConfig({ providerId: "openai-codex", controller })
 			const stateManager = StateManager.get()
+			const mode = stateManager.getGlobalSettingsKey("mode") || "act"
+			const providerKey = mode === "act" ? "actModeApiProvider" : "planModeApiProvider"
+			// Use provider-specific model ID key (openai-codex uses generic apiModelId)
+			const modelIdKey = getProviderModelIdKey("openai-codex" as ApiProvider, mode as "act" | "plan")
+			const config: Record<string, string> = {
+				actModeApiProvider: "openai-codex",
+				planModeApiProvider: "openai-codex",
+				[providerKey]: "openai-codex",
+			}
+			if (modelIdKey) {
+				config[modelIdKey] = openAiCodexDefaultModelId
+			}
+			stateManager.setApiConfiguration(config)
 			stateManager.setGlobalState("welcomeViewCompleted", true)
 			await stateManager.flushPendingState()
+
 			setSelectedProvider("openai-codex")
 			setModelId(openAiCodexDefaultModelId)
 			setStep("success")
@@ -330,12 +425,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 			setStep("error")
 		}
 	}, [controller])
-
-	const startOcaAuth = useCallback(() => {
-		setStep("oca_auth")
-		setAuthStatus("Starting authentication...")
-		initiateOcaAuth()
-	}, [initiateOcaAuth])
 
 	const handleMainMenuSelect = useCallback(
 		(value: string) => {
@@ -363,8 +452,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 	const handleProviderSelect = useCallback(
 		(value: string) => {
 			setSelectedProvider(value)
-			if (value === "oca") {
-				startOcaAuth()
+			if (value === "cline") {
+				startClineAuth()
 			} else if (value === "openai-codex") {
 				setStep("openai_codex_auth")
 				startOpenAiCodexAuth()
@@ -374,7 +463,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 				setStep("apikey")
 			}
 		},
-		[startOcaAuth, startOpenAiCodexAuth],
+		[startClineAuth, startOpenAiCodexAuth],
 	)
 
 	const handleApiKeySubmit = useCallback(
@@ -394,23 +483,52 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 	const saveConfiguration = useCallback(
 		async (model: string, base: string) => {
 			try {
-				if (selectedProvider === "bedrock" && bedrockConfig) {
-					await applyBedrockConfig({
-						bedrockConfig,
-						modelId: model,
-						controller,
-					})
-				} else {
-					await applyProviderConfig({
-						providerId: selectedProvider,
-						apiKey,
-						modelId: model,
-						baseUrl: base,
-						controller,
-					})
+				const stateManager = StateManager.get()
+				// Use provider-specific model ID keys (e.g., cline uses actModeOpenRouterModelId)
+				const actModelKey = getProviderModelIdKey(selectedProvider as ApiProvider, "act")
+				const planModelKey = getProviderModelIdKey(selectedProvider as ApiProvider, "plan")
+				const config: Record<string, string> = {
+					actModeApiProvider: selectedProvider,
+					planModeApiProvider: selectedProvider,
+					apiProvider: selectedProvider,
+				}
+				if (actModelKey) config[actModelKey] = model
+				if (planModelKey) config[planModelKey] = model
+
+				// For cline/openrouter, also set model info (required for getModel() to return correct model)
+				if (selectedProvider === "cline" || selectedProvider === "openrouter") {
+					const openRouterModels = await controller?.readOpenRouterModels()
+					const modelInfo = openRouterModels?.[model]
+					if (modelInfo) {
+						stateManager.setGlobalState("actModeOpenRouterModelInfo", modelInfo)
+						stateManager.setGlobalState("planModeOpenRouterModelInfo", modelInfo)
+					}
 				}
 
-				const stateManager = StateManager.get()
+				// Add API key or Bedrock-specific config
+				if (selectedProvider === "bedrock" && bedrockConfig) {
+					const bedrockFields: Record<string, unknown> = {
+						awsAuthentication: bedrockConfig.awsAuthentication,
+						awsRegion: bedrockConfig.awsRegion,
+						awsUseCrossRegionInference: bedrockConfig.awsUseCrossRegionInference,
+					}
+					if (bedrockConfig.awsProfile !== undefined) bedrockFields.awsProfile = bedrockConfig.awsProfile
+					if (bedrockConfig.awsAccessKey) bedrockFields.awsAccessKey = bedrockConfig.awsAccessKey
+					if (bedrockConfig.awsSecretKey) bedrockFields.awsSecretKey = bedrockConfig.awsSecretKey
+					if (bedrockConfig.awsSessionToken) bedrockFields.awsSessionToken = bedrockConfig.awsSessionToken
+					Object.assign(config, bedrockFields)
+				} else if (apiKey) {
+					const keyField = ProviderToApiKeyMap[selectedProvider as keyof typeof ProviderToApiKeyMap]
+					if (keyField) {
+						const fields = Array.isArray(keyField) ? keyField : [keyField]
+						config[fields[0]] = apiKey
+					}
+				}
+
+				if (base) {
+					config.openAiBaseUrl = base
+				}
+				stateManager.setApiConfiguration(config)
 				stateManager.setGlobalState("welcomeViewCompleted", true)
 				await stateManager.flushPendingState()
 
@@ -472,18 +590,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 	}, [])
 
 	// Auto-navigate to welcome after success (immediate)
-	// For quick setup mode (no onNavigateToWelcome), exit the Ink app
 	useEffect(() => {
-		if (step === "success") {
-			if (onNavigateToWelcome) {
-				onNavigateToWelcome()
-			} else {
-				// Quick setup mode - exit Ink app after successful configuration
-				// The cleanup handler in runInkApp will handle process exit
-				exit()
-			}
+		if (step === "success" && onNavigateToWelcome) {
+			onNavigateToWelcome()
 		}
-	}, [step, onNavigateToWelcome, exit])
+	}, [step, onNavigateToWelcome])
 
 	// Error screen menu items
 	const errorMenuItems: SelectItem[] = useMemo(() => {
@@ -539,9 +650,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 			case "baseurl":
 				setBaseUrl("")
 				setStep("modelid")
-				break
-			case "oca_auth":
-				setStep("provider")
 				break
 			case "cline_auth":
 				setStep("menu")
@@ -681,7 +789,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 					</Box>
 				)
 
-			case "oca_auth":
 			case "cline_auth":
 				return (
 					<Box flexDirection="column">
@@ -771,7 +878,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ controller, onComplete, onEr
 		"modelid",
 		"baseurl",
 		"cline_auth",
-		"oca_auth",
 		"cline_model",
 		"openai_codex_auth",
 		"bedrock",

@@ -7,8 +7,7 @@
 		"jsx": "react",
 		"jsxFactory": "React.createElement",
 		"lib": [
-			"es2022",
-			"DOM"
+			"es2022"
 		],
 		"module": "esnext",
 		"moduleResolution": "Bundler",
