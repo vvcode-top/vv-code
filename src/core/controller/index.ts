@@ -41,6 +41,7 @@ import { BannerCardData } from "@/shared/cline/banner"
 import { getAxiosSettings } from "@/shared/net"
 import { ShowMessageType } from "@/shared/proto/host/window"
 import { Logger } from "@/shared/services/Logger"
+import { Session } from "@/shared/services/Session"
 import { getLatestAnnouncementId } from "@/utils/announcements"
 import { getCwd, getDesktopDir } from "@/utils/path"
 import { PromptRegistry } from "../prompts/system-prompt"
@@ -122,6 +123,7 @@ export class Controller {
 	}
 
 	constructor(readonly context: vscode.ExtensionContext) {
+		Session.reset() // Reset session on controller initialization
 		PromptRegistry.getInstance() // Ensure prompts and tools are registered
 		this.stateManager = StateManager.get()
 		StateManager.get().registerCallbacks({
@@ -913,7 +915,8 @@ export class Controller {
 		const vvSelectedGroupType = this.stateManager.getGlobalStateKey("vvSelectedGroupType")
 
 		const currentTaskItem = this.task?.taskId ? (taskHistory || []).find((item) => item.id === this.task?.taskId) : undefined
-		const clineMessages = this.task?.messageStateHandler.getClineMessages() || []
+		// Spread to create new array reference - React needs this to detect changes in useEffect dependencies
+		const clineMessages = [...(this.task?.messageStateHandler.getClineMessages() || [])]
 		const checkpointManagerErrorMessage = this.task?.taskState.checkpointManagerErrorMessage
 
 		const processedTaskHistory = (taskHistory || [])
