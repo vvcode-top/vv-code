@@ -1,12 +1,12 @@
 import { anthropicModels, CLAUDE_SONNET_1M_SUFFIX } from "@shared/api"
 import { Mode } from "@shared/storage/types"
-import { normalizeVvBackendBaseUrl } from "@shared/vv-config"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { ApiKeyField } from "../common/ApiKeyField"
 import { BaseUrlField } from "../common/BaseUrlField"
 import { ContextWindowSwitcher } from "../common/ContextWindowSwitcher"
 import { ModelInfoView } from "../common/ModelInfoView"
 import { ModelSelector } from "../common/ModelSelector"
+import { RemotelyConfiguredInputWrapper } from "../common/RemotelyConfiguredInputWrapper"
 import ThinkingBudgetSlider from "../ThinkingBudgetSlider"
 import { normalizeApiConfiguration } from "../utils/providerUtils"
 import { useApiConfigurationHandlers } from "../utils/useApiConfigurationHandlers"
@@ -37,15 +37,11 @@ interface AnthropicProviderProps {
  * The Anthropic provider configuration component
  */
 export const AnthropicProvider = ({ showModelOptions, isPopup, currentMode }: AnthropicProviderProps) => {
-	const { apiConfiguration } = useExtensionState()
+	const { apiConfiguration, remoteConfigSettings } = useExtensionState()
 	const { handleFieldChange, handleModeFieldChange } = useApiConfigurationHandlers()
 
 	// Get the normalized configuration
 	const { selectedModelId, selectedModelInfo } = normalizeApiConfiguration(apiConfiguration, currentMode)
-
-	// 默认的 Base URL（通过环境变量配置，未设置则使用线上地址）
-	const defaultBaseUrl = `${normalizeVvBackendBaseUrl(process.env.VV_API_BASE_URL)}/`
-	const currentBaseUrl = apiConfiguration?.anthropicBaseUrl || defaultBaseUrl
 
 	// Helper function for model switching
 	const handleModelChange = (modelId: string) => {
@@ -61,12 +57,16 @@ export const AnthropicProvider = ({ showModelOptions, isPopup, currentMode }: An
 				signupUrl="https://console.anthropic.com/settings/keys"
 			/>
 
-			<BaseUrlField
-				initialValue={currentBaseUrl}
-				label="Use custom base URL"
-				onChange={(value) => handleFieldChange("anthropicBaseUrl", value)}
-				placeholder={`Default: ${defaultBaseUrl}`}
-			/>
+			<RemotelyConfiguredInputWrapper hidden={remoteConfigSettings?.anthropicBaseUrl === undefined}>
+				<BaseUrlField
+					disabled={!!remoteConfigSettings?.anthropicBaseUrl}
+					initialValue={apiConfiguration?.anthropicBaseUrl}
+					label="Use custom base URL"
+					onChange={(value) => handleFieldChange("anthropicBaseUrl", value)}
+					placeholder="Default: https://api.anthropic.com"
+					showLockIcon={!!remoteConfigSettings?.anthropicBaseUrl}
+				/>
+			</RemotelyConfiguredInputWrapper>
 
 			{showModelOptions && (
 				<>
