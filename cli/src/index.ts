@@ -36,6 +36,9 @@ import { parseImagesFromInput, processImagePaths } from "./utils/parser"
 import { CLINE_CLI_DIR, getCliBinaryPath } from "./utils/path"
 import { readStdinIfPiped } from "./utils/piped"
 import { runPlainTextTask } from "./utils/plain-text-task"
+import { applyProviderConfig } from "./utils/provider-config"
+import { selectOutputMode } from "./utils/mode-selection"
+import { getValidCliProviders, isValidCliProvider } from "./utils/providers"
 import { autoUpdateOnStartup, checkForUpdates } from "./utils/update"
 import { initializeCliContext } from "./vscode-context"
 import { CLI_LOG_FILE, shutdownEvent, window } from "./vscode-shim"
@@ -100,21 +103,31 @@ function applyTaskOptions(options: TaskOptions): void {
 }
 
 /**
+ * Get mode selection result using the extracted, testable selectOutputMode function.
+ * This wrapper provides the current process TTY state.
+ */
+function getModeSelection(options: TaskOptions) {
+	return selectOutputMode({
+		stdoutIsTTY: process.stdout.isTTY === true,
+		stdinIsTTY: process.stdin.isTTY === true,
+		stdinWasPiped: options.stdinWasPiped ?? false,
+		json: options.json,
+		yolo: options.yolo,
+	})
+}
+
+/**
  * Determine if plain text mode should be used based on options and environment.
  */
 function shouldUsePlainTextMode(options: TaskOptions): boolean {
-	const isTTY = process.stdout.isTTY === true
-	return !isTTY || !!options.stdinWasPiped || !!options.json || !!options.yolo
+	return getModeSelection(options).usePlainTextMode
 }
 
 /**
  * Get the reason for using plain text mode (for telemetry).
  */
 function getPlainTextModeReason(options: TaskOptions): string {
-	if (options.yolo) return "yolo_flag"
-	if (options.json) return "json"
-	if (options.stdinWasPiped) return "piped_stdin"
-	return "redirected_output"
+	return getModeSelection(options).reason
 }
 
 /**
@@ -477,9 +490,6 @@ async function showConfig(options: { config?: string }) {
 	// Dynamically import the wrapper to avoid circular dependencies
 	const { ConfigViewWrapper } = await import("./components/ConfigViewWrapper")
 
-	// Check feature flags
-	const skillsEnabled = stateManager.getGlobalSettingsKey("skillsEnabled") ?? false
-
 	telemetryService.captureHostEvent("config_command", "executed")
 
 	await runInkApp(
@@ -489,7 +499,7 @@ async function showConfig(options: { config?: string }) {
 			globalState: stateManager.getAllGlobalStateEntries(),
 			workspaceState: stateManager.getAllWorkspaceStateEntries(),
 			hooksEnabled: true,
-			skillsEnabled,
+			skillsEnabled: true,
 			isRawModeSupported: checkRawModeSupport(),
 		}),
 		async () => {
@@ -504,6 +514,49 @@ async function showConfig(options: { config?: string }) {
 /**
  * Run authentication flow
  */
+/**
+ * Perform quick auth setup without UI - validates and saves configuration directly
+ */
+async function performQuickAuthSetup(
+	ctx: CliContext,
+	options: { provider: string; apikey: string; modelid: string; baseurl?: string },
+): Promise<{ success: boolean; error?: string }> {
+	const { provider, apikey, modelid, baseurl } = options
+
+	const normalizedProvider = provider.toLowerCase().trim()
+
+	if (!isValidCliProvider(normalizedProvider)) {
+		const validProviders = getValidCliProviders()
+		return { success: false, error: `Invalid provider '${provider}'. Supported providers: ${validProviders.join(", ")}` }
+	}
+
+	if (normalizedProvider === "bedrock") {
+		return {
+			success: false,
+			error: "Bedrock provider is not supported for quick setup due to complex authentication requirements. Please use interactive setup.",
+		}
+	}
+
+	if (baseurl && !["openai", "openai-native"].includes(normalizedProvider)) {
+		return { success: false, error: "Base URL is only supported for OpenAI and OpenAI-compatible providers" }
+	}
+
+	// Save configuration using shared utility
+	await applyProviderConfig({
+		providerId: normalizedProvider,
+		apiKey: apikey,
+		modelId: modelid,
+		baseUrl: baseurl,
+		controller: ctx.controller,
+	})
+
+	// Mark onboarding as complete
+	StateManager.get().setGlobalState("welcomeViewCompleted", true)
+	await StateManager.get().flushPendingState()
+
+	return { success: true }
+}
+
 async function runAuth(options: {
 	provider?: string
 	apikey?: string
@@ -515,13 +568,34 @@ async function runAuth(options: {
 }) {
 	const ctx = await initializeCli({ ...options, enableAuth: true })
 
-	const hasQuickSetupFlags = options.provider || options.apikey || options.modelid || options.baseurl
-	const quickSetup = hasQuickSetupFlags
-		? { provider: options.provider, apikey: options.apikey, modelid: options.modelid, baseurl: options.baseurl }
-		: undefined
+	const hasQuickSetupFlags = options.provider && options.apikey && options.modelid
 
 	telemetryService.captureHostEvent("auth_command", hasQuickSetupFlags ? "quick_setup" : "interactive")
 
+	// Quick setup mode - no UI, just save configuration and exit
+	if (hasQuickSetupFlags) {
+		const result = await performQuickAuthSetup(ctx, {
+			provider: options.provider!,
+			apikey: options.apikey!,
+			modelid: options.modelid!,
+			baseurl: options.baseurl,
+		})
+
+		await ctx.controller.stateManager.flushPendingState()
+		await ctx.controller.dispose()
+		await ErrorService.get().dispose()
+
+		if (!result.success) {
+			printWarning(result.error || "Quick setup failed")
+			telemetryService.captureHostEvent("auth", "error")
+			exit(1)
+		}
+
+		telemetryService.captureHostEvent("auth", "completed")
+		exit(0)
+	}
+
+	// Interactive mode - show Ink UI
 	let authError = false
 
 	await runInkApp(
@@ -537,7 +611,6 @@ async function runAuth(options: {
 				telemetryService.captureHostEvent("auth", "error")
 				authError = true
 			},
-			authQuickSetup: quickSetup,
 		}),
 		async () => {
 			await ctx.controller.stateManager.flushPendingState()
@@ -668,7 +741,7 @@ async function checkAnyProviderConfigured(): Promise<boolean> {
 	const config = stateManager.getApiConfiguration() as Record<string, unknown>
 
 	// Check Cline account (stored as "cline:clineAccountId" in secrets, loaded into config)
-	if (config["cline:clineAccountId"]) return true
+	if (config["clineApiKey"] || config["cline:clineAccountId"]) return true
 
 	// Check OpenAI Codex OAuth (stored in SECRETS_KEYS, loaded into config)
 	if (config["openai-codex-oauth-credentials"]) return true
@@ -821,6 +894,22 @@ program
 		// Always check for piped stdin content
 		const stdinInput = await readStdinIfPiped()
 
+		// Track whether stdin was actually piped (even if empty) vs not piped (null)
+		// stdinInput === null means stdin wasn't piped (TTY or not FIFO/file)
+		// stdinInput === "" means stdin was piped but empty
+		// stdinInput has content means stdin was piped with data
+		const stdinWasPiped = stdinInput !== null
+
+		// Error if stdin was piped but empty AND no prompt was provided
+		// This handles:
+		// - `echo "" | cline` -> error (empty stdin, no prompt)
+		// - `cline "prompt"` in GitHub Actions -> OK (empty stdin ignored, has prompt)
+		// - `cat file | cline "explain"` -> OK (has stdin AND prompt)
+		if (stdinInput === "" && !prompt) {
+			printWarning("Empty input received from stdin. Please provide content to process.")
+			exit(1)
+		}
+
 		// If no prompt argument, check if input is piped via stdin
 		let effectivePrompt = prompt
 		if (stdinInput) {
@@ -844,14 +933,14 @@ program
 			await resumeTask(options.taskId, {
 				...options,
 				initialPrompt: effectivePrompt,
-				stdinWasPiped: !!stdinInput,
+				stdinWasPiped,
 			})
 			return
 		}
 
 		if (effectivePrompt) {
 			// Pass stdinWasPiped flag so runTask knows to use plain text mode
-			await runTask(effectivePrompt, { ...options, stdinWasPiped: !!stdinInput })
+			await runTask(effectivePrompt, { ...options, stdinWasPiped })
 		} else {
 			// Show welcome prompt if no prompt given
 			await showWelcome(options)
