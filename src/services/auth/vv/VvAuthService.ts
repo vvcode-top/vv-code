@@ -6,8 +6,18 @@ import type { Controller } from "@/core/controller"
 import type { StreamingResponseHandler } from "@/core/controller/grpc-handler"
 import { AuthHandler } from "@/hosts/external/AuthHandler"
 import { HostProvider } from "@/hosts/host-provider"
+import type { ApiProvider } from "@/shared/api"
 import { VvAuthState } from "@/shared/proto/cline/vv_account"
-import type { VvGroupConfig, VvGroupItem, VvGroupType, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
+import type {
+	GlobalStateAndSettings,
+	Secrets,
+	VvGroupConfig,
+	VvGroupItem,
+	VvGroupType,
+	VvUserConfig,
+	VvUserInfo,
+} from "@/shared/storage/state-keys"
+import { normalizeVvBackendBaseUrl, normalizeVvGroupApiProvider } from "@/shared/vv-config"
 import { generateCodeChallenge, generateCodeVerifier, generateState } from "@/shared/vv-crypto"
 import { openExternal } from "@/utils/env"
 import { type VvAuthInfo, VvAuthProvider } from "./providers/VvAuthProvider"
@@ -39,24 +49,11 @@ export class VvAuthService {
 	private readonly AUTH_PAGE_URL: string
 
 	private constructor() {
-		// 检测开发环境（仅通过 IS_DEV 环境变量）
-		const isDevelopment = process.env.IS_DEV === "true"
-		const devBaseUrl = process.env.DEV_BASE_URL || "http://127.0.0.1:3000"
+		// 基础 URL：通过 VV_API_BASE_URL 环境变量配置，未设置则使用线上地址
+		const baseUrl = normalizeVvBackendBaseUrl(process.env.VV_API_BASE_URL)
 
-		// 支持通过环境变量自定义 API 地址（必须是非空字符串）
-		const customApiUrl = process.env.VV_API_BASE_URL
-		if (customApiUrl && customApiUrl.trim() !== "" && customApiUrl !== "undefined") {
-			this.API_BASE_URL = customApiUrl
-			this.AUTH_PAGE_URL = `${customApiUrl.replace("/api", "")}/oauth/vscode/login`
-		} else if (isDevelopment) {
-			// 开发环境默认使用本地地址
-			this.API_BASE_URL = `${devBaseUrl}/api`
-			this.AUTH_PAGE_URL = `${devBaseUrl}/oauth/vscode/login`
-		} else {
-			// 生产环境
-			this.API_BASE_URL = "https://vvcode.top/api"
-			this.AUTH_PAGE_URL = "https://vvcode.top/oauth/vscode/login"
-		}
+		this.API_BASE_URL = `${baseUrl}/api`
+		this.AUTH_PAGE_URL = `${baseUrl}/oauth/vscode/login`
 
 		this._provider = new VvAuthProvider(this.API_BASE_URL)
 	}
@@ -309,7 +306,7 @@ export class VvAuthService {
 
 				// 再次检查是否还有空的 apiKey
 				const stillHasEmptyApiKey = groupConfig.some((g) => !g.apiKey)
-				Logger.log("[VVAuth] After init, groupConfig:", JSON.stringify(groupConfig, null, 2))
+				this.logGroupConfig("After init, groupConfig", groupConfig)
 				Logger.log("[VVAuth] stillHasEmptyApiKey:", stillHasEmptyApiKey)
 				if (stillHasEmptyApiKey) {
 					controller.stateManager.setGlobalState("vvNeedsWebInit", true)
@@ -492,7 +489,9 @@ export class VvAuthService {
 	 */
 	public getGroupConfig(): VvGroupConfig | undefined {
 		const controller = this.requireController()
-		return controller.stateManager.getGlobalStateKey("vvGroupConfig")
+		const groupConfig = controller.stateManager.getGlobalStateKey("vvGroupConfig")
+		this.logGroupConfig("getGroupConfig", groupConfig)
+		return groupConfig
 	}
 
 	/**
@@ -564,28 +563,93 @@ export class VvAuthService {
 	 */
 	private async applyGroupConfig(group: VvGroupItem): Promise<void> {
 		const controller = this.requireController()
-		const isDev = process.env.IS_DEV === "true"
-		const devBaseUrl = process.env.DEV_BASE_URL || "http://127.0.0.1:3000"
+		const providerResult = normalizeVvGroupApiProvider(group.apiProvider)
+		const provider = providerResult.provider
+		if (!providerResult.matched && group.apiProvider?.trim() && group.apiProvider.trim().toLowerCase() !== "undefined") {
+			Logger.warn(`[VVAuth] Unknown group apiProvider "${group.apiProvider}", fallback to "${provider}"`)
+		}
 
-		// 设置 API Provider 为 Anthropic
-		controller.stateManager.setGlobalState("planModeApiProvider", "anthropic")
-		controller.stateManager.setGlobalState("actModeApiProvider", "anthropic")
+		// 设置 API Provider - 需要更新所有缓存层级
+		// StateManager 读取优先级: remoteConfigCache > taskStateCache > globalStateCache
+		// 必须更新高优先级缓存，否则旧值会覆盖新设置
 
-		// 设置 Anthropic API Key
-		controller.stateManager.setSecret("apiKey", group.apiKey)
+		// 根据 provider 获取完整配置（包括 model ID、API Key、Base URL）
+		const providerSettings = this.getProviderModelSettings(provider, group)
 
-		// 设置默认模型（Plan 和 Act 模式都使用相同的模型）
-		controller.stateManager.setGlobalState("planModeApiModelId", group.defaultModelId)
-		controller.stateManager.setGlobalState("actModeApiModelId", group.defaultModelId)
+		// 1. 更新 globalStateCache（最低优先级，持久化到磁盘）
+		controller.stateManager.setGlobalState("planModeApiProvider", provider)
+		controller.stateManager.setGlobalState("actModeApiProvider", provider)
+		controller.stateManager.setGlobalStateBatch(providerSettings.globalState)
 
-		// 设置 baseUrl（开发环境强制使用本地地址）
-		const baseUrl = isDev ? devBaseUrl : group.apiBaseUrl
-		if (baseUrl) {
-			controller.stateManager.setGlobalState("anthropicBaseUrl", baseUrl)
+		// 2. 设置 API Key（加密存储）
+		const secretEntries = Object.entries(providerSettings.secrets) as Array<
+			[keyof Pick<Secrets, "apiKey" | "openAiApiKey">, string | undefined]
+		>
+		for (const [key, value] of secretEntries) {
+			controller.stateManager.setSecret(key, value)
+		}
+
+		// 3. 更新 remoteConfigCache（最高优先级，内存缓存）
+		// 当用户通过设置 UI 修改过 provider 时，setApiConfiguration 会将 provider 写入 remoteConfigCache
+		// 切换分组时必须同步更新，否则旧的 remoteConfigCache 值会覆盖新的 provider
+		controller.stateManager.setRemoteConfigField("planModeApiProvider", provider)
+		controller.stateManager.setRemoteConfigField("actModeApiProvider", provider)
+
+		// 4. 更新 taskStateCache（中间优先级，活跃任务的设置）
+		// 任务加载或通过 updateTaskSettings 修改时会填充 taskStateCache
+		// 切换分组时也需要同步更新
+		if (controller.task?.taskId) {
+			controller.stateManager.setTaskSettingsBatch(controller.task.taskId, {
+				planModeApiProvider: provider,
+				actModeApiProvider: provider,
+				...providerSettings.globalState,
+			})
 		}
 
 		// 立即刷新状态确保生效
 		await controller.stateManager.flushPendingState()
+	}
+
+	/**
+	 * 根据 provider 类型返回对应的完整配置（包括 model ID、API Key、Base URL）
+	 * 不同 provider 使用不同的字段名：
+	 * - anthropic: apiKey, anthropicBaseUrl, planModeApiModelId/actModeApiModelId
+	 * - openai: openAiApiKey, openAiBaseUrl, planModeOpenAiModelId/actModeOpenAiModelId
+	 */
+	private getProviderModelSettings(
+		provider: ApiProvider,
+		group: VvGroupItem,
+	): {
+		secrets: Partial<Pick<Secrets, "apiKey" | "openAiApiKey">>
+		globalState: Partial<GlobalStateAndSettings>
+	} {
+		const baseUrl = normalizeVvBackendBaseUrl(group.apiBaseUrl || process.env.VV_API_BASE_URL)
+
+		switch (provider) {
+			case "openai":
+				return {
+					secrets: {
+						openAiApiKey: group.apiKey,
+					},
+					globalState: {
+						openAiBaseUrl: baseUrl,
+						planModeOpenAiModelId: group.defaultModelId,
+						actModeOpenAiModelId: group.defaultModelId,
+					},
+				}
+			case "anthropic":
+			default:
+				return {
+					secrets: {
+						apiKey: group.apiKey,
+					},
+					globalState: {
+						anthropicBaseUrl: baseUrl,
+						planModeApiModelId: group.defaultModelId,
+						actModeApiModelId: group.defaultModelId,
+					},
+				}
+		}
 	}
 
 	/**
@@ -606,6 +670,7 @@ export class VvAuthService {
 
 		try {
 			const groupConfig = await this._provider.getGroupTokens(accessToken, parseInt(userId, 10))
+			this.logGroupConfig("Group config refreshed", groupConfig)
 
 			controller.stateManager.setGlobalState("vvGroupConfig", groupConfig)
 
@@ -686,6 +751,15 @@ export class VvAuthService {
 			Logger.error("[VVAuth] Failed to refresh user info:", error)
 			return undefined
 		}
+	}
+
+	private logGroupConfig(tag: string, groupConfig: VvGroupConfig | undefined): void {
+		const sanitized = groupConfig?.map((group) => ({
+			...group,
+			apiKey: group.apiKey ? "***" : "",
+		}))
+		const serialized = JSON.stringify(sanitized, null, 2)
+		Logger.info(`[VVAuth] ${tag}: ${serialized}`)
 	}
 
 	/**

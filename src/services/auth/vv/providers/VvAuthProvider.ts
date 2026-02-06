@@ -4,6 +4,7 @@
 import { Logger } from "@shared/services/Logger"
 import { fetch } from "@/shared/net"
 import type { VvGroupConfig, VvUserConfig, VvUserInfo } from "@/shared/storage/state-keys"
+import { normalizeVvBackendBaseUrl, normalizeVvGroupApiProvider } from "@/shared/vv-config"
 
 /**
  * VVCode 认证提供商
@@ -244,7 +245,9 @@ export class VvAuthProvider {
 			}
 
 			// 将服务器返回的字段映射为前端期望的格式
-			return this.mapGroupTokensResponse(result.data)
+			const mapped = this.mapGroupTokensResponse(result.data)
+			Logger.info(`[VVAuthProvider] getGroupTokens result count: ${mapped.length}`)
+			return mapped
 		} catch (error) {
 			Logger.error("[VVAuth] getGroupTokens fetch error:", error)
 			throw error
@@ -287,7 +290,9 @@ export class VvAuthProvider {
 			}
 
 			// 将服务器返回的字段映射为前端期望的格式
-			return this.mapGroupTokensResponse(result.data)
+			const mapped = this.mapGroupTokensResponse(result.data)
+			Logger.info(`[VVAuthProvider] initGroupTokens result count: ${mapped.length}`)
+			return mapped
 		} catch (error) {
 			Logger.error("[VVAuth] initGroupTokens fetch error:", error)
 			throw error
@@ -298,16 +303,16 @@ export class VvAuthProvider {
 	 * 将服务器返回的分组数据映射为前端期望的格式
 	 */
 	private mapGroupTokensResponse(data: any[]): VvGroupConfig {
-		// 使用 provider 的 apiBaseUrl，去掉 /api 后缀
-		const baseUrl = this.apiBaseUrl.replace(/\/api$/, "")
+		// 优先使用接口返回的 baseUrl，未下发时回退到 provider 自身地址（去掉 /api 后缀）
+		const fallbackBaseUrl = normalizeVvBackendBaseUrl(this.apiBaseUrl)
 
 		return data.map((item) => ({
 			type: item.type as VvGroupConfig[0]["type"],
 			name: item.name,
 			defaultModelId: item.defaultModelId,
-			apiProvider: item.apiProvider,
+			apiProvider: normalizeVvGroupApiProvider(item.apiProvider).provider,
 			apiKey: item.apiKey,
-			apiBaseUrl: baseUrl,
+			apiBaseUrl: normalizeVvBackendBaseUrl(item.baseUrl || fallbackBaseUrl),
 			isDefault: item.isDefault,
 		}))
 	}

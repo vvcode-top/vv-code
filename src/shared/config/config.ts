@@ -2,13 +2,14 @@
  * Configuration endpoints and settings
  */
 
-const isDev = process.env.IS_DEV === "true"
+import { normalizeVvBackendBaseUrl } from "@/shared/vv-config"
 
 /**
- * API base URL
- * 开发环境从 DEV_BASE_URL 环境变量获取，生产环境使用线上地址
+ * API base URL (不含 /api 后缀)
+ * 通过 VV_API_BASE_URL 环境变量配置，未设置则使用线上地址。
+ * 兼容：VV_API_BASE_URL 也可传入带 /api 的旧格式。
  */
-export const API_BASE_URL = isDev ? process.env.DEV_BASE_URL || "http://127.0.0.1:3000" : "https://vvcode.top"
+export const API_BASE_URL = normalizeVvBackendBaseUrl(process.env.VV_API_BASE_URL)
 
 /**
  * Configuration API endpoint

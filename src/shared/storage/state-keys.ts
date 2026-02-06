@@ -305,7 +305,7 @@ const USER_SETTINGS_FIELDS = {
 	clineWebToolsEnabled: { default: true as boolean },
 	worktreesEnabled: { default: false as boolean },
 	preferredLanguage: { default: "English" as string },
-	openaiReasoningEffort: { default: "medium" as OpenaiReasoningEffort },
+	openaiReasoningEffort: { default: "high" as OpenaiReasoningEffort },
 	mode: { default: "act" as Mode },
 	dictationSettings: {
 		default: DEFAULT_DICTATION_SETTINGS as DictationSettings,

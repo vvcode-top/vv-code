@@ -26,8 +26,7 @@
 			"env": {
 				"IS_DEV": "false",
 				"DEV_WORKSPACE_FOLDER": "${workspaceFolder}",
-				"CLINE_ENVIRONMENT": "production",
-				"DEV_BASE_URL": "https://vvcode.top"
+				"CLINE_ENVIRONMENT": "production"
 			}
 		},
 		{
@@ -75,8 +74,7 @@
 			"env": {
 				"IS_DEV": "true",
 				"DEV_WORKSPACE_FOLDER": "${workspaceFolder}",
-				"CLINE_ENVIRONMENT": "local",
-				"DEV_BASE_URL": "http://127.0.0.1:3000"
+				"CLINE_ENVIRONMENT": "local"
 			}
 		},
 		{

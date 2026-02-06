@@ -140,7 +140,7 @@ API: http://127.0.0.1:5173/api
 登录页: http://127.0.0.1:5173/oauth/vscode/login
 ```
 
-触发条件：`IS_DEV=true` 或设置 `VV_API_BASE_URL` 环境变量。
+触发条件：设置 `VV_API_BASE_URL` 环境变量。
 
 回调 URI（固定）：`vscode://PiuQiuPiaQia.vvcode/vv-callback`
 

@@ -154,18 +154,15 @@ proto/cline/
 
 ## 开发环境
 
-开发模式下 (`IS_DEV=true`)，`applyGroupConfig` 强制使用 `DEV_BASE_URL` 覆盖分组的 `apiBaseUrl`：
+设置 `VV_API_BASE_URL` 环境变量可覆盖分组的 `apiBaseUrl`：
 
 ```typescript
-const baseUrl = isDev ? devBaseUrl : group.apiBaseUrl
+const baseUrl = process.env.VV_API_BASE_URL ? vvBaseUrl : group.apiBaseUrl
 ```
 
-环境变量配置（.vscode/launch.json）：
-```json
-"env": {
-  "IS_DEV": "true",
-  "DEV_BASE_URL": "http://127.0.0.1:3000"
-}
+环境变量配置（.env）：
+```
+VV_API_BASE_URL=http://127.0.0.1:3000
 ```
 
 ---

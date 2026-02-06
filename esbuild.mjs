@@ -131,14 +131,14 @@ const buildEnvVars = {
 if (production) {
 	// IS_DEV is always disable in production builds.
 	buildEnvVars["process.env.IS_DEV"] = "false"
-	// VVCode: 生产环境不使用开发地址
-	buildEnvVars["process.env.DEV_BASE_URL"] = "undefined"
+	// VVCode: 生产环境不使用自定义地址
+	buildEnvVars["process.env.VV_API_BASE_URL"] = "undefined"
 } else {
 	// VVCode: 开发环境启用 IS_DEV
 	buildEnvVars["process.env.IS_DEV"] = JSON.stringify("true")
-	if (process.env.DEV_BASE_URL) {
-		// VVCode: 开发环境 base URL
-		buildEnvVars["process.env.DEV_BASE_URL"] = JSON.stringify(process.env.DEV_BASE_URL)
+	if (process.env.VV_API_BASE_URL) {
+		// VVCode: 自定义 base URL
+		buildEnvVars["process.env.VV_API_BASE_URL"] = JSON.stringify(process.env.VV_API_BASE_URL)
 	}
 }
 // Set the environment and telemetry env vars. The API key env vars need to be populated in the GitHub

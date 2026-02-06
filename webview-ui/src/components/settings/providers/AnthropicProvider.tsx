@@ -1,5 +1,6 @@
 import { anthropicModels, CLAUDE_SONNET_1M_SUFFIX } from "@shared/api"
 import { Mode } from "@shared/storage/types"
+import { normalizeVvBackendBaseUrl } from "@shared/vv-config"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { ApiKeyField } from "../common/ApiKeyField"
 import { BaseUrlField } from "../common/BaseUrlField"
@@ -42,10 +43,8 @@ export const AnthropicProvider = ({ showModelOptions, isPopup, currentMode }: An
 	// Get the normalized configuration
 	const { selectedModelId, selectedModelInfo } = normalizeApiConfiguration(apiConfiguration, currentMode)
 
-	// 默认的 Base URL（开发环境从环境变量获取）
-	const isDev = process.env.IS_DEV === '"true"'
-	const devBaseUrl = process.env.DEV_BASE_URL || "http://127.0.0.1:3000/"
-	const defaultBaseUrl = isDev ? devBaseUrl : "https://vvcode.top/"
+	// 默认的 Base URL（通过环境变量配置，未设置则使用线上地址）
+	const defaultBaseUrl = `${normalizeVvBackendBaseUrl(process.env.VV_API_BASE_URL)}/`
 	const currentBaseUrl = apiConfiguration?.anthropicBaseUrl || defaultBaseUrl
 
 	// Helper function for model switching
