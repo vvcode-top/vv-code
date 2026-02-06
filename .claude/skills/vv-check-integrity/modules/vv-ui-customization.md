@@ -23,6 +23,21 @@ grep "expandTaskHeader.*useState(false)" webview-ui/src/context/ExtensionStateCo
 
 ---
 
+### 1.5. 输入框上方浮动 Auto-Approve 按钮
+📁 `webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx`
+
+**必须包含浮动折叠按钮**（VVCode 自定义）:
+- 折叠状态时使用 `absolute` 浮动定位
+- 使用 `codicon-fold-up` 作为折叠按钮图标
+
+**检查命令**:
+```bash
+grep "codicon-fold-up" webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx
+grep "absolute top-0 right-0" webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx
+```
+
+---
+
 ### 2. VV状态管理
 📁 `webview-ui/src/context/ExtensionStateContext.tsx`
 
@@ -101,6 +116,22 @@ grep "showVVSettings.*VvSettingsView" webview-ui/src/App.tsx
 ```bash
 grep "navigateToVVSettings" webview-ui/src/components/menu/Navbar.tsx
 grep "VVCode Customization" webview-ui/src/components/menu/Navbar.tsx
+```
+
+---
+
+### 7. 未登录隐藏输入框
+📁 `webview-ui/src/components/chat/ChatView.tsx`
+
+**必须包含**:
+- `useVvAuth` 用于判断登录态
+- 未登录或需要 Web 初始化时不渲染输入区
+
+**检查命令**:
+```bash
+grep "useVvAuth" webview-ui/src/components/chat/ChatView.tsx
+grep "isAuthenticated" webview-ui/src/components/chat/ChatView.tsx
+grep "vvNeedsWebInit" webview-ui/src/components/chat/ChatView.tsx
 ```
 
 ---

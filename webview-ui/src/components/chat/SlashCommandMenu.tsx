@@ -1,7 +1,8 @@
-import { type SlashCommand } from "@shared/slashCommands"
+import type { McpServer } from "@shared/mcp"
 import React, { useCallback, useEffect, useRef } from "react"
 import ScreenReaderAnnounce from "@/components/common/ScreenReaderAnnounce"
 import { useMenuAnnouncement } from "@/hooks/useMenuAnnouncement"
+import type { SlashCommand } from "@/utils/slash-commands"
 import { getMatchingSlashCommands } from "@/utils/slash-commands"
 
 interface SlashCommandMenuProps {
@@ -15,6 +16,7 @@ interface SlashCommandMenuProps {
 	remoteWorkflowToggles?: Record<string, boolean>
 	remoteWorkflows?: any[]
 	availableSkills?: any[]
+	mcpServers?: McpServer[]
 }
 
 const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
@@ -28,6 +30,7 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 	remoteWorkflowToggles,
 	remoteWorkflows,
 	availableSkills,
+	mcpServers = [],
 }) => {
 	const menuRef = useRef<HTMLDivElement>(null)
 
@@ -39,10 +42,12 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 		remoteWorkflowToggles,
 		remoteWorkflows,
 		availableSkills,
+		mcpServers,
 	)
 	const defaultCommands = filteredCommands.filter((cmd) => cmd.section === "default" || !cmd.section)
 	const skillCommands = filteredCommands.filter((cmd) => cmd.section === "custom" && cmd.type === "skill")
 	const workflowCommands = filteredCommands.filter((cmd) => cmd.section === "custom" && cmd.type === "workflow")
+	const mcpCommands = filteredCommands.filter((cmd) => cmd.section === "mcp")
 
 	// Screen reader announcements
 	const getCommandLabel = useCallback((command: SlashCommand) => {
@@ -149,6 +154,12 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 							"Workflows",
 							defaultCommands.length + skillCommands.length,
 							false,
+						)}
+						{renderCommandSection(
+							mcpCommands,
+							"MCP Prompts",
+							defaultCommands.length + skillCommands.length + workflowCommands.length,
+							true,
 						)}
 					</>
 				) : (

@@ -46,6 +46,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	mcpMarketplaceCatalog: McpMarketplaceCatalog
 	totalTasksSize: number | null
 	lastDismissedCliBannerVersion: number
+	dismissedBanners?: Array<{ bannerId: string; dismissedAt: number }>
 
 	availableTerminalProfiles: TerminalProfile[]
 
@@ -54,6 +55,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	mcpTab?: McpViewTab
 	showSettings: boolean
 	settingsTargetSection?: string
+	settingsInitialModelTab?: "recommended" | "free"
 	showVVSettings: boolean // VVCode Customization
 	showHistory: boolean
 	showAccount: boolean
@@ -103,6 +105,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	// Navigation functions
 	navigateToMcp: (tab?: McpViewTab) => void
 	navigateToSettings: (targetSection?: string) => void
+	navigateToSettingsModelPicker: (opts: { targetSection?: string; initialModelTab?: "recommended" | "free" }) => void
 	navigateToVVSettings: () => void // VVCode Customization
 	navigateToHistory: () => void
 	navigateToAccount: () => void
@@ -133,6 +136,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const [mcpTab, setMcpTab] = useState<McpViewTab | undefined>(undefined)
 	const [showSettings, setShowSettings] = useState(false)
 	const [settingsTargetSection, setSettingsTargetSection] = useState<string | undefined>(undefined)
+	const [settingsInitialModelTab, setSettingsInitialModelTab] = useState<"recommended" | "free" | undefined>(undefined)
 	const [showVVSettings, setShowVVSettings] = useState(false) // VVCode Customization
 	const [showHistory, setShowHistory] = useState(false)
 	const [showAccount, setShowAccount] = useState(false)
@@ -150,6 +154,7 @@ export const ExtensionStateContextProvider: React.FC<{
 	const hideSettings = useCallback(() => {
 		setShowSettings(false)
 		setSettingsTargetSection(undefined)
+		setSettingsInitialModelTab(undefined)
 	}, [])
 	const hideVVSettings = useCallback(() => setShowVVSettings(false), [setShowVVSettings]) // VVCode Customization
 	const hideHistory = useCallback(() => setShowHistory(false), [setShowHistory])
@@ -182,6 +187,21 @@ export const ExtensionStateContextProvider: React.FC<{
 			setShowWorktrees(false)
 			setShowVVSettings(false) // VVCode Customization
 			setSettingsTargetSection(targetSection)
+			setSettingsInitialModelTab(undefined)
+			setShowSettings(true)
+		},
+		[closeMcpView],
+	)
+
+	const navigateToSettingsModelPicker = useCallback(
+		(opts: { targetSection?: string; initialModelTab?: "recommended" | "free" }) => {
+			setShowHistory(false)
+			closeMcpView()
+			setShowAccount(false)
+			setShowWorktrees(false)
+			setShowVVSettings(false) // VVCode Customization
+			setSettingsTargetSection(opts.targetSection)
+			setSettingsInitialModelTab(opts.initialModelTab)
 			setShowSettings(true)
 		},
 		[closeMcpView],
@@ -287,7 +307,6 @@ export const ExtensionStateContextProvider: React.FC<{
 		lastDismissedCliBannerVersion: 0,
 		subagentsEnabled: false,
 		backgroundEditEnabled: false,
-		skillsEnabled: false,
 		globalSkillsToggles: {},
 		localSkillsToggles: {},
 
@@ -817,6 +836,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		mcpTab,
 		showSettings,
 		settingsTargetSection,
+		settingsInitialModelTab,
 		showVVSettings, // VVCode Customization
 		showHistory,
 		showAccount,
@@ -838,6 +858,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		// Navigation functions
 		navigateToMcp,
 		navigateToSettings,
+		navigateToSettingsModelPicker,
 		navigateToVVSettings, // VVCode Customization
 		navigateToHistory,
 		navigateToAccount,

@@ -199,6 +199,23 @@ grep "vvGroupConfig.*getGlobalStateKey" src/core/controller/index.ts
 grep -A 100 "return {" src/core/controller/index.ts | grep "vvGroupConfig"
 ```
 
+### 登出清理（必须清除用户数据）
+📁 `src/services/auth/vv/VvAuthService.ts`
+
+**必须包含的清理逻辑**:
+- `controller.clearTask()` - 清空当前任务与聊天
+- `taskHistory` 重置为空数组
+- `vvGroupConfig` 重置为空数组
+- `vvNeedsWebInit` 重置为 `false`
+
+**检查方法**:
+```bash
+grep "clearTask" src/services/auth/vv/VvAuthService.ts
+grep "taskHistory\".*, \\[]" src/services/auth/vv/VvAuthService.ts
+grep "vvGroupConfig\".*, \\[]" src/services/auth/vv/VvAuthService.ts
+grep "vvNeedsWebInit\".*, false" src/services/auth/vv/VvAuthService.ts
+```
+
 ---
 
 ## Protobuf定义

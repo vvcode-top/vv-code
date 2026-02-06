@@ -38,6 +38,14 @@ check_exists "vvAuthService.*VvAuthService" "src/core/controller/index.ts" "  - 
 check_exists "VvAuthService.initialize(this)" "src/core/controller/index.ts" "  - VvAuthService.initialize 调用"
 echo ""
 
+# 1.5 登出清理检查
+echo "🧹 1.5 登出清理"
+check_exists "clearTask" "src/services/auth/vv/VvAuthService.ts" "  - 登出时清空任务"
+check_exists "taskHistory\\\".*, \\[\\]" "src/services/auth/vv/VvAuthService.ts" "  - 登出时清空 taskHistory"
+check_exists "vvGroupConfig\\\".*, \\[\\]" "src/services/auth/vv/VvAuthService.ts" "  - 登出时清空 vvGroupConfig"
+check_exists "vvNeedsWebInit\\\".*, false" "src/services/auth/vv/VvAuthService.ts" "  - 登出时重置 vvNeedsWebInit"
+echo ""
+
 # 2. URI 回调路由检查
 echo "🌐 2. URI 回调路由"
 check_exists 'case "/vv-callback"' "src/services/uri/SharedUriHandler.ts" "  - /vv-callback 路由"
@@ -101,9 +109,14 @@ echo ""
 # 8. UI 自定义检查
 echo "🎨 8. UI 自定义"
 check_exists "expandTaskHeader.*useState(false)" "webview-ui/src/context/ExtensionStateContext.tsx" "  - TaskHeader 默认折叠状态"
+check_exists "codicon-fold-up" "webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx" "  - Auto-Approve 浮动折叠按钮"
+check_exists "absolute top-0 right-0" "webview-ui/src/components/chat/auto-approve-menu/AutoApproveBar.tsx" "  - Auto-Approve 浮动定位"
 check_exists "showVVSettings.*boolean" "webview-ui/src/context/ExtensionStateContext.tsx" "  - showVVSettings 状态定义"
 check_exists "navigateToVVSettings" "webview-ui/src/context/ExtensionStateContext.tsx" "  - navigateToVVSettings 方法"
 check_exists "showVVSettings.*VvSettingsView" "webview-ui/src/App.tsx" "  - VV设置路由集成"
+check_exists "useVvAuth" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 登录态判断"
+check_exists "isAuthenticated" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 使用 isAuthenticated"
+check_exists "vvNeedsWebInit" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 检查 vvNeedsWebInit"
 if ! grep -q "showWelcome" "webview-ui/src/App.tsx" 2>/dev/null; then
     echo -e "${GREEN}✅${NC}   - App.tsx 无 showWelcome 分支"
 else
@@ -124,8 +137,14 @@ else
 fi
 echo ""
 
-# 9. VV自定义组件文件
-echo "📁 9. VV自定义组件文件"
+# 9. 更新完成与欢迎通知文案
+echo "🔔 9. 更新完成与欢迎通知文案"
+check_exists "VVCode has been updated to v" "src/common.ts" "  - 更新完成提示使用 VVCode 品牌"
+check_exists "Welcome to VVCode v" "src/common.ts" "  - 欢迎提示使用 VVCode 品牌"
+echo ""
+
+# 10. VV自定义组件文件
+echo "📁 10. VV自定义组件文件"
 ui_files_to_check=(
     "webview-ui/src/components/settings/VvSettingsView.tsx"
     "webview-ui/src/components/settings/VvAccountInfoCard.tsx"
@@ -143,8 +162,8 @@ for file in "${ui_files_to_check[@]}"; do
 done
 echo ""
 
-# 10. 核心服务文件存在性检查
-echo "📁 10. 核心服务文件"
+# 11. 核心服务文件存在性检查
+echo "📁 11. 核心服务文件"
 files_to_check=(
     "src/services/auth/vv/VvAuthService.ts"
     "src/services/auth/vv/providers/VvAuthProvider.ts"

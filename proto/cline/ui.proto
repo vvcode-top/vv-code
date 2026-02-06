@@ -228,6 +228,13 @@ message ShowWebviewEvent {
   bool preserve_editor_focus = 1; // When true, webview should not steal focus from editor
 }
 
+// Enum for UI button clicked events
+enum UiButtonClickedEvent {
+  UI_BUTTON_CLICKED_EVENT_UNSPECIFIED = 0;
+  SETTINGS_BUTTON_CLICKED = 1;
+  VV_SETTINGS_BUTTON_CLICKED = 2;
+}
+
 // UiService provides methods for managing UI interactions
 service UiService {
   // Scrolls to a specific settings section in the settings view

@@ -57,11 +57,13 @@ git log HEAD..upstream/main --until="$TARGET_DATE 23:59:59" --reverse --oneline 
 是否开始合并？
 ```
 
-### Step 3: 创建合并分支
+### Step 3: 创建合并分支（必须）
 
 ```bash
 git checkout -b merge-cline-$(date +%Y%m%d-%H%M%S)
 ```
+
+**注意：合并必须在新分支进行，禁止直接在 `main` 上合并。**
 
 ### Step 4: 智能合并循环
 

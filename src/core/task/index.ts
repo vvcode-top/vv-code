@@ -1775,9 +1775,8 @@ export class Task {
 			maxConsecutiveMistakes: this.stateManager.getGlobalSettingsKey("maxConsecutiveMistakes"),
 		})
 
-		// Discover and filter available skills (gated by skillsEnabled setting)
-		const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled") ?? false
-		const allSkills = skillsEnabled ? await discoverSkills(this.cwd) : []
+		// Discover and filter available skills
+		const allSkills = await discoverSkills(this.cwd)
 		const resolvedSkills = getAvailableSkills(allSkills)
 
 		// Filter skills by toggle state (enabled by default)
@@ -3044,6 +3043,15 @@ export class Task {
 				this.workspaceManager,
 			)
 
+			// Create MCP prompt fetcher callback that wraps mcpHub.getPrompt
+			const mcpPromptFetcher = async (serverName: string, promptName: string) => {
+				try {
+					return await this.mcpHub.getPrompt(serverName, promptName)
+				} catch {
+					return null
+				}
+			}
+
 			const { processedText, needsClinerulesFileCheck: needsCheck } = await parseSlashCommands(
 				parsedText,
 				localWorkflowToggles,
@@ -3052,6 +3060,7 @@ export class Task {
 				focusChainSettings,
 				useNativeToolCalls,
 				providerInfo,
+				mcpPromptFetcher,
 			)
 
 			if (needsCheck) {

@@ -377,6 +377,10 @@ export class VvAuthService {
 	public async handleDeauth(): Promise<void> {
 		const controller = this.requireController()
 
+		// 0. 终止当前任务并清空对话数据
+		await controller.clearTask()
+		controller.stateManager.setGlobalState("taskHistory", [])
+
 		// 1. 获取当前 token
 		const accessToken = controller.stateManager.getSecretKey("vv:accessToken")
 
@@ -397,9 +401,9 @@ export class VvAuthService {
 		controller.stateManager.setGlobalState("vvUserConfig", undefined)
 
 		// 4. 清除分组配置相关状态
-		controller.stateManager.setGlobalState("vvGroupConfig", undefined)
+		controller.stateManager.setGlobalState("vvGroupConfig", [])
 		controller.stateManager.setGlobalState("vvSelectedGroupType", undefined)
-		controller.stateManager.setGlobalState("vvNeedsWebInit", undefined)
+		controller.stateManager.setGlobalState("vvNeedsWebInit", false)
 
 		// 5. 清理临时存储（globalState 中的临时认证数据）
 		controller.stateManager.setGlobalState("vv:authState", undefined)

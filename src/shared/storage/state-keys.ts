@@ -1,6 +1,5 @@
 import { AutoApprovalSettings, DEFAULT_AUTO_APPROVAL_SETTINGS } from "@shared/AutoApprovalSettings"
 import {
-	ANTHROPIC_MIN_THINKING_BUDGET,
 	ApiProvider,
 	DEFAULT_API_PROVIDER,
 	LiteLLMModelInfo,
@@ -88,6 +87,7 @@ type FieldDefinition<T> = {
 
 type FieldDefinitions = Record<string, FieldDefinition<any>>
 
+export type ConfiguredAPIKeys = Partial<Record<ApiProvider, boolean>>
 const REMOTE_CONFIG_EXTRA_FIELDS = {
 	remoteConfiguredProviders: { default: [] as ApiProvider[] },
 	allowedMCPServers: { default: [] as Array<{ id: string }> },
@@ -97,7 +97,10 @@ const REMOTE_CONFIG_EXTRA_FIELDS = {
 	remoteGlobalWorkflows: { default: undefined as GlobalInstructionsFile[] | undefined },
 	blockPersonalRemoteMCPServers: { default: false as boolean },
 	openTelemetryOtlpHeaders: { default: undefined as Record<string, string> | undefined },
+	otlpMetricsHeaders: { default: undefined as Record<string, string> | undefined },
+	otlpLogsHeaders: { default: undefined as Record<string, string> | undefined },
 	blobStoreConfig: { default: undefined as BlobStoreSettings | undefined },
+	configuredApiKeys: { default: {} as ConfiguredAPIKeys | undefined },
 } satisfies FieldDefinitions
 
 const GLOBAL_STATE_FIELDS = {
@@ -116,7 +119,7 @@ const GLOBAL_STATE_FIELDS = {
 	mcpDisplayMode: { default: DEFAULT_MCP_DISPLAY_MODE as McpDisplayMode },
 	workspaceRoots: { default: undefined as WorkspaceRoot[] | undefined },
 	primaryRootIndex: { default: 0 as number },
-	multiRootEnabled: { default: false as boolean },
+	multiRootEnabled: { default: true as boolean },
 	lastDismissedInfoBannerVersion: { default: 0 as number },
 	lastDismissedModelBannerVersion: { default: 0 as number },
 	lastDismissedCliBannerVersion: { default: 0 as number },
@@ -185,7 +188,7 @@ const API_HANDLER_SETTINGS_FIELDS = {
 
 	// Plan mode configurations
 	planModeApiModelId: { default: undefined as string | undefined },
-	planModeThinkingBudgetTokens: { default: ANTHROPIC_MIN_THINKING_BUDGET as number | undefined },
+	planModeThinkingBudgetTokens: { default: undefined as number | undefined },
 	geminiPlanModeThinkingLevel: { default: undefined as string | undefined },
 	planModeReasoningEffort: { default: undefined as string | undefined },
 	planModeVerbosity: { default: undefined as string | undefined },
@@ -227,7 +230,7 @@ const API_HANDLER_SETTINGS_FIELDS = {
 
 	// Act mode configurations
 	actModeApiModelId: { default: undefined as string | undefined },
-	actModeThinkingBudgetTokens: { default: ANTHROPIC_MIN_THINKING_BUDGET as number | undefined },
+	actModeThinkingBudgetTokens: { default: undefined as number | undefined },
 	geminiActModeThinkingLevel: { default: undefined as string | undefined },
 	actModeReasoningEffort: { default: undefined as string | undefined },
 	actModeVerbosity: { default: undefined as string | undefined },
@@ -296,7 +299,7 @@ const USER_SETTINGS_FIELDS = {
 	terminalOutputLineLimit: { default: 500 as number },
 	maxConsecutiveMistakes: { default: 3 as number },
 	subagentTerminalOutputLineLimit: { default: 2000 as number },
-	strictPlanModeEnabled: { default: true as boolean },
+	strictPlanModeEnabled: { default: false as boolean },
 	yoloModeToggled: { default: false as boolean },
 	useAutoCondense: { default: false as boolean },
 	clineWebToolsEnabled: { default: true as boolean },
@@ -312,9 +315,8 @@ const USER_SETTINGS_FIELDS = {
 	customPrompt: { default: undefined as "compact" | undefined },
 	autoCondenseThreshold: { default: 0.75 as number }, // number from 0 to 1
 	subagentsEnabled: { default: false as boolean },
-	enableParallelToolCalling: { default: false as boolean },
+	enableParallelToolCalling: { default: true as boolean },
 	backgroundEditEnabled: { default: false as boolean },
-	skillsEnabled: { default: true as boolean },
 	optOutOfRemoteConfig: { default: false as boolean },
 
 	// OpenTelemetry configuration
@@ -351,6 +353,7 @@ const GLOBAL_STATE_AND_SETTINGS_FIELDS = { ...GLOBAL_STATE_FIELDS, ...SETTINGS_F
 // Secret keys used in Api Configuration
 const SECRETS_KEYS = [
 	"apiKey",
+	"clineApiKey",
 	"clineAccountId", // Cline Account ID for Firebase
 	"cline:clineAccountId",
 	"openRouterApiKey",

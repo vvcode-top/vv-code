@@ -895,8 +895,8 @@ export class Controller {
 		const lastDismissedInfoBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedInfoBannerVersion") || 0
 		const lastDismissedModelBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedModelBannerVersion") || 0
 		const lastDismissedCliBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedCliBannerVersion") || 0
+		const dismissedBanners = this.stateManager.getGlobalStateKey("dismissedBanners")
 		const subagentsEnabled = this.stateManager.getGlobalSettingsKey("subagentsEnabled")
-		const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
 
 		const availableSkills = await this.getAvailableSkillsMetadata()
 
@@ -1016,11 +1016,11 @@ export class Controller {
 			lastDismissedModelBannerVersion,
 			remoteConfigSettings: this.stateManager.getRemoteConfigSettings(),
 			lastDismissedCliBannerVersion,
+			dismissedBanners,
 			subagentsEnabled,
 			nativeToolCallSetting: this.stateManager.getGlobalStateKey("nativeToolCallEnabled"),
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
-			skillsEnabled,
 			availableSkills,
 			// VVCode Customization: 分组配置
 			vvGroupConfig,
@@ -1043,11 +1043,6 @@ export class Controller {
 
 	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
 		try {
-			const skillsEnabled = this.stateManager.getGlobalSettingsKey("skillsEnabled")
-			if (!skillsEnabled) {
-				return []
-			}
-
 			const { discoverSkills, getAvailableSkills } = await import("../context/instructions/user-instructions/skills")
 			const cwd = this.workspaceManager?.getPrimaryRoot()?.path || (await getCwd(getDesktopDir()))
 			const allSkills = await discoverSkills(cwd)
