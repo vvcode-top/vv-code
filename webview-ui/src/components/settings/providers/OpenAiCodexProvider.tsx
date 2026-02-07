@@ -3,6 +3,7 @@ import { Mode } from "@shared/storage/types"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { AccountServiceClient } from "@/services/grpc-client"
+import { ApiKeyField } from "../common/ApiKeyField"
 import { BaseUrlField } from "../common/BaseUrlField"
 import { ModelInfoView } from "../common/ModelInfoView"
 import { ModelSelector } from "../common/ModelSelector"
@@ -17,7 +18,7 @@ interface OpenAiCodexProviderProps {
 
 /**
  * OpenAI Codex (ChatGPT Plus/Pro) provider configuration component.
- * Uses OAuth authentication instead of API keys.
+ * Supports OAuth by default, and optional API key auth for custom base URLs.
  */
 export const OpenAiCodexProvider = ({ showModelOptions, isPopup, currentMode }: OpenAiCodexProviderProps) => {
 	const { apiConfiguration, openAiCodexIsAuthenticated } = useExtensionState()
@@ -43,6 +44,14 @@ export const OpenAiCodexProvider = ({ showModelOptions, isPopup, currentMode }: 
 
 	return (
 		<div>
+			<ApiKeyField
+				helpText="Optional: only required when using a custom base URL. Leave empty to use OAuth sign-in with your ChatGPT account."
+				initialValue={apiConfiguration?.openAiApiKey || ""}
+				onChange={(value) => handleFieldChange("openAiApiKey", value)}
+				providerName="OpenAI Codex"
+				signupUrl="https://platform.openai.com/api-keys"
+			/>
+
 			<BaseUrlField
 				initialValue={apiConfiguration?.openAiBaseUrl}
 				label="Use custom base URL"
