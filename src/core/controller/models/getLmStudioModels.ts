@@ -18,7 +18,7 @@ export async function getLmStudioModels(_controller: Controller, request: String
 		const endpoint = new URL("api/v0/models", baseUrl)
 
 		const response = await fetch(endpoint.href)
-		const data = await response.json()
+		const data = (await response.json()) as any
 		const models = data?.data?.map((m: unknown) => JSON.stringify(m)) || []
 
 		return StringArray.create({ values: models })

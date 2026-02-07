@@ -461,7 +461,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
 		if (!provider) return ""
 		const stateManager = StateManager.get()
 		const modelKey = getProviderModelIdKey(provider as ApiProvider, mode)
-		return (stateManager.getGlobalSettingsKey(modelKey) as string) || getProviderDefaultModelId(provider as ApiProvider) || ""
+		return (
+			(modelKey ? (stateManager.getGlobalSettingsKey(modelKey as any) as string) : "") ||
+			getProviderDefaultModelId(provider as ApiProvider) ||
+			""
+		)
 	}, [mode, provider, activePanel])
 
 	const toggleMode = useCallback(async () => {

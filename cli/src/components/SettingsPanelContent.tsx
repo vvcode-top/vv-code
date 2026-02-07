@@ -150,7 +150,7 @@ export const SettingsPanelContent: React.FC<SettingsPanelContentProps> = ({
 	const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(() => {
 		const initial: Record<string, boolean> = {}
 		for (const [key, config] of Object.entries(FEATURE_SETTINGS)) {
-			initial[key] = stateManager.getGlobalSettingsKey(config.stateKey) ?? config.default
+			initial[key] = stateManager.getGlobalSettingsKey(config.stateKey as any) ?? config.default
 		}
 		return initial as Record<FeatureKey, boolean>
 	})
@@ -211,8 +211,8 @@ export const SettingsPanelContent: React.FC<SettingsPanelContentProps> = ({
 		const actKey = getProviderModelIdKey(currentProvider as ApiProvider, "act")
 		const planKey = getProviderModelIdKey(currentProvider as ApiProvider, "plan")
 		return {
-			actModelId: (stateManager.getGlobalSettingsKey(actKey as string) as string) || "",
-			planModelId: (stateManager.getGlobalSettingsKey(planKey as string) as string) || "",
+			actModelId: (stateManager.getGlobalSettingsKey(actKey as any) as string) || "",
+			planModelId: (stateManager.getGlobalSettingsKey(planKey as any) as string) || "",
 		}
 	}, [modelRefreshKey, stateManager])
 
@@ -222,7 +222,7 @@ export const SettingsPanelContent: React.FC<SettingsPanelContentProps> = ({
 			const config = FEATURE_SETTINGS[key]
 			const newValue = !features[key]
 			setFeatures((prev) => ({ ...prev, [key]: newValue }))
-			stateManager.setGlobalState(config.stateKey, newValue)
+			stateManager.setGlobalState(config.stateKey as any, newValue)
 		},
 		[features, stateManager],
 	)
@@ -475,7 +475,7 @@ export const SettingsPanelContent: React.FC<SettingsPanelContentProps> = ({
 						key: parentKey,
 						label: parentLabel,
 						type: "checkbox",
-						value: actions[parentKey as keyof typeof actions],
+						value: (actions[parentKey as keyof typeof actions] ?? false) as any,
 						description: parentDesc,
 					})
 					if (actions[parentKey as keyof typeof actions]) {
@@ -719,8 +719,8 @@ export const SettingsPanelContent: React.FC<SettingsPanelContentProps> = ({
 				if (currentProvider) {
 					const actKey = getProviderModelIdKey(currentProvider as ApiProvider, "act")
 					const planKey = getProviderModelIdKey(currentProvider as ApiProvider, "plan")
-					const actModel = stateManager.getGlobalSettingsKey(actKey as string)
-					if (planKey) stateManager.setGlobalState(planKey, actModel)
+					const actModel = stateManager.getGlobalSettingsKey(actKey as any)
+					if (planKey) stateManager.setGlobalState(planKey as any, actModel)
 				}
 			}
 			return

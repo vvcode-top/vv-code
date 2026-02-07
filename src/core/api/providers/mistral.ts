@@ -36,7 +36,7 @@ export class MistralHandler implements ApiHandler {
 				// but we need to extract the URL and init options to pass to our fetch wrapper
 				// which properly handles proxy configuration in standalone mode (JetBrains/CLI)
 				const httpClient = new HTTPClient({
-					fetcher: async (input: RequestInfo | URL, init?: RequestInit) => {
+					fetcher: async (input: any, init?: RequestInit) => {
 						// Handle both string/URL and Request object inputs
 						if (input instanceof Request) {
 							Object.keys(externalHeaders).forEach((key) => {
@@ -118,7 +118,7 @@ export class MistralHandler implements ApiHandler {
 					}
 				}
 			} else if (delta?.content) {
-				let content: string = ""
+				let content = ""
 				if (typeof delta.content === "string") {
 					content = delta.content
 				} else if (Array.isArray(delta.content)) {

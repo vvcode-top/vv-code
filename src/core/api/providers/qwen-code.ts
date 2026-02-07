@@ -113,7 +113,7 @@ export class QwenCodeHandler implements ApiHandler {
 			throw new Error(`Token refresh failed: ${response.status} ${response.statusText}. Response: ${errorText}`)
 		}
 
-		const tokenData = await response.json()
+		const tokenData = (await response.json()) as any
 
 		if (tokenData.error) {
 			throw new Error(`Token refresh failed: ${tokenData.error} - ${tokenData.error_description}`)
@@ -175,9 +175,8 @@ export class QwenCodeHandler implements ApiHandler {
 				client.apiKey = this.credentials.access_token
 				client.baseURL = this.getBaseUrl(this.credentials)
 				return await apiCall()
-			} else {
-				throw error
 			}
+			throw error
 		}
 	}
 

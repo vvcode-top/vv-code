@@ -18,6 +18,27 @@ import { getToolDescription, isFileEditTool, parseToolFromMessage } from "../uti
 import { DiffView } from "./DiffView"
 
 /**
+ * Get the prefix icon for a CLI message
+ * Returns appropriate icon based on message type
+ */
+export function getCliMessagePrefixIcon(message: ClineMessage): string {
+	// For ask messages (user interaction needed)
+	if (message.ask) {
+		return "❯"
+	}
+	// For say messages (assistant output)
+	if (message.say === "task" || message.say === "user_feedback") {
+		return "❯"
+	}
+	// For tool results
+	if (message.type === "say") {
+		return "⎿"
+	}
+	// Default: assistant/tool call
+	return "⏺"
+}
+
+/**
  * Add "(Tab)" hint after "to Act Mode" mentions.
  * Case-insensitive, avoids double-adding if already present.
  */
@@ -211,7 +232,7 @@ function truncate(text: string, maxLength: number): string {
 /**
  * Format tool result for display
  */
-function formatToolResult(result: string, maxLines: number = 5): string[] {
+function formatToolResult(result: string, maxLines = 5): string[] {
 	const lines = result.split("\n")
 	if (lines.length <= maxLines) {
 		return lines
@@ -272,7 +293,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
 	if ((isToolAsk || isToolSay) && text) {
 		const toolInfo = parseToolFromMessage(text)
 		if (toolInfo) {
-			const filePath = toolInfo.args.path || toolInfo.args.file_path
+			const filePath: any = toolInfo.args.path || toolInfo.args.file_path
 
 			// File edit tools - show diff
 			if (isFileEditTool(toolInfo.toolName) && filePath && toolInfo.args.content) {
@@ -282,7 +303,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
 							<ToolCallText args={toolInfo.args} isAsk={isToolAsk} mode={mode} toolName={toolInfo.toolName} />
 						</DotRow>
 						<Box marginLeft={2}>
-							<DiffView content={toolInfo.args.content} filePath={filePath as string | undefined} />
+							{/* @ts-ignore */}
+							<DiffView content={toolInfo.args.content} filePath={filePath as string} />
 						</Box>
 					</Box>
 				)
@@ -378,7 +400,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
 		const isAsk = type === "ask"
 		const parsed = text
 			? jsonParseSafe<ClineAskUseMcpServer>(text, {
-					type: undefined as ClineAskUseMcpServer["type"] | undefined,
+					type: undefined as any,
 					serverName: "unknown server",
 					toolName: undefined as string | undefined,
 					arguments: undefined as string | undefined,

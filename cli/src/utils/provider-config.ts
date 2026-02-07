@@ -18,6 +18,72 @@ export interface ApplyProviderConfigOptions {
 	controller?: Controller
 }
 
+export interface BedrockConfig {
+	awsAuthentication: string
+	awsProfile?: string
+	awsAccessKey?: string
+	awsSecretKey?: string
+	awsSessionToken?: string
+	awsRegion: string
+	awsUseCrossRegionInference: boolean
+}
+
+export interface ApplyBedrockConfigOptions {
+	bedrockConfig: BedrockConfig
+	modelId?: string
+	controller?: Controller
+}
+
+/**
+ * Apply Bedrock provider configuration to state and rebuild API handler if needed
+ */
+export async function applyBedrockConfig(options: ApplyBedrockConfigOptions): Promise<void> {
+	const { bedrockConfig, modelId, controller } = options
+	const stateManager = StateManager.get()
+
+	const config: Record<string, string | boolean> = {
+		actModeApiProvider: "bedrock",
+		planModeApiProvider: "bedrock",
+		awsRegion: bedrockConfig.awsRegion,
+		awsAuthentication: bedrockConfig.awsAuthentication,
+		awsUseCrossRegionInference: bedrockConfig.awsUseCrossRegionInference,
+	}
+
+	// Add optional AWS credentials based on authentication method
+	if (bedrockConfig.awsProfile) {
+		config.awsProfile = bedrockConfig.awsProfile
+	}
+	if (bedrockConfig.awsAccessKey) {
+		config.awsAccessKey = bedrockConfig.awsAccessKey
+	}
+	if (bedrockConfig.awsSecretKey) {
+		config.awsSecretKey = bedrockConfig.awsSecretKey
+	}
+	if (bedrockConfig.awsSessionToken) {
+		config.awsSessionToken = bedrockConfig.awsSessionToken
+	}
+
+	// Add model ID (use provided or fall back to default)
+	const finalModelId = modelId || getDefaultModelId("bedrock")
+	if (finalModelId) {
+		const actModelKey = getProviderModelIdKey("bedrock", "act")
+		const planModelKey = getProviderModelIdKey("bedrock", "plan")
+		if (actModelKey) config[actModelKey] = finalModelId
+		if (planModelKey) config[planModelKey] = finalModelId
+	}
+
+	// Save via StateManager
+	stateManager.setApiConfiguration(config)
+	await stateManager.flushPendingState()
+
+	// Rebuild API handler on active task if one exists
+	if (controller?.task) {
+		const currentMode = stateManager.getGlobalSettingsKey("mode")
+		const apiConfig = stateManager.getApiConfiguration()
+		controller.task.api = buildApiHandler({ ...apiConfig, ulid: controller.task.ulid }, currentMode)
+	}
+}
+
 /**
  * Apply provider configuration to state and rebuild API handler if needed
  */

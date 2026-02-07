@@ -13,6 +13,7 @@ import { Fzf } from "fzf"
  */
 export function fuzzyFilter<T>(items: readonly T[], query: string, selector: (item: T) => string): T[] {
 	if (!query) return [...items]
+	// @ts-expect-error - fzf type definitions are not fully compatible
 	const fzf = new Fzf(items, { selector })
 	return fzf.find(query).map((result) => result.item)
 }

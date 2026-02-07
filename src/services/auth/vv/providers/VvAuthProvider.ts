@@ -14,7 +14,7 @@ export class VvAuthProvider {
 	// API 基础 URL（可配置）
 	private apiBaseUrl: string
 
-	constructor(apiBaseUrl: string = "https://vvcode.top/api") {
+	constructor(apiBaseUrl = "https://vvcode.top/api") {
 		this.apiBaseUrl = apiBaseUrl
 	}
 
@@ -59,14 +59,16 @@ export class VvAuthProvider {
 							"You may have refreshed the page or clicked the login button multiple times. " +
 							"Please wait 30 seconds and try again.",
 					)
-				} else if (response.status === 400) {
+				}
+				if (response.status === 400) {
 					throw new Error(
 						errorData.error_description ||
 							errorData.error ||
 							errorData.message ||
 							"Invalid authorization code - it may have expired or been used already. Please try logging in again.",
 					)
-				} else if (response.status === 401) {
+				}
+				if (response.status === 401) {
 					throw new Error(errorData.error || "Authentication failed - please try logging in again")
 				}
 
@@ -75,7 +77,7 @@ export class VvAuthProvider {
 				)
 			}
 
-			const data = await response.json()
+			const data = (await response.json()) as any
 
 			return {
 				accessToken: data.access_token,
@@ -113,7 +115,7 @@ export class VvAuthProvider {
 			throw new Error(`Failed to get user info: ${response.statusText}`)
 		}
 
-		const result = await response.json()
+		const result = (await response.json()) as any as any
 		const user = result.data
 
 		return {
@@ -145,11 +147,11 @@ export class VvAuthProvider {
 		})
 
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}))
+			const errorData = (await response.json().catch(() => ({}))) as any
 			throw new Error(`Token refresh failed: ${errorData.error || response.statusText}`)
 		}
 
-		const data = await response.json()
+		const data = (await response.json()) as any
 		return {
 			accessToken: data.access_token,
 			userId: data.user_id,
@@ -177,7 +179,7 @@ export class VvAuthProvider {
 			return {}
 		}
 
-		const data = await response.json()
+		const data = (await response.json()) as any
 
 		// 将对象格式的 settings 转换为数组格式
 		const settingsArray = data.settings
@@ -239,7 +241,7 @@ export class VvAuthProvider {
 				throw new Error(`Failed to get group tokens: ${errorText}`)
 			}
 
-			const result = await response.json()
+			const result = (await response.json()) as any
 			if (!result.success) {
 				throw new Error(result.message || "Failed to get group tokens")
 			}
@@ -283,7 +285,7 @@ export class VvAuthProvider {
 				throw new Error(`Failed to init group tokens: ${errorText}`)
 			}
 
-			const result = await response.json()
+			const result = (await response.json()) as any
 			Logger.log("[VVAuth] initGroupTokens result:", JSON.stringify(result, null, 2))
 			if (!result.success) {
 				throw new Error(result.message || "Failed to init group tokens")
@@ -332,7 +334,7 @@ export class VvAuthProvider {
 			throw new Error(`Failed to get system status: ${response.statusText}`)
 		}
 
-		const result = await response.json()
+		const result = (await response.json()) as any
 		if (!result.success) {
 			throw new Error(result.message || "Failed to get system status")
 		}

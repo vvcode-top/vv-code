@@ -11,7 +11,7 @@ import { useTaskController } from "../context/TaskContext"
 import { useLastCompletedAskMessage } from "../hooks/useStateSubscriber"
 import { isMouseEscapeSequence } from "../utils/input"
 import { jsonParseSafe } from "../utils/parser"
-import { getCliMessagePrefixIcon } from "./MessageRow"
+import { getCliMessagePrefixIcon } from "./ChatMessage"
 
 interface AskPromptProps {
 	onRespond?: (response: string) => void
@@ -146,7 +146,7 @@ export const AskPrompt: React.FC<AskPromptProps> = ({ onRespond }) => {
 					setTextInput((prev) => prev.slice(0, -1))
 				} else if (input && !key.ctrl && !key.meta) {
 					// Check if it's a number for option selection (only when no text typed yet)
-					const num = parseInt(input, 10)
+					const num = Number.parseInt(input, 10)
 					if (textInput === "" && !Number.isNaN(num) && num >= 1 && num <= parts.options.length) {
 						const selectedOption = parts.options[num - 1]
 						sendResponse("messageResponse", selectedOption)

@@ -54,6 +54,12 @@ interface AuthViewProps {
 	onComplete?: () => void
 	onError?: () => void
 	onNavigateToWelcome?: () => void
+	quickSetup?: {
+		provider?: string
+		apikey?: string
+		modelid?: string
+		baseurl?: string
+	}
 }
 
 interface SelectItem {

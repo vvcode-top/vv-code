@@ -79,7 +79,10 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSubmit, onExit, cont
 	const modelId = useMemo(() => {
 		const stateManager = StateManager.get()
 		const modelKey = getProviderModelIdKey(provider as ApiProvider, mode)
-		return (stateManager.getGlobalSettingsKey(modelKey as string) as string) || getProviderDefaultModelId(provider)
+		return (
+			(modelKey ? (stateManager.getGlobalSettingsKey(modelKey as any) as string) : "") ||
+			getProviderDefaultModelId(provider as ApiProvider)
+		)
 	}, [mode, provider])
 
 	const toggleMode = useCallback(() => {
