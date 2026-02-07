@@ -73,9 +73,6 @@
 				"noAssignInExpressions": "info",
 				"useIterableCallbackReturn": "info"
 			},
-			"nursery": {
-				"useIterableCallbackReturn": "off"
-			},
 			"complexity": {
 				"noUselessConstructor": "info",
 				"useOptionalChain": "info",
@@ -98,11 +95,6 @@
 		"lineEnding": "lf",
 		"formatWithErrors": true
 	},
-	"css": {
-		"parser": {
-			"tailwindDirectives": true
-		}
-	},
 	"javascript": {
 		"formatter": {
 			"semicolons": "asNeeded",
@@ -122,7 +114,8 @@
 	},
 	"css": {
 		"parser": {
-			"cssModules": true
+			"cssModules": true,
+			"tailwindDirectives": true
 		},
 		"linter": {
 			"enabled": false
