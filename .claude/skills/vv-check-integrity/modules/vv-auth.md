@@ -26,6 +26,22 @@
 - `resetAndRefreshConfig` - 重置并刷新配置
 - `getSystemStatus` - 获取系统状态和公告
 
+### 动态分组 provider 映射（重要）
+
+📁 `src/services/auth/vv/VvAuthService.ts`
+
+当 VV 后端下发分组配置时，需要根据 `apiProvider` 生成不同的配置字段（写入 secrets/globalState）。
+
+**必须包含**:
+- `getProviderModelSettings()` - 根据 `apiProvider` 写入不同的 baseUrl/modelId/key 字段
+
+**必须支持 provider: openai-codex**:
+- `case "openai-codex"` 分支存在
+- 必须写入：
+  - `openAiBaseUrl`（来自分组 `apiBaseUrl`，并归一化）
+  - `planModeApiModelId` / `actModeApiModelId`（来自 `defaultModelId`）
+- 不应在该分支里写入 `openAiApiKey`（默认 Codex 使用 OAuth；自定义端点则由 UI/用户配置 API key）
+
 ### VvAuthProvider
 📁 `src/services/auth/vv/providers/VvAuthProvider.ts`
 

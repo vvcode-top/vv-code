@@ -189,6 +189,8 @@ function createHandlerForProvider(
 		case "openai-codex":
 			return new OpenAiCodexHandler({
 				onRetryAttempt: options.onRetryAttempt,
+				openAiBaseUrl: options.openAiBaseUrl,
+				openAiApiKey: options.openAiApiKey,
 				reasoningEffort: mode === "plan" ? options.planModeReasoningEffort : options.actModeReasoningEffort,
 				apiModelId: mode === "plan" ? options.planModeApiModelId : options.actModeApiModelId,
 			})

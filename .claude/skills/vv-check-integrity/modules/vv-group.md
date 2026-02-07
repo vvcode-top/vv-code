@@ -81,6 +81,12 @@
   - `stateManager.setTaskSettingsBatch(...)`（活跃任务保持一致）
 - `getProviderModelSettings()` - 根据 `apiProvider` 写入不同的 baseUrl/modelId/key 字段
 
+**必须支持 provider: openai-codex**:
+- `apiProvider` 归一化后为 `openai-codex` 时
+  - 必须写入 `openAiBaseUrl`（来自 `group.apiBaseUrl`，并用 `normalizeVvBackendBaseUrl` 归一化）
+  - 必须写入 `planModeApiModelId` / `actModeApiModelId`（来自 `group.defaultModelId`）
+  - 分组配置不下发 `openAiApiKey`（默认 Codex 走 OAuth；自定义端点由用户在设置中填 API key）
+
 ---
 
 ## 功能说明
@@ -128,6 +134,9 @@ VvAuthService.switchGroup
 # provider/baseUrl 归一化工具
 grep "normalizeVvBackendBaseUrl" src/shared/vv-config.ts
 grep "normalizeVvGroupApiProvider" src/shared/vv-config.ts
+
+# openai-codex provider alias（分组下发可能是不同格式）
+grep "openai-codex" src/shared/vv-config.ts
 
 # provider 映射位置
 grep "normalizeVvGroupApiProvider" src/services/auth/vv/providers/VvAuthProvider.ts

@@ -11,6 +11,9 @@ const VV_PROVIDER_ALIAS_MAP: Record<string, ApiProvider> = {
 	open_ai: "openai",
 	"openai-compatible": "openai",
 	openaicompatible: "openai",
+	"openai-codex": "openai-codex",
+	openai_codex: "openai-codex",
+	openaicodex: "openai-codex",
 }
 
 export function normalizeVvBackendBaseUrl(raw: string | undefined, fallback = VV_DEFAULT_BACKEND_BASE_URL): string {
