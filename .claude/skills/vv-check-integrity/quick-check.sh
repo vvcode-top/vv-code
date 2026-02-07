@@ -151,14 +151,29 @@ else
 fi
 echo ""
 
-# 9. 更新完成与欢迎通知文案
-echo "🔔 9. 更新完成与欢迎通知文案"
+# 9. CHANGELOG 品牌与格式检查
+echo "📝 9. CHANGELOG 品牌与格式"
+if [ -f "CHANGELOG.md" ]; then
+    if head -n 1 CHANGELOG.md | grep -q "^# VVCode Changelog$"; then
+        echo -e "${GREEN}✅${NC}   - CHANGELOG 标题为 VVCode Changelog"
+    else
+        echo -e "${RED}❌${NC}   - CHANGELOG 标题不是 '# VVCode Changelog'"
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    echo -e "${RED}❌${NC}   - CHANGELOG.md 文件缺失"
+    ERRORS=$((ERRORS + 1))
+fi
+echo ""
+
+# 10. 更新完成与欢迎通知文案
+echo "🔔 10. 更新完成与欢迎通知文案"
 check_exists "VVCode has been updated to v" "src/common.ts" "  - 更新完成提示使用 VVCode 品牌"
 check_exists "Welcome to VVCode v" "src/common.ts" "  - 欢迎提示使用 VVCode 品牌"
 echo ""
 
-# 10. VV自定义组件文件
-echo "📁 10. VV自定义组件文件"
+# 11. VV自定义组件文件
+echo "📁 11. VV自定义组件文件"
 ui_files_to_check=(
     "webview-ui/src/components/settings/VvSettingsView.tsx"
     "webview-ui/src/components/settings/VvAccountInfoCard.tsx"
@@ -176,8 +191,8 @@ for file in "${ui_files_to_check[@]}"; do
 done
 echo ""
 
-# 11. 核心服务文件存在性检查
-echo "📁 11. 核心服务文件"
+# 12. 核心服务文件存在性检查
+echo "📁 12. 核心服务文件"
 files_to_check=(
     "src/services/auth/vv/VvAuthService.ts"
     "src/services/auth/vv/providers/VvAuthProvider.ts"
