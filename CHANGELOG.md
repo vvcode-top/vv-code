@@ -1,5 +1,10 @@
 # VVCode Changelog
 
+## [1.3.1] - 2026-02-07
+
+### Changed
+- codex 的默认推理强度设置为 "high"
+
 ## [1.3.0] - 2026-02-06
 
 ### Added

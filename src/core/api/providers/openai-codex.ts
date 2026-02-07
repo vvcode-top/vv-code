@@ -157,7 +157,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 		tools?: ChatCompletionTool[],
 	): any {
 		// Determine reasoning effort
-		const reasoningEffort = this.options.reasoningEffort || "medium"
+		const reasoningEffort = this.options.reasoningEffort || "high"
 
 		const body: any = {
 			model: model.id,
