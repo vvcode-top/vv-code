@@ -2,6 +2,11 @@ export interface SlashCommand {
 	name: string
 	description?: string
 	section?: "default" | "custom" | "mcp"
+	/**
+	 * UI hint for how to render/handle the command.
+	 * Optional for backward compatibility across clients.
+	 */
+	type?: "workflow" | "skill" | "mcp" | "command"
 	cliCompatible?: boolean
 }
 
