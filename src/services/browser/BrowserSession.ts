@@ -572,13 +572,7 @@ export class BrowserSession {
 		this.browserActions.push("scrollDown")
 
 		return this.doAction(async (page) => {
-			await page.evaluate(() => {
-				// @ts-expect-error - window is available in browser context
-				window.scrollBy({
-					top: 600,
-					behavior: "auto",
-				})
-			})
+			await page.mouse.wheel({ deltaY: 600 })
 			await setTimeoutPromise(300)
 		})
 	}
@@ -587,13 +581,7 @@ export class BrowserSession {
 		this.browserActions.push("scrollUp")
 
 		return this.doAction(async (page) => {
-			await page.evaluate(() => {
-				// @ts-expect-error - window is available in browser context
-				window.scrollBy({
-					top: -600,
-					behavior: "auto",
-				})
-			})
+			await page.mouse.wheel({ deltaY: -600 })
 			await setTimeoutPromise(300)
 		})
 	}
