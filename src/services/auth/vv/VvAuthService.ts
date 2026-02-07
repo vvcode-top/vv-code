@@ -615,6 +615,7 @@ export class VvAuthService {
 	 * 不同 provider 使用不同的字段名：
 	 * - anthropic: apiKey, anthropicBaseUrl, planModeApiModelId/actModeApiModelId
 	 * - openai: openAiApiKey, openAiBaseUrl, planModeOpenAiModelId/actModeOpenAiModelId
+	 * - openai-codex: openAiApiKey, openAiBaseUrl, planModeApiModelId/actModeApiModelId
 	 */
 	private getProviderModelSettings(
 		provider: ApiProvider,
@@ -639,7 +640,9 @@ export class VvAuthService {
 				}
 			case "openai-codex":
 				return {
-					secrets: {},
+					secrets: {
+						openAiApiKey: group.apiKey,
+					},
 					globalState: {
 						openAiBaseUrl: baseUrl,
 						planModeApiModelId: group.defaultModelId,
