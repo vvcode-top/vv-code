@@ -10,8 +10,8 @@
 以下文档描述了VVCode的二次开发实现细节：
 
 - 📄 `CHANGELOG.md` - VVCode 变更日志（应保持 VVCode 格式）
-- 📄 `docs/Vv_Auth_Implementation.md` - VV认证系统实现文档
-- 📄 `docs/Vv_Group_Policy.md` - VV分组策略说明
+- 📄 `docs/VV_AUTH_IMPLEMENTATION.md` - VV认证系统实现文档
+- 📄 `docs/VV_GROUP_POLICY.md` - VV分组策略说明
 - 📄 `.clinerules/fork-development.md` - 二次开发指南
 
 ---
@@ -82,8 +82,8 @@ VVCode专用的AI技能脚本（当前以 Claude skills 形式管理）：
 必须存在的文件：
 
 - ✅ `CHANGELOG.md` - VVCode 变更日志（并保持 VVCode 格式）
-- ✅ `docs/Vv_Auth_Implementation.md` - 认证系统文档
-- ✅ `docs/Vv_Group_Policy.md` - 分组策略文档
+- ✅ `docs/VV_AUTH_IMPLEMENTATION.md` - 认证系统文档
+- ✅ `docs/VV_GROUP_POLICY.md` - 分组策略文档
 - ✅ `.clinerules/fork-development.md` - 二次开发指南
 - ✅ `assets/qq.jpg` - QQ群二维码
 - ✅ `.claude/skills/vv-merge-cline/SKILL.md` - 合并上游Cline代码的自动化技能

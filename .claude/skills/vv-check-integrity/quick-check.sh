@@ -75,6 +75,20 @@ else
 fi
 echo ""
 
+# 4.5 动态分组关键路径检查
+echo "🧩 4.5 动态分组关键路径"
+check_exists "vvGroupConfig:.*VvGroupConfig" "src/shared/storage/state-keys.ts" "  - state-keys.ts: vvGroupConfig 类型"
+check_exists "vvSelectedGroupType:.*VvGroupType" "src/shared/storage/state-keys.ts" "  - state-keys.ts: vvSelectedGroupType 类型"
+check_exists "export type VvGroupType" "src/shared/storage/state-keys.ts" "  - state-keys.ts: VvGroupType 定义"
+check_exists "export interface VvGroupItem" "src/shared/storage/state-keys.ts" "  - state-keys.ts: VvGroupItem 定义"
+check_exists "normalizeVvBackendBaseUrl" "src/shared/vv-config.ts" "  - vv-config.ts: normalizeVvBackendBaseUrl"
+check_exists "normalizeVvGroupApiProvider" "src/shared/vv-config.ts" "  - vv-config.ts: normalizeVvGroupApiProvider"
+check_exists "setRemoteConfigField.*planModeApiProvider" "src/services/auth/vv/VvAuthService.ts" "  - VvAuthService: 同步 remoteConfigCache"
+check_exists "setTaskSettingsBatch" "src/services/auth/vv/VvAuthService.ts" "  - VvAuthService: 同步 taskStateCache"
+check_exists "getGroupTokens(" "src/services/auth/vv/providers/VvAuthProvider.ts" "  - VvAuthProvider: getGroupTokens"
+check_exists "initGroupTokens(" "src/services/auth/vv/providers/VvAuthProvider.ts" "  - VvAuthProvider: initGroupTokens"
+echo ""
+
 # 5. VV Settings 按钮检查
 echo "⚙️  5. VV Settings 按钮"
 check_exists "sendVVSettingsButtonClickedEvent" "src/extension.ts" "  - sendVVSettingsButtonClickedEvent 导入"
