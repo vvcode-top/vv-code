@@ -151,14 +151,29 @@ else
 fi
 echo ""
 
-# 9. 更新完成与欢迎通知文案
-echo "🔔 9. 更新完成与欢迎通知文案"
+# 9. CHANGELOG 品牌与格式检查
+echo "📝 9. CHANGELOG 品牌与格式"
+if [ -f "CHANGELOG.md" ]; then
+    if head -n 1 CHANGELOG.md | grep -q "^# VVCode Changelog$"; then
+        echo -e "${GREEN}✅${NC}   - CHANGELOG 标题为 VVCode Changelog"
+    else
+        echo -e "${RED}❌${NC}   - CHANGELOG 标题不是 '# VVCode Changelog'"
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    echo -e "${RED}❌${NC}   - CHANGELOG.md 文件缺失"
+    ERRORS=$((ERRORS + 1))
+fi
+echo ""
+
+# 10. 更新完成与欢迎通知文案
+echo "🔔 10. 更新完成与欢迎通知文案"
 check_exists "VVCode has been updated to v" "src/common.ts" "  - 更新完成提示使用 VVCode 品牌"
 check_exists "Welcome to VVCode v" "src/common.ts" "  - 欢迎提示使用 VVCode 品牌"
 echo ""
 
-# 10. VV自定义组件文件
-echo "📁 10. VV自定义组件文件"
+# 11. VV自定义组件文件
+echo "📁 11. VV自定义组件文件"
 ui_files_to_check=(
     "webview-ui/src/components/settings/VvSettingsView.tsx"
     "webview-ui/src/components/settings/VvAccountInfoCard.tsx"
@@ -176,8 +191,8 @@ for file in "${ui_files_to_check[@]}"; do
 done
 echo ""
 
-# 11. 核心服务文件存在性检查
-echo "📁 11. 核心服务文件"
+# 12. 核心服务文件存在性检查
+echo "📁 12. 核心服务文件"
 files_to_check=(
     "src/services/auth/vv/VvAuthService.ts"
     "src/services/auth/vv/providers/VvAuthProvider.ts"
@@ -194,6 +209,28 @@ for file in "${files_to_check[@]}"; do
         ERRORS=$((ERRORS + 1))
     fi
 done
+echo ""
+
+# 13. OpenAI Codex 自定义端点集成检查
+echo "🤖 13. OpenAI Codex 自定义端点集成"
+check_exists 'case "openai-codex"' "src/core/api/index.ts" "  - API Factory: openai-codex 分支"
+check_exists "openAiBaseUrl: options.openAiBaseUrl" "src/core/api/index.ts" "  - API Factory: 透传 openAiBaseUrl"
+check_exists "openAiApiKey: options.openAiApiKey" "src/core/api/index.ts" "  - API Factory: 透传 openAiApiKey"
+check_exists "openAiBaseUrl[?]: string" "src/core/api/providers/openai-codex.ts" "  - OpenAiCodexHandlerOptions: openAiBaseUrl"
+check_exists "openAiApiKey[?]: string" "src/core/api/providers/openai-codex.ts" "  - OpenAiCodexHandlerOptions: openAiApiKey"
+check_exists "private get baseUrl" "src/core/api/providers/openai-codex.ts" "  - OpenAiCodexHandler: baseUrl getter"
+check_exists "API key is required when using a custom base URL for OpenAI Codex" "src/core/api/providers/openai-codex.ts" "  - 自定义端点必须使用 API key"
+check_exists "!hasCustomBaseUrl && attempt === 0 && isAuthFailure" "src/core/api/providers/openai-codex.ts" "  - OAuth 刷新仅用于默认 Codex 端点"
+check_exists "baseURL: this.baseUrl" "src/core/api/providers/openai-codex.ts" "  - OpenAI SDK 使用动态 baseUrl"
+check_exists '\${this.baseUrl}/responses' "src/core/api/providers/openai-codex.ts" "  - fetch 请求使用动态 baseUrl"
+check_exists 'case "openai-codex"' "src/services/auth/vv/VvAuthService.ts" "  - VvAuthService: openai-codex 分支"
+check_exists "planModeApiModelId: group.defaultModelId" "src/services/auth/vv/VvAuthService.ts" "  - VvAuthService: 写入 planModeApiModelId"
+check_exists "actModeApiModelId: group.defaultModelId" "src/services/auth/vv/VvAuthService.ts" "  - VvAuthService: 写入 actModeApiModelId"
+check_exists '"openai-codex": "openai-codex"' "src/shared/vv-config.ts" "  - vv-config: openai-codex alias"
+check_exists 'openai_codex: "openai-codex"' "src/shared/vv-config.ts" "  - vv-config: openai_codex alias"
+check_exists 'openaicodex: "openai-codex"' "src/shared/vv-config.ts" "  - vv-config: openaicodex alias"
+check_exists "BaseUrlField" "webview-ui/src/components/settings/providers/OpenAiCodexProvider.tsx" "  - OpenAiCodexProvider: BaseUrlField 集成"
+check_exists 'handleFieldChange("openAiBaseUrl"' "webview-ui/src/components/settings/providers/OpenAiCodexProvider.tsx" "  - OpenAiCodexProvider: openAiBaseUrl 状态更新"
 echo ""
 
 # 总结

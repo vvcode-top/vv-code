@@ -20,6 +20,8 @@ const CODEX_API_BASE_URL = "https://chatgpt.com/backend-api/codex"
 interface OpenAiCodexHandlerOptions extends CommonApiHandlerOptions {
 	reasoningEffort?: string
 	apiModelId?: string
+	openAiBaseUrl?: string
+	openAiApiKey?: string
 }
 
 /**
@@ -46,6 +48,10 @@ export class OpenAiCodexHandler implements ApiHandler {
 	constructor(options: OpenAiCodexHandlerOptions) {
 		this.options = options
 		this.sessionId = uuidv7()
+	}
+
+	private get baseUrl(): string {
+		return (this.options.openAiBaseUrl || CODEX_API_BASE_URL).replace(/\/+$/, "")
 	}
 
 	private normalizeUsage(usage: any, model: { id: string; info: ModelInfo }): ApiStreamUsageChunk | undefined {
@@ -90,15 +96,27 @@ export class OpenAiCodexHandler implements ApiHandler {
 
 	async *createMessage(systemPrompt: string, messages: ClineStorageMessage[], tools?: ChatCompletionTool[]): ApiStream {
 		const model = this.getModel()
+		const hasCustomBaseUrl = Boolean(this.options.openAiBaseUrl?.trim())
 
 		// Reset state for this request
 		this.pendingToolCallId = undefined
 		this.pendingToolCallName = undefined
 
-		// Get access token from OAuth manager
-		let accessToken = await openAiCodexOAuthManager.getAccessToken()
-		if (!accessToken) {
-			throw new Error("Not authenticated with OpenAI Codex. Please sign in using the OpenAI Codex OAuth flow in settings.")
+		// Auth: custom base URL uses API key directly; default Codex uses OAuth
+		let accessToken: string
+		if (hasCustomBaseUrl) {
+			if (!this.options.openAiApiKey) {
+				throw new Error("API key is required when using a custom base URL for OpenAI Codex.")
+			}
+			accessToken = this.options.openAiApiKey
+		} else {
+			const token = await openAiCodexOAuthManager.getAccessToken()
+			if (!token) {
+				throw new Error(
+					"Not authenticated with OpenAI Codex. Please sign in using the OpenAI Codex OAuth flow in settings.",
+				)
+			}
+			accessToken = token
 		}
 
 		// Format conversation for Responses API
@@ -116,7 +134,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 				const message = error instanceof Error ? error.message : String(error)
 				const isAuthFailure = /unauthorized|invalid token|not authenticated|authentication|401/i.test(message)
 
-				if (attempt === 0 && isAuthFailure) {
+				if (!hasCustomBaseUrl && attempt === 0 && isAuthFailure) {
 					// Force refresh the token for retry
 					const refreshed = await openAiCodexOAuthManager.forceRefreshAccessToken()
 					if (!refreshed) {
@@ -139,7 +157,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 		tools?: ChatCompletionTool[],
 	): any {
 		// Determine reasoning effort
-		const reasoningEffort = this.options.reasoningEffort || "medium"
+		const reasoningEffort = this.options.reasoningEffort || "high"
 
 		const body: any = {
 			model: model.id,
@@ -194,7 +212,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 					this.client ??
 					new OpenAI({
 						apiKey: accessToken,
-						baseURL: CODEX_API_BASE_URL,
+						baseURL: this.baseUrl,
 						defaultHeaders: codexHeaders,
 						fetch, // Use shared fetch for proxy support
 					})
@@ -227,7 +245,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 	}
 
 	private async *makeCodexRequest(requestBody: any, model: { id: string; info: ModelInfo }, accessToken: string): ApiStream {
-		const url = `${CODEX_API_BASE_URL}/responses`
+		const url = `${this.baseUrl}/responses`
 
 		// Get ChatGPT account ID for organization subscriptions
 		const accountId = await openAiCodexOAuthManager.getAccountId()

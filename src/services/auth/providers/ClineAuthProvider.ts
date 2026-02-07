@@ -307,16 +307,16 @@ export class ClineAuthProvider {
 
 				// 400/401 = Invalid/expired token (permanent failure)
 				if (response.status === 400 || response.status === 401) {
-					const errorData = await response.json().catch(() => ({}))
+					const errorData = (await response.json().catch(() => ({}))) as any
 					const errorMessage = errorData?.error || "Invalid or expired token"
 					throw new AuthInvalidTokenError(errorMessage)
 				}
 				// 5xx, 429, network errors = transient failures
-				const errorData = await response.json().catch(() => ({}))
-				throw new AuthNetworkError(`status: ${response.status}`, errorData)
+				const errorData = (await response.json().catch(() => ({}))) as any
+				throw new AuthNetworkError(`status: ${response.status}`, errorData as any)
 			}
 
-			const data: ClineAuthApiTokenExchangeResponse = await response.json()
+			const data: ClineAuthApiTokenExchangeResponse = (await response.json()) as any
 
 			if (!data.success || !data.data.refreshToken || !data.data.accessToken) {
 				throw new Error("Failed to exchange authorization code for access token")
@@ -372,7 +372,7 @@ export class ClineAuthProvider {
 			}
 
 			// If we didn't get a redirect, try to parse the response as JSON
-			const responseData = await response.json()
+			const responseData = (await response.json()) as any
 			if (responseData.redirect_url) {
 				return responseData.redirect_url
 			}
@@ -406,11 +406,11 @@ export class ClineAuthProvider {
 			})
 
 			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}))
+				const errorData = (await response.json().catch(() => ({}))) as any
 				throw new Error(errorData.error_description || "Failed to exchange authorization code for tokens")
 			}
 
-			const responseJSON = await response.json()
+			const responseJSON = (await response.json()) as any
 			const responseType: ClineAuthApiTokenExchangeResponse = responseJSON
 			const tokenData = responseType.data
 

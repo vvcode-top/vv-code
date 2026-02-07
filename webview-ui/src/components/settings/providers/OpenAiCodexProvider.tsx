@@ -3,6 +3,7 @@ import { Mode } from "@shared/storage/types"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { AccountServiceClient } from "@/services/grpc-client"
+import { BaseUrlField } from "../common/BaseUrlField"
 import { ModelInfoView } from "../common/ModelInfoView"
 import { ModelSelector } from "../common/ModelSelector"
 import { normalizeApiConfiguration } from "../utils/providerUtils"
@@ -20,7 +21,7 @@ interface OpenAiCodexProviderProps {
  */
 export const OpenAiCodexProvider = ({ showModelOptions, isPopup, currentMode }: OpenAiCodexProviderProps) => {
 	const { apiConfiguration, openAiCodexIsAuthenticated } = useExtensionState()
-	const { handleModeFieldChange } = useApiConfigurationHandlers()
+	const { handleFieldChange, handleModeFieldChange } = useApiConfigurationHandlers()
 
 	const { selectedModelId, selectedModelInfo } = normalizeApiConfiguration(apiConfiguration, currentMode)
 
@@ -42,6 +43,13 @@ export const OpenAiCodexProvider = ({ showModelOptions, isPopup, currentMode }: 
 
 	return (
 		<div>
+			<BaseUrlField
+				initialValue={apiConfiguration?.openAiBaseUrl}
+				label="Use custom base URL"
+				onChange={(value) => handleFieldChange("openAiBaseUrl", value)}
+				placeholder="Default: https://chatgpt.com/backend-api/codex"
+			/>
+
 			<div style={{ marginBottom: "15px" }}>
 				{openAiCodexIsAuthenticated ? (
 					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

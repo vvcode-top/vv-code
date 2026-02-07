@@ -3,7 +3,7 @@
 
 import { String as ProtoString } from "@shared/proto/cline/common"
 import { ChevronDownIcon, ExternalLinkIcon } from "lucide-react"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import styled from "styled-components"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useExtensionState } from "@/context/ExtensionStateContext"
@@ -119,8 +119,35 @@ interface VvGroupSelectorProps {
 
 export function VvGroupSelector({ className }: VvGroupSelectorProps) {
 	const { vvGroupConfig, vvSelectedGroupType } = useExtensionState()
+	const containerRef = useRef<HTMLDivElement>(null)
 	const [isOpen, setIsOpen] = useState(false)
 	const [isSwitching, setIsSwitching] = useState(false)
+
+	useEffect(() => {
+		if (!isOpen) return
+
+		const handlePointerDown = (event: PointerEvent) => {
+			const containerEl = containerRef.current
+			if (!containerEl) return
+			if (!(event.target instanceof Node)) return
+			if (containerEl.contains(event.target)) return
+			setIsOpen(false)
+		}
+
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setIsOpen(false)
+			}
+		}
+
+		document.addEventListener("pointerdown", handlePointerDown, true)
+		document.addEventListener("keydown", handleKeyDown, true)
+
+		return () => {
+			document.removeEventListener("pointerdown", handlePointerDown, true)
+			document.removeEventListener("keydown", handleKeyDown, true)
+		}
+	}, [isOpen])
 
 	// 优先使用用户选中的分组，如果没有则使用默认分组
 	const currentGroup = vvSelectedGroupType
@@ -171,7 +198,7 @@ export function VvGroupSelector({ className }: VvGroupSelectorProps) {
 	}
 
 	return (
-		<GroupContainer className={className}>
+		<GroupContainer className={className} ref={containerRef}>
 			<Tooltip>
 				<TooltipContent>{hasMissingApiKey ? "部分分组未配置，点击切换或创建" : "切换分组"}</TooltipContent>
 				<TooltipTrigger>

@@ -33,6 +33,7 @@ import { HookDiscoveryCache } from "./core/hooks/HookDiscoveryCache"
 import { StateManager } from "./core/storage/StateManager"
 import {
 	cleanupMcpMarketplaceCatalogFromGlobalState,
+	cleanupOldApiKey,
 	migrateCustomInstructionsToGlobalRules,
 	migrateTaskHistoryToFile,
 	migrateWelcomeViewCompleted,
@@ -521,7 +522,7 @@ ${ctx.cellJson || "{}"}
 	// Register the generateGitCommitMessage command handler
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.GenerateCommit, async (scm) => {
-			generateCommitMsg(webview.controller.stateManager, scm)
+			generateCommitMsg(webview.controller, scm)
 		}),
 		vscode.commands.registerCommand(commands.AbortCommit, () => {
 			abortCommitGeneration()
@@ -683,6 +684,7 @@ if (IS_DEV) {
 // VSCode-specific storage migrations
 async function performStorageMigrations(context: ExtensionContext): Promise<void> {
 	try {
+		cleanupOldApiKey()
 		// Migrate is not done if the new storage does not have the lastShownAnnouncementId flag
 		const hasMigrated = StateManager.get().getGlobalStateKey("lastShownAnnouncementId")
 		if (hasMigrated !== undefined) {

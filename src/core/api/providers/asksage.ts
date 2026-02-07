@@ -164,7 +164,7 @@ export class AskSageHandler implements ApiHandler {
 				return undefined
 			}
 
-			const data = await response.json()
+			const data = (await response.json()) as any
 			const usedTokens = data.response as number
 
 			return {

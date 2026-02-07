@@ -57,6 +57,21 @@ VV设置页面的主视图组件。
 - `vvUpdateCompletionSettings` - 更新补全设置RPC调用
 - `enabled` - 补全开关状态
 
+### OpenAiCodexProvider
+📁 `webview-ui/src/components/settings/providers/OpenAiCodexProvider.tsx`
+
+OpenAI Codex 提供商设置面板（与通用 Provider 设置页联动）。
+
+**必须包含**:
+- `OpenAiCodexProvider` - 组件名称
+- `BaseUrlField` - 自定义端点输入组件
+- `handleFieldChange("openAiBaseUrl", ...)` - 持久化自定义 base URL
+- `openAiCodexIsAuthenticated` - 默认 Codex OAuth 登录态展示
+
+📌 **行为要求**:
+- 默认不填时应走官方 Codex 端点（`https://chatgpt.com/backend-api/codex`）
+- 填写自定义端点时，后端应切换到 API key 鉴权路径
+
 ---
 
 ## Controller层

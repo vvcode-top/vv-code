@@ -30,14 +30,14 @@ export class VvAuthService {
 	private static instance: VvAuthService | null = null
 	private _controller: Controller | null = null
 	private _provider: VvAuthProvider
-	private _authenticated: boolean = false
+	private _authenticated = false
 	private _activeAuthStatusUpdateSubscriptions = new Set<{
 		controller: Controller
 		responseStream: StreamingResponseHandler<VvAuthState>
 	}>()
 
 	// 防止重复请求的标记
-	private _processingAuthCallback: boolean = false
+	private _processingAuthCallback = false
 	private _lastProcessedCode: string | null = null
 
 	// 认证配置
@@ -637,6 +637,15 @@ export class VvAuthService {
 						actModeOpenAiModelId: group.defaultModelId,
 					},
 				}
+			case "openai-codex":
+				return {
+					secrets: {},
+					globalState: {
+						openAiBaseUrl: baseUrl,
+						planModeApiModelId: group.defaultModelId,
+						actModeApiModelId: group.defaultModelId,
+					},
+				}
 			case "anthropic":
 			default:
 				return {
@@ -669,7 +678,7 @@ export class VvAuthService {
 		}
 
 		try {
-			const groupConfig = await this._provider.getGroupTokens(accessToken, parseInt(userId, 10))
+			const groupConfig = await this._provider.getGroupTokens(accessToken, Number.parseInt(userId, 10))
 			this.logGroupConfig("Group config refreshed", groupConfig)
 
 			controller.stateManager.setGlobalState("vvGroupConfig", groupConfig)
@@ -741,7 +750,7 @@ export class VvAuthService {
 		}
 
 		try {
-			const userInfo = await this._provider.getUserInfo(accessToken, parseInt(userId, 10))
+			const userInfo = await this._provider.getUserInfo(accessToken, Number.parseInt(userId, 10))
 			controller.stateManager.setGlobalState("vvUserInfo", userInfo)
 			await controller.stateManager.flushPendingState()
 			this.sendAuthStatusUpdate()
