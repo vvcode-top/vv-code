@@ -7,7 +7,8 @@ import { ApiKeyField } from "../common/ApiKeyField"
 import { BaseUrlField } from "../common/BaseUrlField"
 import { ModelInfoView } from "../common/ModelInfoView"
 import { ModelSelector } from "../common/ModelSelector"
-import { normalizeApiConfiguration } from "../utils/providerUtils"
+import ReasoningEffortSelector from "../ReasoningEffortSelector"
+import { normalizeApiConfiguration, supportsReasoningEffortForModelId } from "../utils/providerUtils"
 import { useApiConfigurationHandlers } from "../utils/useApiConfigurationHandlers"
 
 interface OpenAiCodexProviderProps {
@@ -25,6 +26,7 @@ export const OpenAiCodexProvider = ({ showModelOptions, isPopup, currentMode }: 
 	const { handleFieldChange, handleModeFieldChange } = useApiConfigurationHandlers()
 
 	const { selectedModelId, selectedModelInfo } = normalizeApiConfiguration(apiConfiguration, currentMode)
+	const showReasoningEffort = supportsReasoningEffortForModelId(selectedModelId, true)
 
 	const handleSignIn = async () => {
 		try {
@@ -96,6 +98,7 @@ export const OpenAiCodexProvider = ({ showModelOptions, isPopup, currentMode }: 
 						}
 						selectedModelId={selectedModelId}
 					/>
+					{showReasoningEffort && <ReasoningEffortSelector currentMode={currentMode} />}
 
 					<ModelInfoView isPopup={isPopup} modelInfo={selectedModelInfo} selectedModelId={selectedModelId} />
 				</>
