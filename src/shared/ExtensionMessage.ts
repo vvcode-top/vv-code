@@ -118,6 +118,7 @@ export interface ExtensionState {
 	vvNeedsWebInit?: boolean // 需要去 web 端初始化配置
 	vvSelectedGroupType?: string // 用户选中的分组类型
 	optOutOfRemoteConfig?: boolean
+	doubleCheckCompletionEnabled?: boolean
 	banners?: BannerCardData[]
 	openAiCodexIsAuthenticated?: boolean
 }
