@@ -48,3 +48,5 @@ test-results
 .secrets
 
 *.tsbuildinfo
+
+opencode.json
