@@ -113,10 +113,31 @@ else
 fi
 COUNT=$(grep -A 6 "validateSlashCommand" "webview-ui/src/components/chat/ChatTextArea.tsx" 2>/dev/null | grep -c "availableSkills" || echo 0)
 if [ "$COUNT" -ge 2 ]; then
-    echo -e "${GREEN}✅${NC}   - 前端集成 ($COUNT/2)"
+	echo -e "${GREEN}✅${NC}   - 前端集成 ($COUNT/2)"
 else
-    echo -e "${RED}❌${NC}   - 前端集成 ($COUNT/2)"
-    ERRORS=$((ERRORS + 1))
+	echo -e "${RED}❌${NC}   - 前端集成 ($COUNT/2)"
+	ERRORS=$((ERRORS + 1))
+fi
+
+if grep -A 12 "export function getMatchingSlashCommands" "webview-ui/src/utils/slash-commands.ts" | grep -q "availableSkills"; then
+	echo -e "${GREEN}✅${NC}   - slash-commands: getMatchingSlashCommands 包含 availableSkills"
+else
+	echo -e "${RED}❌${NC}   - slash-commands: getMatchingSlashCommands 缺少 availableSkills"
+	ERRORS=$((ERRORS + 1))
+fi
+
+if grep -A 12 "export function validateSlashCommand" "webview-ui/src/utils/slash-commands.ts" | grep -q "availableSkills"; then
+	echo -e "${GREEN}✅${NC}   - slash-commands: validateSlashCommand 包含 availableSkills"
+else
+	echo -e "${RED}❌${NC}   - slash-commands: validateSlashCommand 缺少 availableSkills"
+	ERRORS=$((ERRORS + 1))
+fi
+
+if grep -A 12 "interface SlashCommandMenuProps" "webview-ui/src/components/chat/SlashCommandMenu.tsx" | grep -q "availableSkills"; then
+	echo -e "${GREEN}✅${NC}   - SlashCommandMenuProps 包含 availableSkills"
+else
+	echo -e "${RED}❌${NC}   - SlashCommandMenuProps 缺少 availableSkills"
+	ERRORS=$((ERRORS + 1))
 fi
 echo ""
 

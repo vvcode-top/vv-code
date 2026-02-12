@@ -25,6 +25,26 @@
 - `vvSelectedGroupType` - 选中的分组类型
 - `vvNeedsWebInit` - 需要Web初始化标记
 
+### 补全配置 Proto（与状态键联动）
+📁 `proto/cline/vv_completion.proto`
+
+补全配置由 `proto/cline/vv_completion.proto` 定义，并与 `state-keys.ts` 的对应状态键联动。
+
+**必须包含字段**:
+- `message VvCompletionSettings`
+- `enabled`
+- `provider`
+- `model_id`
+- `debounce_ms`
+- `use_group_api_key`
+
+**检查方法**:
+```bash
+grep "message VvCompletionSettings" proto/cline/vv_completion.proto
+grep "model_id" proto/cline/vv_completion.proto
+grep "use_group_api_key" proto/cline/vv_completion.proto
+```
+
 ### Controller 状态推送
 📁 `src/core/controller/index.ts`
 

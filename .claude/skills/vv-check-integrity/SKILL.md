@@ -138,7 +138,7 @@ fi
 - **导入/导出** - 检查 `import/export` 语句
 - **Proto定义** - 检查 `service/rpc/message` 关键字
 
-⚠️ **命名格式注意**：Proto 文件使用 `snake_case`（如 `vv_inline_completion_enabled`），TypeScript 使用 `camelCase`（如 `vvInlineCompletionEnabled`）。检查时必须使用正确的格式，否则会误报缺失。
+⚠️ **命名格式注意**：Proto 文件常用 `snake_case`（如 `model_id`、`use_group_api_key`），TypeScript 状态键使用 `camelCase`（如 `vvInlineCompletionModelId`、`vvInlineCompletionUseGroupApiKey`）。检查时必须使用正确的格式，否则会误报缺失。
 
 ### Step 6: 生成检查报告
 
@@ -234,21 +234,23 @@ fi
 
 ## 重要说明：命名格式差异
 
-### Proto 和 TypeScript 命名转换
+### Proto 和 TypeScript 命名
 
 VVCode 中存在两种命名格式，**检查时必须注意**：
 
-**Proto 文件（.proto）使用 snake_case：**
+**Proto（补全配置）使用 snake_case 字段名：**
 ```protobuf
-// proto/cline/state.proto
-optional bool vv_inline_completion_enabled = 174;
-optional string vv_inline_completion_provider = 175;
-optional string vv_inline_completion_model_id = 176;
-optional int32 vv_inline_completion_debounce_ms = 177;
-optional bool vv_inline_completion_use_group_api_key = 178;
+// proto/cline/vv_completion.proto
+message VvCompletionSettings {
+  bool enabled = 1;
+  string provider = 2;
+  string model_id = 3;
+  int32 debounce_ms = 4;
+  bool use_group_api_key = 5;
+}
 ```
 
-**TypeScript 文件（.ts）使用 camelCase：**
+**TypeScript（全局状态）使用 camelCase 键名：**
 ```typescript
 // src/shared/storage/state-keys.ts
 vvInlineCompletionEnabled: { default: false as boolean },
@@ -258,49 +260,19 @@ vvInlineCompletionDebounceMs: { default: 300 as number },
 vvInlineCompletionUseGroupApiKey: { default: false as boolean },
 ```
 
-### 命名转换规则
-
-1. **Proto → TypeScript**: `snake_case` → `camelCase`
-   - `vv_inline_completion_enabled` → `vvInlineCompletionEnabled`
-   - `vv_user_info` → `vvUserInfo`
-   
-2. **字段映射**: 通过 `scripts/generate-state-proto.mjs` 自动生成
-
 ### 检查注意事项
 
-❌ **错误检查方式**：
+补全相关 proto 字段在 `proto/cline/vv_completion.proto`，状态键在 `src/shared/storage/state-keys.ts`。
+
+**检查方式**：
 ```bash
-# 在 TypeScript 文件中搜索 snake_case（会误报缺失）
-grep "vv_inline_completion_enabled" src/shared/storage/state-keys.ts
-```
+# 检查补全 proto（snake_case）
+grep "model_id" proto/cline/vv_completion.proto
+grep "use_group_api_key" proto/cline/vv_completion.proto
 
-✅ **正确检查方式**：
-```bash
-# 在 TypeScript 文件中搜索 camelCase
-grep "vvInlineCompletionEnabled" src/shared/storage/state-keys.ts
-
-# 在 Proto 文件中搜索 snake_case
-grep "vv_inline_completion_enabled" proto/cline/state.proto
-```
-
-### 验证方法
-
-检查字段是否完整时，应该：
-1. 在 Proto 文件中搜索 `snake_case` 格式
-2. 在 TypeScript 文件中搜索 `camelCase` 格式
-3. 确认两者数量和类型一致
-
-**示例验证脚本**：
-```bash
-# 统计 Proto 中的 VV 字段数量
-grep -c "vv_inline_completion" proto/cline/state.proto
-# 输出: 5
-
-# 统计 TypeScript 中的 VV 字段数量
-grep -c "vvInlineCompletion" src/shared/storage/state-keys.ts
-# 输出: 5
-
-# 两者相等则完整 ✅
+# 检查 TS 状态键（camelCase）
+grep "vvInlineCompletionModelId" src/shared/storage/state-keys.ts
+grep "vvInlineCompletionUseGroupApiKey" src/shared/storage/state-keys.ts
 ```
 
 ## 常见问题
