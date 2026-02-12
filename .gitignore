@@ -31,6 +31,7 @@ coverage-unit
 .env
 .secrets
 .github/act/.secrets
+opencode.json
 
 .worktrees
 
@@ -48,5 +49,3 @@ test-results
 .secrets
 
 *.tsbuildinfo
-
-opencode.json

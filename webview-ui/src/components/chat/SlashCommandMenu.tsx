@@ -15,7 +15,6 @@ interface SlashCommandMenuProps {
 	globalWorkflowToggles?: Record<string, boolean>
 	remoteWorkflowToggles?: Record<string, boolean>
 	remoteWorkflows?: any[]
-	availableSkills?: any[]
 	mcpServers?: McpServer[]
 }
 
@@ -29,7 +28,6 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 	globalWorkflowToggles = {},
 	remoteWorkflowToggles,
 	remoteWorkflows,
-	availableSkills,
 	mcpServers = [],
 }) => {
 	const menuRef = useRef<HTMLDivElement>(null)
@@ -41,12 +39,10 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 		globalWorkflowToggles,
 		remoteWorkflowToggles,
 		remoteWorkflows,
-		availableSkills,
 		mcpServers,
 	)
 	const defaultCommands = filteredCommands.filter((cmd) => cmd.section === "default" || !cmd.section)
-	const skillCommands = filteredCommands.filter((cmd) => cmd.section === "custom" && cmd.type === "skill")
-	const workflowCommands = filteredCommands.filter((cmd) => cmd.section === "custom" && cmd.type === "workflow")
+	const workflowCommands = filteredCommands.filter((cmd) => cmd.section === "custom")
 	const mcpCommands = filteredCommands.filter((cmd) => cmd.section === "mcp")
 
 	// Screen reader announcements
@@ -114,11 +110,6 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 							role="option">
 							<div className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">
 								<span className="ph-no-capture">/{command.name}</span>
-								{command.type && (
-									<span className="text-[0.85em] text-(--vscode-descriptionForeground) ml-2">
-										({command.type})
-									</span>
-								)}
 							</div>
 							{showDescriptions && command.description && (
 								<div className="text-[0.85em] text-(--vscode-descriptionForeground) whitespace-normal overflow-hidden text-ellipsis">
@@ -148,19 +139,8 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 				{filteredCommands.length > 0 ? (
 					<>
 						{renderCommandSection(defaultCommands, "Default Commands", 0, true)}
-						{renderCommandSection(skillCommands, "Skills", defaultCommands.length, true)}
-						{renderCommandSection(
-							workflowCommands,
-							"Workflows",
-							defaultCommands.length + skillCommands.length,
-							false,
-						)}
-						{renderCommandSection(
-							mcpCommands,
-							"MCP Prompts",
-							defaultCommands.length + skillCommands.length + workflowCommands.length,
-							true,
-						)}
+						{renderCommandSection(workflowCommands, "Workflow Commands", defaultCommands.length, false)}
+						{renderCommandSection(mcpCommands, "MCP Prompts", defaultCommands.length + workflowCommands.length, true)}
 					</>
 				) : (
 					<div aria-selected="false" className="py-2 px-3 cursor-default flex flex-col" role="option">
