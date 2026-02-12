@@ -121,7 +121,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 		}
 
 		// Format conversation for Responses API
-		const formattedInput = convertToOpenAIResponsesInput(messages)
+		const formattedInput = convertToOpenAIResponsesInput(messages).input
 
 		// Build request body
 		const requestBody = this.buildRequestBody(model, formattedInput, systemPrompt, tools)
