@@ -173,11 +173,13 @@ export class OpenAiNativeHandler implements ApiHandler {
 
 		// Create the response using Responses API
 		const requestedEffort = normalizeOpenaiReasoningEffort(this.options.reasoningEffort)
+		// Map "xhigh" to "high" since OpenAI SDK doesn't support "xhigh" for Responses API
+		const mappedEffort: ChatCompletionReasoningEffort | "none" = requestedEffort === "xhigh" ? "high" : requestedEffort
 		const reasoning: { effort: ChatCompletionReasoningEffort; summary: "auto" } | undefined =
-			requestedEffort === "none"
+			mappedEffort === "none"
 				? undefined
 				: {
-						effort: requestedEffort,
+						effort: mappedEffort,
 						summary: "auto",
 					}
 
@@ -357,7 +359,13 @@ export class OpenAiNativeHandler implements ApiHandler {
 				const reasoningTokens = usage.output_tokens_details?.reasoning_tokens || 0
 				const totalTokens = usage.total_tokens || 0
 				Logger.log(`Total tokens from Responses API usage: ${totalTokens}`)
-				const totalCost = calculateApiCostOpenAI(model.info, inputTokens, outputTokens + reasoningTokens, cacheWriteTokens, cacheReadTokens)
+				const totalCost = calculateApiCostOpenAI(
+					model.info,
+					inputTokens,
+					outputTokens + reasoningTokens,
+					cacheWriteTokens,
+					cacheReadTokens,
+				)
 				const nonCachedInputTokens = Math.max(0, inputTokens - cacheReadTokens - cacheWriteTokens)
 				yield {
 					type: "usage",
