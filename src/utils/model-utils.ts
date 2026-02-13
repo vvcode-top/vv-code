@@ -144,6 +144,14 @@ export function isGemini3ModelFamily(id: string): boolean {
 	return modelId.includes("gemini3") || modelId.includes("gemini-3")
 }
 
+export function supportsReasoningEffortForModel(modelId?: string): boolean {
+	if (!modelId) {
+		return false
+	}
+	const id = normalize(modelId)
+	return id.includes("gemini") || id.includes("gpt") || id.startsWith("openai/o") || id.includes("grok")
+}
+
 function isDeepSeek32ModelFamily(id: string): boolean {
 	const modelId = normalize(id)
 	return modelId.includes("deepseek") && modelId.includes("3.2") && !modelId.includes("speciale")
