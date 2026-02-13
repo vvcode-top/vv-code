@@ -74,6 +74,20 @@ OpenAI Codex 提供商设置面板（与通用 Provider 设置页联动）。
 
 ---
 
+### Reasoning Effort 默认值
+📁 `webview-ui/src/components/settings/ReasoningEffortSelector.tsx`
+
+**必须满足**:
+- 未设置时默认显示 `high`
+
+**检查命令**:
+```bash
+grep -q ': "high"' webview-ui/src/components/settings/ReasoningEffortSelector.tsx
+! grep -q ': "medium"' webview-ui/src/components/settings/ReasoningEffortSelector.tsx
+```
+
+---
+
 ## Controller层
 
 ### 设置按钮点击订阅

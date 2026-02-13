@@ -38,6 +38,19 @@ grep "absolute top-0 right-0" webview-ui/src/components/chat/auto-approve-menu/A
 
 ---
 
+### 1.6. 输入框下方不展示模型选择
+📁 `webview-ui/src/components/chat/ChatTextArea.tsx`
+
+**风险点（不应存在）**:
+- `navigateToSettingsModelPicker`（输入框下方的模型/API 设置入口）
+
+**检查命令**:
+```bash
+! grep -q "navigateToSettingsModelPicker" webview-ui/src/components/chat/ChatTextArea.tsx
+```
+
+---
+
 ### 2. VV状态管理
 📁 `webview-ui/src/context/ExtensionStateContext.tsx`
 

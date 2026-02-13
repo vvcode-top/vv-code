@@ -25,7 +25,7 @@ const ReasoningEffortSelector = ({
 	const selectedEffort =
 		isOpenaiReasoningEffort(modeFields.reasoningEffort) && allowedEfforts.includes(modeFields.reasoningEffort)
 			? modeFields.reasoningEffort
-			: "medium"
+			: "high"
 
 	return (
 		<div style={{ marginTop: 10, marginBottom: 5 }}>

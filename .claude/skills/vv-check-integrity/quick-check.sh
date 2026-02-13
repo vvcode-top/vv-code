@@ -152,6 +152,12 @@ check_exists "showVVSettings.*VvSettingsView" "webview-ui/src/App.tsx" "  - VV�
 check_exists "useVvAuth" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 登录态判断"
 check_exists "isAuthenticated" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 使用 isAuthenticated"
 check_exists "vvNeedsWebInit" "webview-ui/src/components/chat/ChatView.tsx" "  - ChatView 检查 vvNeedsWebInit"
+if ! grep -q "navigateToSettingsModelPicker" "webview-ui/src/components/chat/ChatTextArea.tsx" 2>/dev/null; then
+    echo -e "${GREEN}✅${NC}   - ChatTextArea 无模型选择入口"
+else
+    echo -e "${RED}❌${NC}   - ChatTextArea 不应展示模型选择入口"
+    ERRORS=$((ERRORS + 1))
+fi
 if ! grep -q "showWelcome" "webview-ui/src/App.tsx" 2>/dev/null; then
     echo -e "${GREEN}✅${NC}   - App.tsx 无 showWelcome 分支"
 else
@@ -252,6 +258,20 @@ check_exists 'openai_codex: "openai-codex"' "src/shared/vv-config.ts" "  - vv-co
 check_exists 'openaicodex: "openai-codex"' "src/shared/vv-config.ts" "  - vv-config: openaicodex alias"
 check_exists "BaseUrlField" "webview-ui/src/components/settings/providers/OpenAiCodexProvider.tsx" "  - OpenAiCodexProvider: BaseUrlField 集成"
 check_exists 'handleFieldChange("openAiBaseUrl"' "webview-ui/src/components/settings/providers/OpenAiCodexProvider.tsx" "  - OpenAiCodexProvider: openAiBaseUrl 状态更新"
+echo ""
+
+# 14. Reasoning Effort 默认值检查
+echo "🧠 14. Reasoning Effort 默认值"
+check_exists 'const value = (effort || "high").toLowerCase()' "src/shared/storage/types.ts" "  - normalizeOpenaiReasoningEffort 默认值为 high"
+check_exists 'return isOpenaiReasoningEffort(value) ? value : "high"' "src/shared/storage/types.ts" "  - normalizeOpenaiReasoningEffort fallback 为 high"
+check_exists 'const reasoningEffort = this.options.reasoningEffort || "high"' "src/core/api/providers/requesty.ts" "  - Requesty 默认 reasoning effort 为 high"
+check_exists ': "high"' "webview-ui/src/components/settings/ReasoningEffortSelector.tsx" "  - 设置页 ReasoningEffortSelector 默认显示 high"
+if grep -q ': "medium"' "webview-ui/src/components/settings/ReasoningEffortSelector.tsx" 2>/dev/null; then
+	echo -e "${RED}❌${NC}   - 设置页不应回退到 medium"
+	ERRORS=$((ERRORS + 1))
+else
+	echo -e "${GREEN}✅${NC}   - 设置页无 medium 回退"
+fi
 echo ""
 
 # 总结

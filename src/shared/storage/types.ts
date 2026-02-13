@@ -7,8 +7,8 @@ export function isOpenaiReasoningEffort(value: unknown): value is OpenaiReasonin
 }
 
 export function normalizeOpenaiReasoningEffort(effort?: string): OpenaiReasoningEffort {
-	const value = (effort || "medium").toLowerCase()
-	return isOpenaiReasoningEffort(value) ? value : "medium"
+	const value = (effort || "high").toLowerCase()
+	return isOpenaiReasoningEffort(value) ? value : "high"
 }
 
 export type Mode = "plan" | "act"
