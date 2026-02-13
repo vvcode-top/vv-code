@@ -154,8 +154,7 @@ export class VvAuthService {
 		}
 
 		// 5. 构建回调 URI（使用 HostProvider 获取回调 URL）
-		const callbackHost = await HostProvider.get().getCallbackUrl()
-		const callbackUri = `${callbackHost}/vv-callback`
+		const callbackUri = await HostProvider.get().getCallbackUrl("/vv-callback")
 
 		// 6. 构建授权 URL
 		const authUrl = new URL(this.AUTH_PAGE_URL)
@@ -198,8 +197,7 @@ export class VvAuthService {
 
 		// 5. 启用 AuthHandler 并获取本地回环 URL
 		AuthHandler.getInstance().setEnabled(true)
-		const callbackHost = await AuthHandler.getInstance().getCallbackUrl()
-		const callbackUri = `${callbackHost}/vv-callback`
+		const callbackUri = await AuthHandler.getInstance().getCallbackUrl("/vv-callback")
 
 		// 6. 构建授权 URL
 		const authUrl = new URL(this.AUTH_PAGE_URL)
