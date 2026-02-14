@@ -165,6 +165,7 @@ export const CommandOutputRow = memo(
 		const command = requestsApproval ? rawCommand.slice(0, -COMMAND_REQ_APP_STRING.length) : rawCommand
 		const showCancelButton =
 			(isCommandExecuting || isCommandPending) && typeof onCancelCommand === "function" && isBackgroundExec
+
 		const commandHeader = (
 			<div className="flex items-center gap-2.5 mb-3">
 				{icon}

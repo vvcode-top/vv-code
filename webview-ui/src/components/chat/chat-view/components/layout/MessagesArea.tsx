@@ -1,11 +1,12 @@
-import { ClineMessage } from "@shared/ExtensionMessage"
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react"
-import React, { useCallback, useMemo } from "react"
+import type { ClineMessage } from "@shared/ExtensionMessage"
+import type React from "react"
+import { useCallback, useMemo } from "react"
 import { Virtuoso } from "react-virtuoso"
 import { StickyUserMessage } from "@/components/chat/task-header/StickyUserMessage"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { cn } from "@/lib/utils"
-import { ChatState, MessageHandlers, ScrollBehavior } from "../../types/chatTypes"
+import type { ChatState, MessageHandlers, ScrollBehavior } from "../../types/chatTypes"
+import { isToolGroup } from "../../utils/messageUtils"
 import { createMessageRenderer } from "../messages/MessageRenderer"
 
 interface MessagesAreaProps {
@@ -15,10 +16,6 @@ interface MessagesAreaProps {
 	scrollBehavior: ScrollBehavior
 	chatState: ChatState
 	messageHandlers: MessageHandlers
-	isReasoningActive?: boolean
-	isWaitingForContent?: boolean
-	streamingReasoningContent?: string
-	supportsStreaming?: boolean
 }
 
 /**
@@ -32,34 +29,8 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 	scrollBehavior,
 	chatState,
 	messageHandlers,
-	isReasoningActive,
-	isWaitingForContent,
-	streamingReasoningContent,
-	supportsStreaming,
 }) => {
 	const { clineMessages } = useExtensionState()
-	const [isStreamingReasoningExpanded, setIsStreamingReasoningExpanded] = React.useState(true)
-	const reasoningScrollRef = React.useRef<HTMLDivElement>(null)
-	const rafPendingRef = React.useRef(false)
-
-	// Auto-scroll reasoning content to bottom as it streams.
-	// Uses a pending-RAF guard so rapid content updates coalesce into a single
-	// scroll-to-bottom per frame instead of queuing redundant callbacks that
-	// could race with DOM updates during fast streams.
-	React.useEffect(() => {
-		if (reasoningScrollRef.current && streamingReasoningContent && isStreamingReasoningExpanded) {
-			if (!rafPendingRef.current) {
-				rafPendingRef.current = true
-				requestAnimationFrame(() => {
-					rafPendingRef.current = false
-					const scrollElement = reasoningScrollRef.current
-					if (scrollElement) {
-						scrollElement.scrollTop = scrollElement.scrollHeight
-					}
-				})
-			}
-		}
-	}, [streamingReasoningContent, isStreamingReasoningExpanded])
 
 	const {
 		virtuosoRef,
@@ -90,19 +61,98 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 	}, [scrollToMessage, scrolledPastUserMessageIndex])
 
 	const { expandedRows, inputValue, setActiveQuote } = chatState
+	const lastVisibleRow = useMemo(() => groupedMessages.at(-1), [groupedMessages])
+	const lastVisibleMessage = useMemo(() => {
+		const lastRow = lastVisibleRow
+		if (!lastRow) {
+			return undefined
+		}
+		return Array.isArray(lastRow) ? lastRow.at(-1) : lastRow
+	}, [lastVisibleRow])
 
-	const itemContent = useCallback(
-		createMessageRenderer(
-			groupedMessages,
-			modifiedMessages,
-			expandedRows,
-			toggleRowExpansion,
-			handleRowHeightChange,
-			setActiveQuote,
-			inputValue,
-			messageHandlers,
-			!!(isWaitingForContent || isReasoningActive),
-		),
+	// Show "Thinking..." in the Footer until real content starts streaming.
+	// This is the sole early loading indicator - RequestStartRow does NOT duplicate it.
+	// Covers: pre-api_req_started (backend processing) AND post-api_req_started (waiting for model).
+	// Hides once reasoning, tools, text, or any other content message appears.
+	const isWaitingForResponse = useMemo(() => {
+		const lastRawMessage = clineMessages.at(-1)
+
+		const lastMsg = modifiedMessages[modifiedMessages.length - 1]
+
+		// Never show thinking while waiting on user input (any ask state).
+		// This includes completion_result, tool approvals, followups, and resume asks.
+		if (lastRawMessage?.type === "ask") {
+			return false
+		}
+		// attempt_completion emits a final say("completion_result") before ask("completion_result").
+		// Treat that final completion message as non-waiting to avoid a brief footer flicker.
+		if (lastRawMessage?.type === "say" && lastRawMessage.say === "completion_result") {
+			return false
+		}
+		if (lastRawMessage?.type === "say" && lastRawMessage.say === "api_req_started") {
+			try {
+				const info = JSON.parse(lastRawMessage.text || "{}")
+				if (info.cancelReason === "user_cancelled") {
+					return false
+				}
+			} catch {
+				// ignore parse errors
+			}
+		}
+
+		// Always show while task has started but no visible rows are rendered yet.
+		if (groupedMessages.length === 0) {
+			return true
+		}
+
+		// Defensive guard for transient states where a grouped row exists
+		// but we still cannot resolve a concrete visible message.
+		if (!lastVisibleMessage) {
+			return true
+		}
+
+		// Always show when the last rendered row is a toolgroup.
+		if (lastVisibleRow && isToolGroup(lastVisibleRow)) {
+			return true
+		}
+
+		// User-requested behavior:
+		// if the last visible row is not actively partial, always show Thinking in the footer.
+		// (some rows like checkpoint_created don't set `partial`, and should be treated as non-partial)
+		if (lastVisibleMessage.partial !== true) {
+			return true
+		}
+
+		if (!lastMsg) {
+			// No messages after the initial task message - new task just started
+			return true
+		}
+		if (lastMsg.say === "user_feedback" || lastMsg.say === "user_feedback_diff") return true
+		if (lastMsg.say === "api_req_started") {
+			try {
+				const info = JSON.parse(lastMsg.text || "{}")
+				// Still in progress (no cost) and nothing has streamed after it yet
+				return info.cost == null
+			} catch {
+				return true
+			}
+		}
+		return false
+	}, [clineMessages, groupedMessages.length, lastVisibleMessage, lastVisibleRow, modifiedMessages])
+
+	const itemContent = useMemo(
+		() =>
+			createMessageRenderer(
+				groupedMessages,
+				modifiedMessages,
+				expandedRows,
+				toggleRowExpansion,
+				handleRowHeightChange,
+				setActiveQuote,
+				inputValue,
+				messageHandlers,
+				isWaitingForResponse,
+			),
 		[
 			groupedMessages,
 			modifiedMessages,
@@ -112,9 +162,28 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 			setActiveQuote,
 			inputValue,
 			messageHandlers,
-			isWaitingForContent,
-			isReasoningActive,
+			isWaitingForResponse,
 		],
+	)
+
+	// Keep Virtuoso footer component identity stable while waiting state is unchanged.
+	// This avoids remounting the shimmer node on every message update.
+	const virtuosoComponents = useMemo(
+		() => ({
+			Footer: () =>
+				isWaitingForResponse ? (
+					<div className="px-4 pt-2 pb-2.5">
+						<div className="ml-1">
+							<span className="animate-shimmer bg-linear-90 from-foreground to-description bg-[length:200%_100%] bg-clip-text text-transparent select-none">
+								Thinking...
+							</span>
+						</div>
+					</div>
+				) : (
+					<div className="min-h-1" />
+				),
+		}),
+		[isWaitingForResponse],
 	)
 
 	return (
@@ -143,58 +212,7 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 					}}
 					atBottomThreshold={10} // trick to make sure virtuoso re-renders when task changes, and we use initialTopMostItemIndex to start at the bottom
 					className="scrollable grow overflow-y-scroll"
-					components={{
-						Footer: () => (
-							<div>
-								{/* Show "Working..." at bottom of chat stream.
-								    "Thinking..." is now rendered inline in RequestStartRow to keep it
-								    anchored to the request row and avoid visual jumps during followup
-								    question streaming when options grow the row. */}
-								{isWaitingForContent && (
-									<div className="pl-[16px] pt-2.5">
-										{/* Non-streaming models: just shimmer text */}
-										{(supportsStreaming === false || !streamingReasoningContent) && (
-											<div className="inline-flex justify-baseline gap-0.5 text-left select-none px-0 w-full">
-												<span className="animate-shimmer bg-linear-90 from-foreground to-description bg-[length:200%_100%] bg-clip-text text-transparent">
-													{isWaitingForContent ? "Working..." : "Thinking..."}
-												</span>
-											</div>
-										)}
-
-										{/* Streaming models with reasoning: show expandable content */}
-										{supportsStreaming !== false && streamingReasoningContent && (
-											<div className="mb-1">
-												<button
-													className="inline-flex items-center justify-baseline gap-0.5 text-left select-none cursor-pointer px-0 w-full bg-transparent border-0"
-													onClick={() => setIsStreamingReasoningExpanded(!isStreamingReasoningExpanded)}
-													type="button">
-													<span className="animate-shimmer bg-linear-90 from-foreground to-description bg-[length:200%_100%] bg-clip-text text-transparent">
-														Thinking...
-													</span>
-													{isStreamingReasoningExpanded ? (
-														<ChevronDownIcon className="size-1 ml-1 text-foreground" />
-													) : (
-														<ChevronRightIcon className="size-1 ml-1 text-foreground" />
-													)}
-												</button>
-												{isStreamingReasoningExpanded && (
-													<div
-														className="mt-1 max-h-[75px] overflow-y-auto text-description text-sm leading-normal whitespace-pre-wrap break-words pl-2 border-l border-description/50"
-														ref={reasoningScrollRef}
-														// column-reverse keeps content anchored at bottom as it streams in
-														// Combined with scrollTop = scrollHeight, this ensures latest content is visible
-														style={{ display: "flex", flexDirection: "column-reverse" }}>
-														<span className="block">{streamingReasoningContent}</span>
-													</div>
-												)}
-											</div>
-										)}
-									</div>
-								)}
-								<div className="min-h-1" />
-							</div>
-						),
-					}}
+					components={virtuosoComponents}
 					data={groupedMessages}
 					// increasing top by 3_000 to prevent jumping around when user collapses a row
 					increaseViewportBy={{
