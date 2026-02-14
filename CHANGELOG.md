@@ -1,5 +1,10 @@
 # VVCode Changelog
 
+## [1.3.3] - 2026-02-14
+
+### Added
+- 支持从 `.agents/skills` 目录发现 Skills
+
 ## [1.3.1] - 2026-02-07
 
 ### Changed
