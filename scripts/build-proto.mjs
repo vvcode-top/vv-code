@@ -166,21 +166,21 @@ function checkAppleSiliconCompatibility() {
 	const cpuArchitecture = os.arch()
 	if (cpuArchitecture === "arm64") {
 		try {
-			// Check if Rosetta is installed
-			const rosettaCheck = execSync('/usr/bin/pgrep oahd || echo "NOT_INSTALLED"').toString().trim()
-
-			if (rosettaCheck === "NOT_INSTALLED") {
-				console.log(chalk.yellow("Detected Apple Silicon (ARM64) architecture."))
-				console.log(
-					chalk.red("Rosetta 2 is NOT installed. The npm version of protoc is not compatible with Apple Silicon."),
-				)
-				console.log(chalk.cyan("Please install Rosetta 2 using the following command:"))
-				console.log(chalk.cyan("  softwareupdate --install-rosetta --agree-to-license"))
-				console.log(chalk.red("Aborting build process."))
-				process.exit(1)
-			}
+			// Avoid process-list based checks (e.g. `pgrep oahd`) because they can be blocked in sandboxed
+			// environments and they are not reliable indicators of Rosetta being installed.
+			// The practical requirement is: can we execute the bundled `protoc` binary?
+			execSync(`"${PROTOC}" --version`, { stdio: "ignore" })
 		} catch (_error) {
-			console.log(chalk.yellow("Could not determine Rosetta installation status. Proceeding anyway."))
+			console.log(chalk.yellow("Detected Apple Silicon (ARM64) architecture."))
+			console.log(
+				chalk.red(
+					"Unable to execute the bundled protoc (grpc-tools). You likely need Rosetta 2 to run the x86_64 binary.",
+				),
+			)
+			console.log(chalk.cyan("Please install Rosetta 2 using the following command:"))
+			console.log(chalk.cyan("  softwareupdate --install-rosetta --agree-to-license"))
+			console.log(chalk.red("Aborting build process."))
+			process.exit(1)
 		}
 	}
 }
