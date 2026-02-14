@@ -218,7 +218,7 @@ git show HEAD~1:$FILE > /tmp/vv-backup-$(basename $FILE)
 
 ```bash
 # 0. VVCode 功能完整性快速检查（新增！）
-.agents/skills/vv-check-integrity/quick-check.sh
+bash .agents/skills/vv-check-integrity/quick-check.sh
 
 # 如果快速检查失败，终止并报告问题
 if [ $? -ne 0 ]; then
@@ -237,6 +237,18 @@ npm run check-types
 
 # 3. 编译
 npm run compile
+
+# 4. 如果改动代码多，除了类型检查也需要执行 WebView 构建
+CHANGES=$(git diff HEAD~1 --stat | tail -1)
+INSERTIONS=$(echo $CHANGES | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)
+DELETIONS=$(echo $CHANGES | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo 0)
+TOTAL=$((INSERTIONS + DELETIONS))
+KEY_FILES_CHANGED=$(git diff HEAD~1 --name-only | grep -E "(extension\.ts|registry\.ts|state-keys\.ts|App\.tsx|ExtensionStateContext)" | wc -l)
+
+if [ $TOTAL -gt 200 ] || [ $KEY_FILES_CHANGED -gt 0 ]; then
+    echo "🧪 变更较大，执行额外验证: npm run build:webview"
+    npm run build:webview
+fi
 ```
 
 **验证失败处理：**
@@ -289,9 +301,21 @@ fi
 
 ```bash
 # 完整验证
-.agents/skills/vv-check-integrity/quick-check.sh  # 快速检查
+bash .agents/skills/vv-check-integrity/quick-check.sh  # 快速检查
 npm run check-types                                 # 类型检查
 npm run compile                                     # 编译验证
+
+# 如果整体改动代码多，额外执行 WebView 构建
+CHANGES=$(git diff origin/main --stat | tail -1)
+INSERTIONS=$(echo $CHANGES | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)
+DELETIONS=$(echo $CHANGES | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo 0)
+TOTAL=$((INSERTIONS + DELETIONS))
+KEY_FILES_CHANGED=$(git diff origin/main --name-only | grep -E "(extension\.ts|registry\.ts|state-keys\.ts|App\.tsx|ExtensionStateContext)" | wc -l)
+
+if [ $TOTAL -gt 200 ] || [ $KEY_FILES_CHANGED -gt 0 ]; then
+    echo "🧪 变更较大，执行额外验证: npm run build:webview"
+    npm run build:webview
+fi
 
 # 显示合并统计
 echo "📊 合并统计："
