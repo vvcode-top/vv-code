@@ -1,6 +1,8 @@
 import { WebviewProvider } from "@/core/webview"
 import { Logger } from "@/shared/services/Logger"
 
+export const TASK_URI_PATH = "/task"
+
 /**
  * Shared URI handler that processes both VSCode URI events and HTTP server callbacks
  */
@@ -81,6 +83,15 @@ export class SharedUriHandler {
 					Logger.warn("SharedUriHandler: Missing code parameter for auth callback")
 					return false
 				}
+				case TASK_URI_PATH: {
+					const prompt = query.get("prompt")
+					if (prompt) {
+						await visibleWebview.controller.handleTaskCreation(prompt)
+						return true
+					}
+					Logger.warn("SharedUriHandler: Missing prompt parameter for task creation")
+					return false
+				}
 				// VVCode Customization: VVCode 认证回调
 				case "/vv-callback": {
 					Logger.log("SharedUriHandler: VVCode Auth callback received")
@@ -100,15 +111,6 @@ export class SharedUriHandler {
 					Logger.log("SharedUriHandler: VVCode init-complete callback received")
 					await visibleWebview.controller.handleVVInitComplete()
 					return true
-				}
-				case "/task": {
-					const prompt = query.get("prompt")
-					if (prompt) {
-						await visibleWebview.controller.handleTaskCreation(prompt)
-						return true
-					}
-					Logger.warn("SharedUriHandler: Missing prompt parameter for task creation")
-					return false
 				}
 				// Match /mcp-auth/callback/{hash}
 				case path.match(/^\/mcp-auth\/callback\/[^/]+$/)?.input: {
