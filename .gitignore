@@ -31,6 +31,7 @@ coverage-unit
 .env
 .secrets
 .github/act/.secrets
+opencode.json
 
 .worktrees
 
@@ -49,4 +50,5 @@ test-results
 
 *.tsbuildinfo
 
-opencode.json
+# Smoke test results (generated)
+evals/smoke-tests/results/

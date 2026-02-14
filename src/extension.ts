@@ -79,6 +79,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Perform storage migrations that does not block extension activation
 	performStorageMigrations(context)
+	registerSkillsStateRefreshWatchers(context, webview)
 
 	// Initialize hook discovery cache for performance optimization
 	HookDiscoveryCache.getInstance().initialize(
@@ -380,7 +381,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	)
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand(commands.FocusChatInput, async (preserveEditorFocus: boolean = false) => {
+		vscode.commands.registerCommand(commands.FocusChatInput, async (preserveEditorFocus = false) => {
 			const webview = WebviewProvider.getInstance() as VscodeWebviewProvider
 
 			// Show the webview
@@ -554,6 +555,44 @@ ${ctx.cellJson || "{}"}
 	return createClineAPI(webview.controller)
 }
 
+function registerSkillsStateRefreshWatchers(context: vscode.ExtensionContext, webview: VscodeWebviewProvider) {
+	const skillPatterns = [
+		"**/.clinerules/skills/**/SKILL.md",
+		"**/.cline/skills/**/SKILL.md",
+		"**/.claude/skills/**/SKILL.md",
+		"**/.agents/skills/**/SKILL.md",
+	]
+
+	let refreshTimer: NodeJS.Timeout | undefined
+	const scheduleStateRefresh = () => {
+		if (refreshTimer) {
+			clearTimeout(refreshTimer)
+		}
+		refreshTimer = setTimeout(() => {
+			refreshTimer = undefined
+			webview.controller.postStateToWebview().catch((error) => {
+				Logger.error("[SkillsWatcher] Failed to refresh state after skill file change:", error)
+			})
+		}, 200)
+	}
+
+	for (const pattern of skillPatterns) {
+		const watcher = vscode.workspace.createFileSystemWatcher(pattern)
+		watcher.onDidCreate(scheduleStateRefresh, null, context.subscriptions)
+		watcher.onDidChange(scheduleStateRefresh, null, context.subscriptions)
+		watcher.onDidDelete(scheduleStateRefresh, null, context.subscriptions)
+		context.subscriptions.push(watcher)
+	}
+
+	context.subscriptions.push(
+		new vscode.Disposable(() => {
+			if (refreshTimer) {
+				clearTimeout(refreshTimer)
+			}
+		}),
+	)
+}
+
 async function showJupyterPromptInput(title: string, placeholder: string): Promise<string | undefined> {
 	return new Promise((resolve) => {
 		const quickPick = vscode.window.createQuickPick()
@@ -609,7 +648,21 @@ function setupHostProvider(context: ExtensionContext) {
 	const createCommentReview = () => getVscodeCommentReviewController()
 	const createTerminalManager = () => new VscodeTerminalManager()
 
-	const getCallbackUrl = async () => `${vscode.env.uriScheme || "vscode"}://${context.extension.id}`
+	const getCallbackUrl = async (path: string) => {
+		const scheme = vscode.env.uriScheme || "vscode"
+		const callbackUri = vscode.Uri.parse(`${scheme}://${context.extension.id}${path}`)
+
+		if (vscode.env.uiKind === vscode.UIKind.Web) {
+			// In VS Code Web (Codespaces, code serve-web), vscode:// URIs redirect to the
+			// desktop app instead of staying in the browser. Use asExternalUri to convert
+			// to a web-reachable HTTPS URL that routes back to the extension's URI handler.
+			const externalUri = await vscode.env.asExternalUri(callbackUri)
+			return externalUri.toString(true)
+		}
+
+		// In regular desktop VS Code, use the vscode:// URI protocol handler directly.
+		return callbackUri.toString(true)
+	}
 	HostProvider.initialize(
 		createWebview,
 		createDiffView,

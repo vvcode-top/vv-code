@@ -1,4 +1,5 @@
 import type { McpServer } from "@shared/mcp"
+import type { SkillMetadata } from "@shared/skills"
 import { PLATFORM_CONFIG, PlatformType } from "@/config/platform.config"
 import { BASE_SLASH_COMMANDS, type SlashCommand, VSCODE_ONLY_COMMANDS } from "../../../src/shared/slashCommands.ts"
 
@@ -7,7 +8,7 @@ export type { SlashCommand }
 export const DEFAULT_SLASH_COMMANDS: SlashCommand[] =
 	PLATFORM_CONFIG.type === PlatformType.VSCODE ? [...BASE_SLASH_COMMANDS, ...VSCODE_ONLY_COMMANDS] : BASE_SLASH_COMMANDS
 
-export function getSkillCommands(availableSkills?: any[]): SlashCommand[] {
+export function getSkillCommands(availableSkills?: SkillMetadata[]): SlashCommand[] {
 	if (!availableSkills || availableSkills.length === 0) {
 		return []
 	}
@@ -196,7 +197,7 @@ export function getMatchingSlashCommands(
 	globalWorkflowToggles: Record<string, boolean> = {},
 	remoteWorkflowToggles?: Record<string, boolean>,
 	remoteWorkflows?: any[],
-	availableSkills?: any[],
+	availableSkills?: SkillMetadata[],
 	mcpServers: McpServer[] = [],
 ): SlashCommand[] {
 	const workflowCommands = getWorkflowCommands(
@@ -250,7 +251,7 @@ export function validateSlashCommand(
 	globalWorkflowToggles: Record<string, boolean> = {},
 	remoteWorkflowToggles?: Record<string, boolean>,
 	remoteWorkflows?: any[],
-	availableSkills?: any[],
+	availableSkills?: SkillMetadata[],
 	mcpServers: McpServer[] = [],
 ): "full" | "partial" | null {
 	if (!command) {

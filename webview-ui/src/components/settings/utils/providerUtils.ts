@@ -69,6 +69,11 @@ import {
 	xaiModels,
 } from "@shared/api"
 import { Mode } from "@shared/storage/types"
+import * as reasoningSupport from "@shared/utils/reasoning-support"
+
+export function supportsReasoningEffortForModelId(modelId?: string, _allowShortOpenAiIds = false): boolean {
+	return reasoningSupport.supportsReasoningEffortForModel(modelId)
+}
 
 /**
  * Returns the static model list for a provider.
@@ -824,7 +829,7 @@ export function filterOpenRouterModelIds(modelIds: string[], provider: ApiProvid
 		// For Cline provider: exclude :free models, but keep Minimax models
 		return modelIds.filter((id) => {
 			// Keep all Minimax and devstral models regardless of :free suffix
-			if (id.toLowerCase().includes("minimax-m2")) {
+			if (id.toLowerCase().includes("minimax-m2") || id.toLowerCase().includes("arcee-ai/trinity-large")) {
 				return true
 			}
 			// Filter out other :free models

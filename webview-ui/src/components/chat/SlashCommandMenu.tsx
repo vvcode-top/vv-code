@@ -1,4 +1,5 @@
 import type { McpServer } from "@shared/mcp"
+import type { SkillMetadata } from "@shared/skills"
 import React, { useCallback, useEffect, useRef } from "react"
 import ScreenReaderAnnounce from "@/components/common/ScreenReaderAnnounce"
 import { useMenuAnnouncement } from "@/hooks/useMenuAnnouncement"
@@ -15,7 +16,7 @@ interface SlashCommandMenuProps {
 	globalWorkflowToggles?: Record<string, boolean>
 	remoteWorkflowToggles?: Record<string, boolean>
 	remoteWorkflows?: any[]
-	availableSkills?: any[]
+	availableSkills?: SkillMetadata[]
 	mcpServers?: McpServer[]
 }
 

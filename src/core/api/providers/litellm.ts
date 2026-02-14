@@ -70,7 +70,7 @@ export async function fetchLiteLlmModelsInfo(baseUrl: string, apiKey: string): P
 		})
 
 		if (response.ok) {
-			const data: LiteLlmModelInfoResponse = (await response.json()) as any
+			const data: LiteLlmModelInfoResponse = await response.json()
 			return data
 		}
 		Logger.error("Failed to fetch LiteLLM model info:", response.statusText)
@@ -85,7 +85,7 @@ export async function fetchLiteLlmModelsInfo(baseUrl: string, apiKey: string): P
 		})
 
 		if (retryResponse.ok) {
-			const data: LiteLlmModelInfoResponse = (await retryResponse.json()) as any
+			const data: LiteLlmModelInfoResponse = await retryResponse.json()
 			return data
 		}
 		Logger.error("Failed to fetch LiteLLM model info with Authorization header:", retryResponse.statusText)
