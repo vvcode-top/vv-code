@@ -218,7 +218,7 @@ git show HEAD~1:$FILE > /tmp/vv-backup-$(basename $FILE)
 
 ```bash
 # 0. VVCode 功能完整性快速检查（新增！）
-.claude/skills/vv-check-integrity/quick-check.sh
+.agents/skills/vv-check-integrity/quick-check.sh
 
 # 如果快速检查失败，终止并报告问题
 if [ $? -ne 0 ]; then
@@ -289,7 +289,7 @@ fi
 
 ```bash
 # 完整验证
-.claude/skills/vv-check-integrity/quick-check.sh  # 快速检查
+.agents/skills/vv-check-integrity/quick-check.sh  # 快速检查
 npm run check-types                                 # 类型检查
 npm run compile                                     # 编译验证
 

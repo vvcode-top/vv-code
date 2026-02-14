@@ -20,7 +20,7 @@ description: 检查 VVCode 定制功能的完整性。验证核心模块（认�
 
 ```bash
 # 1. 快速检查（2-3 秒）
-.claude/skills/vv-check-integrity/quick-check.sh
+.agents/skills/vv-check-integrity/quick-check.sh
 
 # 2. 如果失败，调用 AI 做详细诊断
 检查 VVCode 功能完整性
@@ -60,7 +60,7 @@ description: 检查 VVCode 定制功能的完整性。验证核心模块（认�
 
 ```bash
 # Step 1: 先运行快速检查（快速失败）
-.claude/skills/vv-check-integrity/quick-check.sh
+.agents/skills/vv-check-integrity/quick-check.sh
 
 # Step 2: 如果快速检查通过
 if [ $? -eq 0 ]; then
@@ -78,7 +78,7 @@ fi
 使用 bash 脚本快速验证关键集成点：
 
 ```bash
-.claude/skills/vv-check-integrity/quick-check.sh
+.agents/skills/vv-check-integrity/quick-check.sh
 ```
 
 **检查内容**：

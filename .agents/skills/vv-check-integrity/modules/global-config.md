@@ -26,10 +26,10 @@ VVCode相关的静态资源：
 
 ## Skills 技能
 
-VVCode专用的AI技能脚本（当前以 Claude skills 形式管理）：
+VVCode专用的AI技能脚本：
 
-- 🔧 `.claude/skills/vv-merge-cline/SKILL.md` - 合并上游Cline代码的自动化技能
-- 🔧 `.claude/skills/vv-release/SKILL.md` - VVCode快速发布流程技能
+- 🔧 `.agents/skills/vv-merge-cline/SKILL.md` - 合并上游Cline代码的自动化技能
+- 🔧 `.agents/skills/vv-release/SKILL.md` - VVCode快速发布流程技能
 
 ---
 
@@ -86,8 +86,8 @@ VVCode专用的AI技能脚本（当前以 Claude skills 形式管理）：
 - ✅ `docs/VV_GROUP_POLICY.md` - 分组策略文档
 - ✅ `.clinerules/fork-development.md` - 二次开发指南
 - ✅ `assets/qq.jpg` - QQ群二维码
-- ✅ `.claude/skills/vv-merge-cline/SKILL.md` - 合并上游Cline代码的自动化技能
-- ✅ `.claude/skills/vv-release/SKILL.md` - VVCode快速发布流程技能
+- ✅ `.agents/skills/vv-merge-cline/SKILL.md` - 合并上游Cline代码的自动化技能
+- ✅ `.agents/skills/vv-release/SKILL.md` - VVCode快速发布流程技能
 
 ---
 

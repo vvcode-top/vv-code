@@ -79,6 +79,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Perform storage migrations that does not block extension activation
 	performStorageMigrations(context)
+	registerSkillsStateRefreshWatchers(context, webview)
 
 	// Initialize hook discovery cache for performance optimization
 	HookDiscoveryCache.getInstance().initialize(
@@ -552,6 +553,44 @@ ${ctx.cellJson || "{}"}
 	Logger.log(`[Cline] extension activated in ${performance.now() - activationStartTime} ms`)
 
 	return createClineAPI(webview.controller)
+}
+
+function registerSkillsStateRefreshWatchers(context: vscode.ExtensionContext, webview: VscodeWebviewProvider) {
+	const skillPatterns = [
+		"**/.clinerules/skills/**/SKILL.md",
+		"**/.cline/skills/**/SKILL.md",
+		"**/.claude/skills/**/SKILL.md",
+		"**/.agents/skills/**/SKILL.md",
+	]
+
+	let refreshTimer: NodeJS.Timeout | undefined
+	const scheduleStateRefresh = () => {
+		if (refreshTimer) {
+			clearTimeout(refreshTimer)
+		}
+		refreshTimer = setTimeout(() => {
+			refreshTimer = undefined
+			webview.controller.postStateToWebview().catch((error) => {
+				Logger.error("[SkillsWatcher] Failed to refresh state after skill file change:", error)
+			})
+		}, 200)
+	}
+
+	for (const pattern of skillPatterns) {
+		const watcher = vscode.workspace.createFileSystemWatcher(pattern)
+		watcher.onDidCreate(scheduleStateRefresh, null, context.subscriptions)
+		watcher.onDidChange(scheduleStateRefresh, null, context.subscriptions)
+		watcher.onDidDelete(scheduleStateRefresh, null, context.subscriptions)
+		context.subscriptions.push(watcher)
+	}
+
+	context.subscriptions.push(
+		new vscode.Disposable(() => {
+			if (refreshTimer) {
+				clearTimeout(refreshTimer)
+			}
+		}),
+	)
 }
 
 async function showJupyterPromptInput(title: string, placeholder: string): Promise<string | undefined> {

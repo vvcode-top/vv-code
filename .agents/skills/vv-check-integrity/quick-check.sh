@@ -139,6 +139,11 @@ else
 	echo -e "${RED}❌${NC}   - SlashCommandMenuProps 缺少 availableSkills"
 	ERRORS=$((ERRORS + 1))
 fi
+
+check_exists "registerSkillsStateRefreshWatchers(context, webview)" "src/extension.ts" "  - activate 注册 Skills 文件监听"
+check_exists "function registerSkillsStateRefreshWatchers" "src/extension.ts" "  - Skills watcher 函数定义"
+check_exists "\\*\\*/\\.agents/skills/\\*\\*/SKILL\\.md" "src/extension.ts" "  - 监听 .agents/skills 下 SKILL.md 变更"
+check_exists "webview.controller.postStateToWebview()" "src/extension.ts" "  - Skills 变更后推送最新状态"
 echo ""
 
 # 8. UI 自定义检查
@@ -284,7 +289,7 @@ else
     echo ""
     echo "💡 修复建议："
     echo "   1. 运行 'vv-check-integrity' skill 获取详细诊断"
-    echo "   2. 查看 .claude/skills/vv-check-integrity/modules/ 中的模块清单"
+    echo "   2. 查看 .agents/skills/vv-check-integrity/modules/ 中的模块清单"
     echo "   3. 从 git history 恢复缺失的代码"
     exit 1
 fi

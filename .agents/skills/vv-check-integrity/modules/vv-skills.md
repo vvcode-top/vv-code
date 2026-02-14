@@ -109,6 +109,23 @@ grep "availableSkills" webview-ui/src/utils/slash-commands.ts | wc -l  # 应该 
 
 ---
 
+## 文件监听刷新（解决新增技能不刷新）
+
+📁 `src/extension.ts`
+
+**必须包含**:
+- 注册 `registerSkillsStateRefreshWatchers(context, webview)`
+- 监听 `**/.agents/skills/**/SKILL.md` 等路径变更
+- 变更后触发 `postStateToWebview()` 下发最新 `availableSkills`
+
+**检查方法**:
+```bash
+grep -q "registerSkillsStateRefreshWatchers(context, webview)" src/extension.ts
+grep -q "function registerSkillsStateRefreshWatchers" src/extension.ts
+grep -q "\\*\\*/\\.agents/skills/\\*\\*/SKILL\\.md" src/extension.ts
+grep -q "postStateToWebview" src/extension.ts
+```
+
 ## 快速检查清单
 
 运行以下命令验证所有集成点：
@@ -130,6 +147,10 @@ COUNT=$(grep -A 6 "getMatchingSlashCommands" webview-ui/src/components/chat/Chat
 
 # 5. Slash command 工具函数
 grep "getSkillCommands" webview-ui/src/utils/slash-commands.ts && echo "✅" || echo "❌"
+
+# 6. Skills 文件监听刷新
+grep -q "registerSkillsStateRefreshWatchers(context, webview)" src/extension.ts && echo "✅" || echo "❌"
+grep -q "\\*\\*/\\.agents/skills/\\*\\*/SKILL\\.md" src/extension.ts && echo "✅" || echo "❌"
 ```
 
 ---
