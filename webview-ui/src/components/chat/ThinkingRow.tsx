@@ -11,7 +11,6 @@ interface ThinkingRowProps {
 	onToggle?: () => void
 	title?: string
 	isStreaming?: boolean
-	showChevron?: boolean
 }
 
 export const ThinkingRow = memo(
@@ -23,53 +22,16 @@ export const ThinkingRow = memo(
 		onToggle,
 		title = "Thinking",
 		isStreaming = false,
-		showChevron = true,
 	}: ThinkingRowProps) => {
 		const scrollRef = useRef<HTMLDivElement>(null)
 		const [canScrollUp, setCanScrollUp] = useState(false)
 		const [canScrollDown, setCanScrollDown] = useState(false)
-		const [displayReasoning, setDisplayReasoning] = useState(reasoningContent)
-		const pendingReasoningRef = useRef<string | undefined>(reasoningContent)
-		const reasoningFlushTimeoutRef = useRef<number | null>(null)
-		const lastReasoningFlushRef = useRef(0)
-		const REASONING_FLUSH_INTERVAL_MS = 80
 
 		const checkScrollable = useCallback(() => {
 			if (scrollRef.current) {
 				const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
 				setCanScrollUp(scrollTop > 1)
 				setCanScrollDown(scrollTop + clientHeight < scrollHeight - 1)
-			}
-		}, [])
-
-		useEffect(() => {
-			pendingReasoningRef.current = reasoningContent
-			const now = Date.now()
-			const elapsed = now - lastReasoningFlushRef.current
-			const shouldFlushNow = elapsed >= REASONING_FLUSH_INTERVAL_MS && reasoningFlushTimeoutRef.current === null
-
-			if (shouldFlushNow) {
-				lastReasoningFlushRef.current = now
-				setDisplayReasoning((prev) => (prev === pendingReasoningRef.current ? prev : pendingReasoningRef.current))
-				return
-			}
-
-			if (reasoningFlushTimeoutRef.current === null) {
-				const delay = Math.max(REASONING_FLUSH_INTERVAL_MS - elapsed, 0)
-				reasoningFlushTimeoutRef.current = window.setTimeout(() => {
-					lastReasoningFlushRef.current = Date.now()
-					setDisplayReasoning((prev) => (prev === pendingReasoningRef.current ? prev : pendingReasoningRef.current))
-					reasoningFlushTimeoutRef.current = null
-				}, delay)
-			}
-		}, [reasoningContent])
-
-		useEffect(() => {
-			return () => {
-				if (reasoningFlushTimeoutRef.current !== null) {
-					clearTimeout(reasoningFlushTimeoutRef.current)
-					reasoningFlushTimeoutRef.current = null
-				}
 			}
 		}, [])
 
@@ -80,7 +42,7 @@ export const ThinkingRow = memo(
 				scrollRef.current.scrollTop = scrollRef.current.scrollHeight
 			}
 			checkScrollable()
-		}, [displayReasoning, isVisible, checkScrollable])
+		}, [reasoningContent, isVisible, checkScrollable])
 
 		if (!isVisible) {
 			return null
@@ -99,9 +61,9 @@ export const ThinkingRow = memo(
 							"inline-flex justify-baseline gap-0.5 text-left select-none px-0 py-0 my-0 h-auto min-h-0 w-full text-description overflow-visible",
 							{
 								"cursor-pointer": !!onToggle,
-								"cursor-default": !onToggle,
 							},
 						)}
+						disabled={!onToggle}
 						onClick={onToggle}
 						size="icon"
 						variant="icon">
@@ -109,16 +71,14 @@ export const ThinkingRow = memo(
 							className={cn("text-[13px] leading-[1.2]", {
 								"animate-shimmer bg-linear-90 from-foreground to-description bg-[length:200%_100%] bg-clip-text text-transparent":
 									isStreaming,
-								"select-none": isStreaming,
 							})}>
 							{title}
 						</span>
-						{showChevron &&
-							(isExpanded ? (
-								<ChevronDownIcon className="!size-1 text-description" />
-							) : (
-								<ChevronRightIcon className="!size-1 text-description" />
-							))}
+						{isExpanded ? (
+							<ChevronDownIcon className="!size-1 text-description" />
+						) : (
+							<ChevronRightIcon className="!size-1 text-description" />
+						)}
 					</Button>
 				) : null}
 
@@ -143,7 +103,7 @@ export const ThinkingRow = memo(
 								)}
 								onScroll={checkScrollable}
 								ref={scrollRef}>
-								<span className="pb-2 block text-sm">{displayReasoning}</span>
+								<span className="pb-2 block text-sm">{reasoningContent}</span>
 							</div>
 							{canScrollUp && (
 								<div className="absolute top-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-b from-background to-transparent" />
