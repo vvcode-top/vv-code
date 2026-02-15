@@ -31,7 +31,6 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 	messageHandlers,
 }) => {
 	const { clineMessages } = useExtensionState()
-	const lastRawMessage = useMemo(() => clineMessages.at(-1), [clineMessages])
 
 	const {
 		virtuosoRef,
@@ -71,11 +70,13 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 		return Array.isArray(lastRow) ? lastRow.at(-1) : lastRow
 	}, [lastVisibleRow])
 
-	// Show "Thinking..." until real content starts streaming.
+	// Show "Thinking..." in the Footer until real content starts streaming.
 	// This is the sole early loading indicator - RequestStartRow does NOT duplicate it.
 	// Covers: pre-api_req_started (backend processing) AND post-api_req_started (waiting for model).
 	// Hides once reasoning, tools, text, or any other content message appears.
 	const isWaitingForResponse = useMemo(() => {
+		const lastRawMessage = clineMessages.at(-1)
+
 		const lastMsg = modifiedMessages[modifiedMessages.length - 1]
 
 		// Never show thinking while waiting on user input (any ask state).
@@ -137,40 +138,12 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 			}
 		}
 		return false
-	}, [lastRawMessage, groupedMessages.length, lastVisibleMessage, lastVisibleRow, modifiedMessages])
-
-	// Keep loader in the message flow (not footer). During handoff from waiting -> reasoning stream,
-	// keep the loader mounted until a real reasoning row is visible.
-	const showThinkingLoaderRow = useMemo(() => {
-		const handoffToReasoningPending =
-			lastRawMessage?.type === "say" &&
-			lastRawMessage.say === "reasoning" &&
-			lastRawMessage.partial === true &&
-			lastVisibleMessage?.say !== "reasoning"
-
-		// Mirror the old footer behavior exactly: show whenever waiting logic says so.
-		// Plus a brief handoff guard while grouped rows catch up to raw reasoning stream.
-		return isWaitingForResponse || handoffToReasoningPending
-	}, [isWaitingForResponse, lastRawMessage, lastVisibleMessage?.say])
-
-	const displayedGroupedMessages = useMemo<(ClineMessage | ClineMessage[])[]>(() => {
-		if (!showThinkingLoaderRow) {
-			return groupedMessages
-		}
-		const waitingRow: ClineMessage = {
-			ts: Number.MIN_SAFE_INTEGER,
-			type: "say",
-			say: "reasoning",
-			partial: true,
-			text: "",
-		}
-		return [...groupedMessages, waitingRow]
-	}, [groupedMessages, showThinkingLoaderRow])
+	}, [clineMessages, groupedMessages.length, lastVisibleMessage, lastVisibleRow, modifiedMessages])
 
 	const itemContent = useMemo(
 		() =>
 			createMessageRenderer(
-				displayedGroupedMessages,
+				groupedMessages,
 				modifiedMessages,
 				expandedRows,
 				toggleRowExpansion,
@@ -178,10 +151,10 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 				setActiveQuote,
 				inputValue,
 				messageHandlers,
-				false,
+				isWaitingForResponse,
 			),
 		[
-			displayedGroupedMessages,
+			groupedMessages,
 			modifiedMessages,
 			expandedRows,
 			toggleRowExpansion,
@@ -189,15 +162,28 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 			setActiveQuote,
 			inputValue,
 			messageHandlers,
+			isWaitingForResponse,
 		],
 	)
 
-	// Keep footer as a simple spacer. Thinking loading is rendered as an in-list row.
+	// Keep Virtuoso footer component identity stable while waiting state is unchanged.
+	// This avoids remounting the shimmer node on every message update.
 	const virtuosoComponents = useMemo(
 		() => ({
-			Footer: () => <div className="min-h-1" />,
+			Footer: () =>
+				isWaitingForResponse ? (
+					<div className="px-4 pt-2 pb-2.5">
+						<div className="ml-1">
+							<span className="animate-shimmer bg-linear-90 from-foreground to-description bg-[length:200%_100%] bg-clip-text text-transparent text-[13px] leading-none select-none">
+								Thinking...
+							</span>
+						</div>
+					</div>
+				) : (
+					<div className="min-h-1" />
+				),
 		}),
-		[],
+		[isWaitingForResponse],
 	)
 
 	return (
@@ -227,13 +213,13 @@ export const MessagesArea: React.FC<MessagesAreaProps> = ({
 					atBottomThreshold={10} // trick to make sure virtuoso re-renders when task changes, and we use initialTopMostItemIndex to start at the bottom
 					className="scrollable grow overflow-y-scroll"
 					components={virtuosoComponents}
-					data={displayedGroupedMessages}
+					data={groupedMessages}
 					// increasing top by 3_000 to prevent jumping around when user collapses a row
 					increaseViewportBy={{
 						top: 3_000,
 						bottom: Number.MAX_SAFE_INTEGER,
 					}} // hack to make sure the last message is always rendered to get truly perfect scroll to bottom animation when new messages are added (Number.MAX_SAFE_INTEGER is safe for arithmetic operations, which is all virtuoso uses this value for in src/sizeRangeSystem.ts)
-					initialTopMostItemIndex={displayedGroupedMessages.length - 1} // messages is the raw format returned by extension, modifiedMessages is the manipulated structure that combines certain messages of related type, and visibleMessages is the filtered structure that removes messages that should not be rendered
+					initialTopMostItemIndex={groupedMessages.length - 1} // messages is the raw format returned by extension, modifiedMessages is the manipulated structure that combines certain messages of related type, and visibleMessages is the filtered structure that removes messages that should not be rendered
 					itemContent={itemContent}
 					key={task.ts}
 					rangeChanged={handleRangeChanged}

@@ -887,17 +887,15 @@ export const ChatRowContent = memo(
 					}
 					case "reasoning": {
 						const isReasoningStreaming = message.partial === true
-						const hasReasoningText = !!message.text?.trim()
 						return (
 							<ThinkingRow
-								isExpanded={(isReasoningStreaming && hasReasoningText) || isExpanded}
+								isExpanded={isReasoningStreaming || isExpanded}
 								isStreaming={isReasoningStreaming}
 								isVisible={true}
 								onToggle={isReasoningStreaming ? undefined : handleToggle}
 								reasoningContent={message.text}
-								showChevron={!isReasoningStreaming || hasReasoningText}
-								showTitle={true}
 								title={isReasoningStreaming ? "Thinking..." : "Thinking"}
+								showTitle={true}
 							/>
 						)
 					}
