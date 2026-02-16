@@ -30,8 +30,6 @@ interface ClineHandlerOptions extends CommonApiHandlerOptions {
 	clineApiKey?: string
 }
 
-const CLINE_FREE_MODELS = ["anthropic/claude-sonnet-4.6", "anthropic/claude-4.6-sonnet", "kwaipilot/kat-coder-pro", "z-ai/glm-5"]
-
 export class ClineHandler implements ApiHandler {
 	private options: ClineHandlerOptions
 	private clineAccountService = ClineAccountService.getInstance()
@@ -200,7 +198,7 @@ export class ClineHandler implements ApiHandler {
 					// @ts-expect-error-next-line
 					let totalCost = (chunk.usage.cost || 0) + (chunk.usage.cost_details?.upstream_inference_cost || 0)
 					const modelId = this.getModel().id
-					const isFreeModel = CLINE_FREE_MODELS.includes(modelId)
+					const isFreeModel = ["kwaipilot/kat-coder-pro", "minimax/minimax-m2.5", "z-ai/glm-5"].includes(modelId)
 
 					if (isFreeModel) {
 						totalCost = 0
@@ -254,7 +252,7 @@ export class ClineHandler implements ApiHandler {
 				const generation = response.data
 				let totalCost = generation?.total_cost || 0
 				const modelId = this.getModel().id
-				const isFreeModel = CLINE_FREE_MODELS.includes(modelId)
+				const isFreeModel = ["kwaipilot/kat-coder-pro", "minimax/minimax-m2.5", "z-ai/glm-5"].includes(modelId)
 
 				if (isFreeModel) {
 					totalCost = 0
