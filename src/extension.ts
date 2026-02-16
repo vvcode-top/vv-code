@@ -118,6 +118,11 @@ export async function activate(context: vscode.ExtensionContext) {
 	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
 	const completionProvider = new VvCompletionProvider(webview.controller)
 	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: "**" }, completionProvider))
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeTextDocument((event) => {
+			completionProvider.onDidChangeTextDocument(event)
+		}),
+	)
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {

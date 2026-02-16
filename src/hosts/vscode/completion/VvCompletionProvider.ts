@@ -15,6 +15,7 @@ import { shouldSkipCompletion } from "./prefiltering"
 import { processSingleLineCompletion } from "./processSingleLineCompletion"
 import { getTemplateForModel } from "./vvAutocompleteTemplate"
 import { VvCompletionStreamer } from "./vvCompletionStreamer"
+import { VvCompletionLatencyTracker, type VvCompletionTimingOutcome } from "./vvCompletionTiming"
 import { VvHelperVars } from "./vvHelperVars"
 
 interface CompletionOutcome {
@@ -23,10 +24,30 @@ interface CompletionOutcome {
 }
 
 export class VvCompletionProvider implements vscode.InlineCompletionItemProvider {
+	private static readonly MAX_TRACKED_DOCS = 200
 	private displayedCompletions = new Map<string, CompletionOutcome>()
+	private lastUserInputAtMsByDoc = new Map<string, number>()
 	private completionStreamer = new VvCompletionStreamer()
 
 	constructor(private readonly controller: Controller) {}
+
+	public onDidChangeTextDocument(event: vscode.TextDocumentChangeEvent) {
+		if (event.contentChanges.length === 0) {
+			return
+		}
+
+		const uri = event.document.uri.toString()
+		this.lastUserInputAtMsByDoc.set(uri, Date.now())
+
+		if (this.lastUserInputAtMsByDoc.size <= VvCompletionProvider.MAX_TRACKED_DOCS) {
+			return
+		}
+
+		const oldestUri = this.lastUserInputAtMsByDoc.keys().next().value
+		if (oldestUri) {
+			this.lastUserInputAtMsByDoc.delete(oldestUri)
+		}
+	}
 
 	async provideInlineCompletionItems(
 		document: vscode.TextDocument,
@@ -34,6 +55,20 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 		context: vscode.InlineCompletionContext,
 		token: vscode.CancellationToken,
 	): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | null> {
+		const completionId = uuidv4()
+		const timingTracker = new VvCompletionLatencyTracker({
+			requestId: completionId,
+			lastUserInputAtMs: this.lastUserInputAtMsByDoc.get(document.uri.toString()),
+		})
+		let llmRequested = false
+		const logTiming = (outcome: VvCompletionTimingOutcome) => {
+			if (!llmRequested && outcome !== "success") {
+				return
+			}
+			timingTracker.markRenderReady()
+			Logger.log(timingTracker.buildSummary(outcome))
+		}
+
 		try {
 			// ====================================================================
 			// PREPARATION PHASE (Continue's prepareLlm + initial checks)
@@ -45,7 +80,9 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				return null
 			}
 
-			Logger.log("[VvCompletion] 触发补全", document.fileName, `行 ${position.line + 1}, 列 ${position.character + 1}`)
+			Logger.log(
+				`[VvCompletion] 触发补全 req=${completionId} 文件=${document.fileName} 行=${position.line + 1} 列=${position.character + 1}`,
+			)
 
 			// Skip for certain schemes
 			if (document.uri.scheme === "vscode-scm" || document.uri.scheme === "output") {
@@ -147,7 +184,6 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// STREAMING COMPLETION (Continue's streamCompletionWithFilters)
 			// ====================================================================
 
-			const completionId = uuidv4()
 			const abortController = new AbortController()
 
 			token.onCancellationRequested(() => {
@@ -160,6 +196,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// Stream completion with filters
 			// Note: Use "FIM" as the API model name
 			let rawCompletion = ""
+			llmRequested = true
 			const completionStream = this.completionStreamer.streamCompletionWithFilters(
 				abortController.signal,
 				client,
@@ -169,6 +206,10 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				maxTokens,
 				template.stopTokens,
 				helper,
+				{
+					onLlmStart: () => timingTracker.markLlmStart(),
+					onLlmDone: () => timingTracker.markLlmDone(),
+				},
 			)
 
 			for await (const chunk of completionStream) {
@@ -178,6 +219,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// Check if aborted
 			if (token.isCancellationRequested) {
 				Logger.log("[VvCompletion] 请求已取消")
+				logTiming("cancelled")
 				return null
 			}
 
@@ -185,6 +227,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 
 			if (!rawCompletion) {
 				Logger.log("[VvCompletion] 没有返回补全")
+				logTiming("empty")
 				return null
 			}
 
@@ -196,6 +239,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 
 			if (!processed) {
 				Logger.log("[VvCompletion] ⛔ 补全被后处理过滤")
+				logTiming("filtered")
 				return null
 			}
 
@@ -229,6 +273,7 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 
 				if (result === undefined) {
 					Logger.log("[VvCompletion] 单行处理返回 undefined")
+					logTiming("filtered")
 					return null
 				}
 
@@ -274,10 +319,12 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				`行 ${range.start.line}:${range.start.character} 到 行 ${range.end.line}:${range.end.character}`,
 			)
 			Logger.log("[VvCompletion]    当前光标位置:", `行 ${position.line}:${position.character}`)
+			logTiming("success")
 
 			return [item]
 		} catch (error) {
 			Logger.error("[VvCompletion] 补全错误:", error)
+			logTiming("error")
 			return null
 		}
 	}

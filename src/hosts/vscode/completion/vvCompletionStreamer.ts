@@ -7,6 +7,11 @@ import OpenAI from "openai"
 import { VvStreamTransformPipeline } from "./streamFilters/VvStreamTransformPipeline"
 import { VvHelperVars } from "./vvHelperVars"
 
+interface VvStreamTimingCallbacks {
+	onLlmStart?: () => void
+	onLlmDone?: () => void
+}
+
 /**
  * Completion streamer that applies filters to LLM output
  */
@@ -34,6 +39,7 @@ export class VvCompletionStreamer {
 		maxTokens: number,
 		stopTokens: string[],
 		helper: VvHelperVars,
+		timingCallbacks?: VvStreamTimingCallbacks,
 	): AsyncGenerator<string> {
 		// Full stop means to stop the LLM's generation
 		let abortController: AbortController | undefined
@@ -50,7 +56,7 @@ export class VvCompletionStreamer {
 		})
 
 		// Call LLM with FIM (using OpenAI completions API)
-		const generator = this.streamFim(client, model, prefix, suffix, maxTokens, abortController.signal)
+		const generator = this.streamFim(client, model, prefix, suffix, maxTokens, abortController.signal, timingCallbacks)
 
 		// Apply stream filters
 		const transformedGenerator = this.streamTransformPipeline.transform(
@@ -82,6 +88,7 @@ export class VvCompletionStreamer {
 		suffix: string,
 		maxTokens: number,
 		signal: AbortSignal,
+		timingCallbacks?: VvStreamTimingCallbacks,
 	): AsyncGenerator<string> {
 		try {
 			// Prepare request parameters
@@ -105,9 +112,11 @@ export class VvCompletionStreamer {
 			Logger.log("[VvCompletion]   temperature:", requestParams.temperature)
 
 			// Call API with non-streaming
+			timingCallbacks?.onLlmStart?.()
 			const response = await client.completions.create(requestParams, {
 				signal,
 			})
+			timingCallbacks?.onLlmDone?.()
 
 			Logger.log("[VvCompletion] LLM 响应完成")
 			Logger.log("[VvCompletion]   完整响应:", JSON.stringify(response, null, 2))
