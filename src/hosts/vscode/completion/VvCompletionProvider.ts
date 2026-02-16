@@ -9,6 +9,7 @@ import * as vscode from "vscode"
 import type { Controller } from "@/core/controller"
 import { fetch } from "@/shared/net"
 import { postprocessCompletion } from "./filters"
+import { resolveCompletionGroup } from "./groupSelection"
 import { MultilineCompletionMode, shouldCompleteMultiline } from "./multiline"
 import { shouldSkipCompletion } from "./prefiltering"
 import { processSingleLineCompletion } from "./processSingleLineCompletion"
@@ -77,9 +78,10 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 				return null
 			}
 
-			const defaultGroup = vvGroupConfig.find((group) => group.isDefault)
-			if (!defaultGroup) {
-				Logger.error("[VvCompletion] 未找到默认组")
+			const selectedGroupType = this.controller.stateManager.getGlobalStateKey("vvSelectedGroupType")
+			const activeGroup = resolveCompletionGroup(vvGroupConfig, selectedGroupType)
+			if (!activeGroup) {
+				Logger.error("[VvCompletion] 未找到可用分组（请检查分组 API key）")
 				return null
 			}
 
@@ -116,8 +118,8 @@ export class VvCompletionProvider implements vscode.InlineCompletionItemProvider
 			// LLM PREPARATION (Continue's _prepareLlm)
 			// ====================================================================
 
-			const apiKey = defaultGroup.apiKey
-			let baseUrl = defaultGroup.apiBaseUrl || ""
+			const apiKey = activeGroup.apiKey
+			let baseUrl = activeGroup.apiBaseUrl || ""
 
 			if (!apiKey) {
 				Logger.error("[VvCompletion] 未配置 API key")

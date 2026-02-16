@@ -222,7 +222,7 @@ export class VvAuthProvider {
 	 */
 	async getGroupTokens(accessToken: string, userId: number): Promise<VvGroupConfig> {
 		const url = `${this.apiBaseUrl}/oauth/vscode/group_tokens`
-		Logger.log("[VVAuth] getGroupTokens request:", { url, userId })
+		Logger.log(`[VVAuth] getGroupTokens request: url=${url}, userId=${userId}`)
 
 		try {
 			const response = await fetch(url, {
@@ -233,7 +233,7 @@ export class VvAuthProvider {
 				},
 			})
 
-			Logger.log("[VVAuth] getGroupTokens response status:", response.status)
+			Logger.log(`[VVAuth] getGroupTokens response status: ${response.status}`)
 
 			if (!response.ok) {
 				const errorText = await response.text()
@@ -264,7 +264,7 @@ export class VvAuthProvider {
 	 */
 	async initGroupTokens(accessToken: string, userId: number): Promise<VvGroupConfig> {
 		const url = `${this.apiBaseUrl}/oauth/vscode/init_group_tokens`
-		Logger.log("[VVAuth] initGroupTokens request:", { url, userId })
+		Logger.log(`[VVAuth] initGroupTokens request: url=${url}, userId=${userId}`)
 
 		try {
 			const response = await fetch(url, {
@@ -277,7 +277,7 @@ export class VvAuthProvider {
 				},
 			})
 
-			Logger.log("[VVAuth] initGroupTokens response status:", response.status)
+			Logger.log(`[VVAuth] initGroupTokens response status: ${response.status}`)
 
 			if (!response.ok) {
 				const errorText = await response.text()

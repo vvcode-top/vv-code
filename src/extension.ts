@@ -641,7 +641,8 @@ async function showJupyterPromptInput(title: string, placeholder: string): Promi
 
 function setupHostProvider(context: ExtensionContext) {
 	const outputChannel = registerClineOutputChannel(context)
-	outputChannel.appendLine("[Cline] Setting up VS Code host...")
+	const startupTag = process.env.IS_DEV === "true" ? "[VVCode Dev]" : "[VVCode]"
+	outputChannel.appendLine(`${startupTag} Setting up VS Code host...`)
 
 	const createWebview = () => new VscodeWebviewProvider(context)
 	const createDiffView = () => new VscodeDiffViewProvider()

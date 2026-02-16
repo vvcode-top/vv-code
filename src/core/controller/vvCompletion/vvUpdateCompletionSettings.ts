@@ -14,12 +14,24 @@ import type { Controller } from "@/core/controller"
 export async function vvUpdateCompletionSettings(controller: Controller, request: VvCompletionSettings): Promise<Empty> {
 	const stateManager = controller.stateManager
 
-	// Update settings
-	stateManager.setGlobalState("vvInlineCompletionEnabled", request.enabled)
-	stateManager.setGlobalState("vvInlineCompletionProvider", request.provider || "anthropic")
-	stateManager.setGlobalState("vvInlineCompletionModelId", request.modelId || "claude-3-5-haiku-20241022")
-	stateManager.setGlobalState("vvInlineCompletionDebounceMs", request.debounceMs || 400)
-	stateManager.setGlobalState("vvInlineCompletionUseGroupApiKey", request.useGroupApiKey ?? true)
+	const updates = {
+		vvInlineCompletionEnabled: request.enabled,
+		vvInlineCompletionProvider: request.provider || "anthropic",
+		vvInlineCompletionModelId: request.modelId || "claude-3-5-haiku-20241022",
+		vvInlineCompletionDebounceMs: request.debounceMs || 400,
+		vvInlineCompletionUseGroupApiKey: request.useGroupApiKey ?? true,
+	}
+
+	// Keep global and current task settings in sync so completion switches apply immediately.
+	stateManager.setGlobalState("vvInlineCompletionEnabled", updates.vvInlineCompletionEnabled)
+	stateManager.setGlobalState("vvInlineCompletionProvider", updates.vvInlineCompletionProvider)
+	stateManager.setGlobalState("vvInlineCompletionModelId", updates.vvInlineCompletionModelId)
+	stateManager.setGlobalState("vvInlineCompletionDebounceMs", updates.vvInlineCompletionDebounceMs)
+	stateManager.setGlobalState("vvInlineCompletionUseGroupApiKey", updates.vvInlineCompletionUseGroupApiKey)
+
+	if (controller.task?.taskId) {
+		stateManager.setTaskSettingsBatch(controller.task.taskId, updates)
+	}
 
 	// Flush state to disk
 	await stateManager.flushPendingState()

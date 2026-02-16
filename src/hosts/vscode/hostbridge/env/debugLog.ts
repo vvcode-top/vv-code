@@ -1,7 +1,8 @@
 import { Empty, StringRequest } from "@shared/proto/cline/common"
 import * as vscode from "vscode"
 
-const CLINE_OUTPUT_CHANNEL = vscode.window.createOutputChannel("Cline")
+const OUTPUT_CHANNEL_NAME = process.env.IS_DEV === "true" ? "VVCode (Dev)" : "VVCode"
+const CLINE_OUTPUT_CHANNEL = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME)
 
 // Appends a log message to all Cline output channels.
 export async function debugLog(request: StringRequest): Promise<Empty> {
