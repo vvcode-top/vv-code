@@ -65,6 +65,16 @@
 
 - Restore reasoning trace visibility in chat and improve the thinking row UX so reasoning is visible, then collapsible after completion.
 
+## [3.63.0]
+
+### Added
+
+- added zai GLM 5 Free promo
+
+### Fixed
+
+- Restore reasoning trace visibility in chat and improve the thinking row UX so reasoning is visible, then collapsible after completion.
+
 ## [3.62.0]
 
 ### Fixed
