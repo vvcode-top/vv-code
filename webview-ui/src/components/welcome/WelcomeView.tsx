@@ -69,7 +69,7 @@ const WelcomeView = memo(() => {
 				<p>
 					I can do all kinds of tasks thanks to breakthroughs in{" "}
 					<VSCodeLink className="inline" href="https://www.anthropic.com/claude/sonnet">
-						Claude 4 Sonnet's
+						Claude 4.6 Sonnet's
 					</VSCodeLink>
 					agentic coding capabilities and access to tools that let me create & edit files, explore complex projects, use
 					a browser, and execute terminal commands <i>(with your permission, of course)</i>. I can even use MCP to
@@ -103,7 +103,7 @@ const WelcomeView = memo(() => {
 						{isVVLoggingIn ? "正在跳转浏览器..." : "使用 VVCode 账号登录"}
 						{isVVLoggingIn && (
 							<span className="ml-1 animate-spin">
-								<span className="codicon codicon-refresh"></span>
+								<span className="codicon codicon-refresh" />
 							</span>
 						)}
 					</VSCodeButton>
@@ -113,7 +113,7 @@ const WelcomeView = memo(() => {
 					Get Started for Free (Cline Official)
 					{isLoading && (
 						<span className="ml-1 animate-spin">
-							<span className="codicon codicon-refresh"></span>
+							<span className="codicon codicon-refresh" />
 						</span>
 					)}
 				</VSCodeButton>
