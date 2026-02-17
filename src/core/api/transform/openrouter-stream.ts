@@ -5,6 +5,7 @@ import {
 	OPENROUTER_PROVIDER_PREFERENCES,
 	openRouterClaudeOpus461mModelId,
 	openRouterClaudeSonnet41mModelId,
+	openRouterClaudeSonnet461mModelId,
 	openRouterClaudeSonnet451mModelId,
 	openRouterClaudeSonnet461mModelId,
 } from "@shared/api"
