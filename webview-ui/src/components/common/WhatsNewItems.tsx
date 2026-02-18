@@ -79,15 +79,39 @@ export const WhatsNewItems: React.FC<WhatsNewItemsProps> = ({
 				<>
 					{/* Hardcoded fallback items shown when remote welcome banners feature flag is off */}
 					<li className="mb-2">
-						<strong>Try latest SOTA coding model:</strong> Claude Sonnet 4.6 and Gemini 3.1 pro within Cline!{" "}
+						<strong>Claude Sonnet 4.6 is here!</strong> Advanced reasoning and coding performance. Note: Free
+						promotion ended.{" "}
 						<InlineModelLink label="Try now" modelId="anthropic/claude-sonnet-4.6" pickerTab="recommended" />
 					</li>
 					<li className="mb-2">
-						<strong>Try Cline CLI 2.0:</strong> with /mcp functionality added in CLI{" "}
-						<code style={inlineCodeStyle}>npm install -g cline</code>
+						<strong>GLM 5:</strong> SOTA coding capability with lightning fast inference, now available with free
+						promo! <InlineModelLink label="Try now" modelId="z-ai/glm-5" pickerTab="free" />
 					</li>
 					<li className="mb-2">
-						<strong>Minimax M2.5 and Z.ai GLM 5:</strong> no longer free starting Feb 23, 2026
+						<strong>MiniMax M2.5:</strong> SOTA coding capability with lightning fast inference, now available with
+						free promo! <InlineModelLink label="Try now" modelId="minimax/minimax-m2.5" pickerTab="free" />
+					</li>
+					<li className="mb-2">
+						<strong>Cline CLI 2.0:</strong> Major upgrade bringing interactive and autonomous agentic coding to your
+						terminal. Install with <code style={inlineCodeStyle}>npm install -g cline</code>
+						<a
+							href="https://cline.bot/cli"
+							rel="noopener noreferrer"
+							style={{ color: "var(--vscode-textLink-foreground)" }}
+							target="_blank">
+							{" "}
+							Learn more
+						</a>
+					</li>
+					<li className="mb-2">
+						<strong> Subagents experimental feature</strong> available in VSCode and the CLI.{" "}
+						<a
+							href="https://docs.cline.bot/features/subagents"
+							rel="noopener noreferrer"
+							style={{ color: "var(--vscode-textLink-foreground)" }}
+							target="_blank">
+							Learn more
+						</a>
 					</li>
 				</>
 			)}
