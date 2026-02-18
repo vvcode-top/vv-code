@@ -1,29 +1,38 @@
-import * as path from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
-import type { ApiHandler, buildApiHandler } from "@core/api"
+import { buildApiHandler } from "@core/api"
 import { parseAssistantMessageV2, ToolUse } from "@core/assistant-message"
+import { ContextManager } from "@core/context/context-management/ContextManager"
+import { checkContextWindowExceededError } from "@core/context/context-management/context-error-handling"
+import { getContextWindowInfo } from "@core/context/context-management/context-window-utils"
 import { discoverSkills, getAvailableSkills } from "@core/context/instructions/user-instructions/skills"
 import { formatResponse } from "@core/prompts/responses"
 import { PromptRegistry } from "@core/prompts/system-prompt"
+import { ClineToolSet } from "@core/prompts/system-prompt/registry/ClineToolSet"
 import type { SystemPromptContext } from "@core/prompts/system-prompt/types"
 import { StreamResponseHandler } from "@core/task/StreamResponseHandler"
-import { ClineAssistantToolUseBlock, ClineStorageMessage, ClineTextContentBlock, ClineUserContent } from "@shared/messages"
+import { ClineAssistantToolUseBlock, ClineStorageMessage, ClineTextContentBlock } from "@shared/messages"
 import { Logger } from "@shared/services/Logger"
-import { ClineDefaultTool, ClineTool } from "@shared/tools"
-import { ContextManager } from "@/core/context/context-management/ContextManager"
-import { checkContextWindowExceededError } from "@/core/context/context-management/context-error-handling"
-import { getContextWindowInfo } from "@/core/context/context-management/context-window-utils"
-import { HostRegistryInfo } from "@/registry"
-import { ClineError, ClineErrorType } from "@/services/error"
+import { SETTINGS_DEFAULTS } from "@shared/storage/state-keys"
+import type { ClineTool } from "@shared/tools"
+import { ClineDefaultTool } from "@shared/tools"
+import { isNextGenModelFamily } from "@utils/model-utils"
+import * as path from "path"
+import { HostProvider } from "@/hosts/host-provider"
+import { ClineError, ClineErrorType } from "@/services/error/ClineError"
 import { ApiFormat } from "@/shared/proto/cline/models"
 import { calculateApiCostAnthropic } from "@/utils/cost"
-import { isNextGenModelFamily } from "@/utils/model-utils"
 import { TaskState } from "../../TaskState"
-import { ToolExecutorCoordinator } from "../ToolExecutorCoordinator"
-import { ToolValidator } from "../ToolValidator"
 import type { TaskConfig } from "../types/TaskConfig"
-import { SubagentBuilder } from "./SubagentBuilder"
 
+const SUBAGENT_ALLOWED_TOOLS: ClineDefaultTool[] = [
+	ClineDefaultTool.FILE_READ,
+	ClineDefaultTool.LIST_FILES,
+	ClineDefaultTool.SEARCH,
+	ClineDefaultTool.LIST_CODE_DEF,
+	ClineDefaultTool.BASH,
+	ClineDefaultTool.USE_SKILL,
+	ClineDefaultTool.ATTEMPT,
+]
 const MAX_EMPTY_ASSISTANT_RETRIES = 3
 const MAX_INITIAL_STREAM_ATTEMPTS = 3
 const INITIAL_STREAM_RETRY_BASE_DELAY_MS = 250
@@ -57,20 +66,6 @@ interface SubagentRunStats {
 	contextUsagePercentage: number
 }
 
-interface SubagentRequestUsageState {
-	inputTokens: number
-	outputTokens: number
-	cacheWriteTokens: number
-	cacheReadTokens: number
-	totalTokens: number
-	totalCost?: number
-}
-
-interface SubagentUsageState {
-	currentRequest: SubagentRequestUsageState
-	lastRequest?: SubagentRequestUsageState
-}
-
 interface SubagentToolCall {
 	toolUseId: string
 	id?: string
@@ -81,15 +76,19 @@ interface SubagentToolCall {
 	isNativeToolCall: boolean
 }
 
-function createEmptyRequestUsageState(): SubagentRequestUsageState {
-	return {
-		inputTokens: 0,
-		outputTokens: 0,
-		cacheWriteTokens: 0,
-		cacheReadTokens: 0,
-		totalTokens: 0,
-	}
-}
+const SUBAGENT_SYSTEM_SUFFIX = `\n\n# Subagent Execution Mode
+You are running as a research subagent. Your job is to explore the codebase and gather information to answer the question.
+Explore, read related files, trace through call chains, and build a complete picture before reporting back.
+You can read files, list directories, search for patterns, list code definitions, and run commands.
+Only use execute_command for readonly operations like ls, grep, git log, git diff, gh, etc.
+When it makes sense, be clever about chaining commands or in-command scripting in execute_command to quickly get relevant context - and using pipes / filters to help narrow results.
+Do not run commands that modify files or system state.
+When you have a comprehensive answer, call the attempt_completion tool.
+The attempt_completion result field is sent directly to the main agent, so put your full final findings there.
+Unless the subagent prompt explicitly asks for detailed analysis, keep the result concise and focus on the files the main agent should read next.
+Include a section titled "Relevant file paths" and list only file paths, one per line.
+Do not include line numbers, summaries, or per-file explanations unless explicitly requested.
+`
 
 function serializeToolResult(result: unknown): string {
 	if (typeof result === "string") {
@@ -223,22 +222,12 @@ function pushSubagentToolResultBlock(toolResultBlocks: any[], call: SubagentTool
 }
 
 export class SubagentRunner {
-	private readonly agent: SubagentBuilder
-	private readonly apiHandler: ApiHandler
-	private readonly allowedTools: ClineDefaultTool[]
 	private activeApiAbort: (() => void) | undefined
 	private abortRequested = false
 	private activeCommandExecutions = 0
 	private abortingCommands = false
 
-	constructor(
-		private baseConfig: TaskConfig,
-		subagentName = "subagent",
-	) {
-		this.agent = new SubagentBuilder(baseConfig, subagentName)
-		this.apiHandler = this.agent.getApiHandler()
-		this.allowedTools = this.agent.getAllowedTools()
-	}
+	constructor(private baseConfig: TaskConfig) {}
 
 	async abort(): Promise<void> {
 		this.abortRequested = true
@@ -292,9 +281,7 @@ export class SubagentRunner {
 		this.abortRequested = false
 		const state = new TaskState()
 		let emptyAssistantResponseRetries = 0
-		const usageState: SubagentUsageState = {
-			currentRequest: createEmptyRequestUsageState(),
-		}
+		let previousRequestTotalTokens: number | undefined
 		const stats: SubagentRunStats = {
 			toolCalls: 0,
 			inputTokens: 0,
@@ -312,7 +299,11 @@ export class SubagentRunner {
 		try {
 			const mode = this.baseConfig.services.stateManager.getGlobalSettingsKey("mode")
 			const apiConfiguration = this.baseConfig.services.stateManager.getApiConfiguration()
-			const api = this.apiHandler
+			const effectiveApiConfiguration = {
+				...apiConfiguration,
+				ulid: this.baseConfig.ulid,
+			}
+			const api = buildApiHandler(effectiveApiConfiguration, mode)
 			this.activeApiAbort = api.abort?.bind(api)
 
 			const providerId = (
@@ -329,22 +320,9 @@ export class SubagentRunner {
 				providerInfo.model.info.apiFormat === ApiFormat.OPENAI_RESPONSES ||
 				!!this.baseConfig.services.stateManager.getGlobalStateKey("nativeToolCallEnabled")
 
-			const host = HostRegistryInfo.get()
+			const host = await HostProvider.env.getHostVersion({})
 			const discoveredSkills = await discoverSkills(this.baseConfig.cwd)
-			const availableSkills = getAvailableSkills(discoveredSkills)
-			const configuredSkillNames = this.agent.getConfiguredSkills()
-			const skills =
-				configuredSkillNames !== undefined
-					? configuredSkillNames
-							.map((skillName) => {
-								const skill = availableSkills.find((candidate) => candidate.name === skillName)
-								if (!skill) {
-									Logger.warn(`[SubagentRunner] Configured skill '${skillName}' not found for subagent run.`)
-								}
-								return skill
-							})
-							.filter((skill): skill is (typeof availableSkills)[number] => Boolean(skill))
-					: availableSkills
+			const skills = getAvailableSkills(discoveredSkills)
 
 			const context: SystemPromptContext = {
 				providerInfo,
@@ -360,10 +338,9 @@ export class SubagentRunner {
 			}
 
 			const promptRegistry = PromptRegistry.getInstance()
-			const generatedSystemPrompt = await promptRegistry.get(context)
-			const systemPrompt = this.agent.buildSystemPrompt(generatedSystemPrompt)
+			const systemPrompt = (await promptRegistry.get(context)) + SUBAGENT_SYSTEM_SUFFIX
 			const useNativeToolCalls = !!promptRegistry.nativeTools?.length
-			const nativeTools = useNativeToolCalls ? this.agent.buildNativeTools(context) : undefined
+			const nativeTools = useNativeToolCalls ? this.buildNativeTools(context) : undefined
 			const workspaceMetadataEnvironmentBlock = await this.getWorkspaceMetadataEnvironmentBlock()
 
 			if (useNativeToolCalls && (!nativeTools || nativeTools.length === 0)) {
@@ -403,21 +380,24 @@ export class SubagentRunner {
 
 			while (true) {
 				if (
-					usageState.lastRequest &&
-					this.shouldCompactBeforeNextRequest(usageState.lastRequest.totalTokens, api, providerInfo.model.id)
+					previousRequestTotalTokens !== undefined &&
+					this.shouldCompactBeforeNextRequest(previousRequestTotalTokens, api, providerInfo.model.id)
 				) {
 					const didCompact = this.compactConversationForContextWindow(conversation)
 					if (didCompact) {
 						Logger.warn("[SubagentRunner] Proactively compacted context before next subagent request.")
 					}
 					// Prevent repeated compaction attempts off the same token sample.
-					usageState.lastRequest = undefined
+					previousRequestTotalTokens = undefined
 				}
 
 				const streamHandler = new StreamResponseHandler()
 				const { toolUseHandler } = streamHandler.getHandlers()
-				usageState.currentRequest = createEmptyRequestUsageState()
-				const requestUsage = usageState.currentRequest
+				let requestInputTokens = 0
+				let requestOutputTokens = 0
+				let requestCacheWriteTokens = 0
+				let requestCacheReadTokens = 0
+				let requestTotalCost: number | undefined
 
 				let assistantText = ""
 				let assistantTextSignature: string | undefined
@@ -440,17 +420,13 @@ export class SubagentRunner {
 							stats.outputTokens += chunk.outputTokens || 0
 							stats.cacheWriteTokens += chunk.cacheWriteTokens || 0
 							stats.cacheReadTokens += chunk.cacheReadTokens || 0
-							requestUsage.inputTokens += chunk.inputTokens || 0
-							requestUsage.outputTokens += chunk.outputTokens || 0
-							requestUsage.cacheWriteTokens += chunk.cacheWriteTokens || 0
-							requestUsage.cacheReadTokens += chunk.cacheReadTokens || 0
-							requestUsage.totalTokens =
-								requestUsage.inputTokens +
-								requestUsage.outputTokens +
-								requestUsage.cacheWriteTokens +
-								requestUsage.cacheReadTokens
-							requestUsage.totalCost = chunk.totalCost ?? requestUsage.totalCost
-							stats.contextTokens = requestUsage.totalTokens
+							requestInputTokens += chunk.inputTokens || 0
+							requestOutputTokens += chunk.outputTokens || 0
+							requestCacheWriteTokens += chunk.cacheWriteTokens || 0
+							requestCacheReadTokens += chunk.cacheReadTokens || 0
+							requestTotalCost = chunk.totalCost ?? requestTotalCost
+							stats.contextTokens =
+								requestInputTokens + requestOutputTokens + requestCacheWriteTokens + requestCacheReadTokens
 							stats.contextUsagePercentage =
 								stats.contextWindow > 0 ? (stats.contextTokens / stats.contextWindow) * 100 : 0
 							onProgress({ stats: { ...stats } })
@@ -487,21 +463,17 @@ export class SubagentRunner {
 				}
 
 				const calculatedRequestCost =
-					requestUsage.totalCost ??
+					requestTotalCost ??
 					calculateApiCostAnthropic(
 						providerInfo.model.info,
-						requestUsage.inputTokens,
-						requestUsage.outputTokens,
-						requestUsage.cacheWriteTokens,
-						requestUsage.cacheReadTokens,
+						requestInputTokens,
+						requestOutputTokens,
+						requestCacheWriteTokens,
+						requestCacheReadTokens,
 					)
-				requestUsage.totalTokens =
-					requestUsage.inputTokens +
-					requestUsage.outputTokens +
-					requestUsage.cacheWriteTokens +
-					requestUsage.cacheReadTokens
 				stats.totalCost += calculatedRequestCost || 0
-				usageState.lastRequest = { ...requestUsage }
+				previousRequestTotalTokens =
+					requestInputTokens + requestOutputTokens + requestCacheWriteTokens + requestCacheReadTokens
 
 				const nativeFinalizedToolCalls = toolUseHandler.getAllFinalizedToolUses().map((toolCall, index) => ({
 					toolUseId: resolveToolUseId(toolCall, index),
@@ -587,7 +559,7 @@ export class SubagentRunner {
 				}
 				emptyAssistantResponseRetries = 0
 
-				const toolResultBlocks = [] as ClineUserContent[]
+				const toolResultBlocks = [] as any[]
 				for (const call of finalizedToolCalls) {
 					const toolName = call.name as ClineDefaultTool
 					const toolCallParams = toToolUseParams(call.input)
@@ -606,7 +578,7 @@ export class SubagentRunner {
 						return { status: "completed", result: completionResult, stats }
 					}
 
-					if (!this.allowedTools.includes(toolName)) {
+					if (!SUBAGENT_ALLOWED_TOOLS.includes(toolName)) {
 						const deniedResult = formatResponse.toolError(`Tool '${toolName}' is not available inside subagent runs.`)
 						pushSubagentToolResultBlock(toolResultBlocks, call, toolName, deniedResult)
 						continue
@@ -676,17 +648,9 @@ export class SubagentRunner {
 
 	private createSubagentTaskConfig(state: TaskState): TaskConfig {
 		const baseCallbacks = this.baseConfig.callbacks
-		const coordinator = new ToolExecutorCoordinator()
-		const validator = new ToolValidator(this.baseConfig.services.clineIgnoreController)
-
-		for (const tool of this.allowedTools) {
-			coordinator.registerByName(tool, validator)
-		}
 
 		return {
 			...this.baseConfig,
-			api: this.apiHandler,
-			coordinator,
 			taskState: state,
 			isSubagentExecution: true,
 			vscodeTerminalExecutionMode: "backgroundExec",
@@ -767,20 +731,22 @@ export class SubagentRunner {
 	}
 
 	private shouldCompactBeforeNextRequest(
-		requestTotalTokens: number,
+		previousRequestTotalTokens: number,
 		api: ReturnType<typeof buildApiHandler>,
 		modelId: string,
 	): boolean {
 		const { contextWindow, maxAllowedSize } = getContextWindowInfo(api)
 		const useAutoCondense = this.baseConfig.services.stateManager.getGlobalSettingsKey("useAutoCondense")
 		if (useAutoCondense && isNextGenModelFamily(modelId)) {
-			const autoCondenseThreshold = 0.75
+			// Use default — the UI to adjust this is disabled and stored values may be corrupted.
+			// See: https://github.com/cline/cline/pull/9348
+			const autoCondenseThreshold = SETTINGS_DEFAULTS.autoCondenseThreshold
 			const roundedThreshold = autoCondenseThreshold ? Math.floor(contextWindow * autoCondenseThreshold) : maxAllowedSize
 			const thresholdTokens = Math.min(roundedThreshold, maxAllowedSize)
-			return requestTotalTokens >= thresholdTokens
+			return previousRequestTotalTokens >= thresholdTokens
 		}
 
-		return requestTotalTokens >= maxAllowedSize
+		return previousRequestTotalTokens >= maxAllowedSize
 	}
 
 	private async *createMessageWithInitialChunkRetry(
@@ -828,5 +794,17 @@ export class SubagentRunner {
 				await delay(delayMs)
 			}
 		}
+	}
+
+	private buildNativeTools(context: SystemPromptContext): ClineTool[] {
+		const family = PromptRegistry.getInstance().getModelFamily(context)
+		const toolSets = ClineToolSet.getToolsForVariantWithFallback(family, SUBAGENT_ALLOWED_TOOLS)
+		const filteredToolSpecs = toolSets
+			.map((toolSet) => toolSet.config)
+			.filter((toolSpec) => !toolSpec.contextRequirements || toolSpec.contextRequirements(context))
+
+		const converter = ClineToolSet.getNativeConverter(context.providerInfo.providerId, context.providerInfo.model.id)
+
+		return filteredToolSpecs.map((tool) => converter(tool, context))
 	}
 }
