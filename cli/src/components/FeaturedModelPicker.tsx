@@ -7,14 +7,13 @@
 import { Box, Text } from "ink"
 import React from "react"
 import { COLORS } from "../constants/colors"
-import type { FeaturedModel } from "../constants/featured-models"
+import { type FeaturedModel, getAllFeaturedModels } from "../constants/featured-models"
 
 interface FeaturedModelPickerProps {
 	selectedIndex: number
 	title?: string
 	showBrowseAll?: boolean
 	helpText?: string
-	featuredModels: FeaturedModel[]
 }
 
 export const FeaturedModelPicker: React.FC<FeaturedModelPickerProps> = ({
@@ -22,9 +21,8 @@ export const FeaturedModelPicker: React.FC<FeaturedModelPickerProps> = ({
 	title,
 	showBrowseAll = true,
 	helpText = "Arrows to navigate, Enter to select",
-	featuredModels,
 }) => {
-	const models = featuredModels
+	const featuredModels = getAllFeaturedModels()
 
 	return (
 		<Box flexDirection="column">
@@ -37,7 +35,7 @@ export const FeaturedModelPicker: React.FC<FeaturedModelPickerProps> = ({
 				</Text>
 			)}
 
-			{models.map((model, i) => {
+			{featuredModels.map((model, i) => {
 				const isSelected = i === selectedIndex
 
 				return (
@@ -66,8 +64,8 @@ export const FeaturedModelPicker: React.FC<FeaturedModelPickerProps> = ({
 
 			{showBrowseAll && (
 				<Box>
-					<Text color={selectedIndex === models.length ? COLORS.primaryBlue : "white"}>
-						{selectedIndex === models.length ? "❯ " : "  "}
+					<Text color={selectedIndex === featuredModels.length ? COLORS.primaryBlue : "white"}>
+						{selectedIndex === featuredModels.length ? "❯ " : "  "}
 						Browse all models...
 					</Text>
 				</Box>
@@ -83,21 +81,24 @@ export const FeaturedModelPicker: React.FC<FeaturedModelPickerProps> = ({
  * Get the maximum valid index for the featured model picker
  * (includes "Browse all" option if showBrowseAll is true)
  */
-export function getFeaturedModelMaxIndex(featuredModels: FeaturedModel[], showBrowseAll = true): number {
+export function getFeaturedModelMaxIndex(showBrowseAll = true): number {
+	const featuredModels = getAllFeaturedModels()
 	return showBrowseAll ? featuredModels.length : featuredModels.length - 1
 }
 
 /**
  * Check if the selected index is the "Browse all" option
  */
-export function isBrowseAllSelected(selectedIndex: number, featuredModels: FeaturedModel[]): boolean {
+export function isBrowseAllSelected(selectedIndex: number): boolean {
+	const featuredModels = getAllFeaturedModels()
 	return selectedIndex === featuredModels.length
 }
 
 /**
  * Get the featured model at the given index, or null if "Browse all" is selected
  */
-export function getFeaturedModelAtIndex(index: number, featuredModels: FeaturedModel[]): FeaturedModel | null {
+export function getFeaturedModelAtIndex(index: number): FeaturedModel | null {
+	const featuredModels = getAllFeaturedModels()
 	if (index >= 0 && index < featuredModels.length) {
 		return featuredModels[index]
 	}
