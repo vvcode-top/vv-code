@@ -65,6 +65,24 @@
 
 - Restore reasoning trace visibility in chat and improve the thinking row UX so reasoning is visible, then collapsible after completion.
 
+## [3.65.0]
+
+### Added
+
+- Add /skills slash command to CLI for viewing and managing installed skills
+
+### Fixed
+
+- Fix aggressive context compaction caused by accidental clicks on the context window progress bar silently setting a very low auto-condense threshold
+- Fix infinite retry loop when write_to_file fails with missing content parameter.
+- Fixed default claude model
+
+## [3.64.0]
+
+### Added
+- Added sonnet 4.6
+
+
 ## [3.63.0]
 
 ### Added
