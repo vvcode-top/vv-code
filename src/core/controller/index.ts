@@ -958,6 +958,7 @@ export class Controller {
 		const clineConfig = ClineEnv.config()
 		const environment = clineConfig.environment
 		const banners = BannerService.get().getActiveBanners() ?? []
+		const welcomeBanners = BannerService.get().getWelcomeBanners() ?? []
 
 		// Check OpenAI Codex authentication status
 		const { openAiCodexOAuthManager } = await import("@/integrations/openai-codex/oauth")
@@ -1055,6 +1056,7 @@ export class Controller {
 			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
 			doubleCheckCompletionEnabled,
 			banners,
+			welcomeBanners,
 			openAiCodexIsAuthenticated,
 		}
 	}
