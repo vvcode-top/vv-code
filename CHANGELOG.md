@@ -65,6 +65,13 @@
 
 - Restore reasoning trace visibility in chat and improve the thinking row UX so reasoning is visible, then collapsible after completion.
 
+## [3.66.0]
+
+### Added
+
+- Gemini-3.1 Pro Preview
+
+
 ## [3.65.0]
 
 ### Added
