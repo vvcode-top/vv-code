@@ -104,6 +104,8 @@ const REMOTE_CONFIG_EXTRA_FIELDS = {
 } satisfies FieldDefinitions
 
 const GLOBAL_STATE_FIELDS = {
+	clineVersion: { default: undefined as string | undefined },
+	"cline.generatedMachineId": { default: undefined as string | undefined }, // Note, distinctId reads/writes this directly from/to StorageContext before StateManager is initialized.
 	lastShownAnnouncementId: { default: undefined as string | undefined },
 	taskHistory: { default: [] as HistoryItem[], isAsync: true },
 	userInfo: { default: undefined as UserInfo | undefined },
@@ -403,6 +405,8 @@ const SECRETS_KEYS = [
 	"vv:userId",
 ] as const
 
+// WARNING, these are not ALL of the local state keys in practice. For example, FileContextTracker
+// uses dynamic keys like pendingFileContextWarning_${taskId}.
 export const LocalStateKeys = [
 	"localClineRulesToggles",
 	"localCursorRulesToggles",
