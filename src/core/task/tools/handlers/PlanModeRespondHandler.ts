@@ -9,14 +9,13 @@ import type { ToolResponse } from "../../index"
 import type { IPartialBlockHandler, IToolHandler } from "../ToolExecutorCoordinator"
 import type { TaskConfig } from "../types/TaskConfig"
 import type { StronglyTypedUIHelpers } from "../types/UIHelpers"
+import { getTaskCompletionTelemetry } from "../utils"
 
 export class PlanModeRespondHandler implements IToolHandler, IPartialBlockHandler {
 	readonly name = ClineDefaultTool.PLAN_MODE
 	private lastUpdateTime = 0
 	private lastUpdateLength = 0
 	private readonly UPDATE_THROTTLE_MS = 100 // Only update UI every 100ms
-
-	constructor() {}
 
 	getDescription(block: ToolUse): string {
 		return `[${block.name}]`
@@ -153,6 +152,8 @@ export class PlanModeRespondHandler implements IToolHandler, IPartialBlockHandle
 			const { processFilesIntoText } = await import("@integrations/misc/extract-text")
 			fileContentString = await processFilesIntoText(planResponseFiles)
 		}
+
+		telemetryService.captureTaskCompleted(config.ulid, getTaskCompletionTelemetry(config))
 
 		// Handle mode switching response
 		if (config.taskState.didRespondToPlanAskBySwitchingMode) {

@@ -11,7 +11,6 @@ import {
 	CLAUDE_SONNET_1M_TIERS,
 	openRouterClaudeOpus461mModelId,
 	openRouterClaudeSonnet41mModelId,
-	openRouterClaudeSonnet461mModelId,
 	openRouterClaudeSonnet451mModelId,
 	openRouterClaudeSonnet461mModelId,
 } from "@/shared/api"
