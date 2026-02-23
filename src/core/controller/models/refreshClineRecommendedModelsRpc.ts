@@ -4,10 +4,10 @@ import type { Controller } from "../index"
 import { refreshClineRecommendedModels } from "./refreshClineRecommendedModels"
 
 export async function refreshClineRecommendedModelsRpc(
-	_controller: Controller,
+	controller: Controller,
 	_request: EmptyRequest,
 ): Promise<ClineRecommendedModelsResponse> {
-	const models = await refreshClineRecommendedModels()
+	const models = await refreshClineRecommendedModels(controller)
 	return ClineRecommendedModelsResponse.create({
 		recommended: models.recommended.map((model) =>
 			ClineRecommendedModel.create({
