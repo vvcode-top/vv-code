@@ -16,17 +16,15 @@ const AgentBaseConfigSchema = z.object({
 	name: z.string().trim().min(1),
 	description: z.string().trim().min(1),
 	tools: z.array(z.nativeEnum(ClineDefaultTool)).default([]),
-	skills: z.array(z.string().trim().min(1)).optional(),
-	modelId: z.string().trim().min(1).optional(),
+	modelId: z.string().trim().min(1),
 	systemPrompt: z.string().trim().min(1),
 })
 
 const AgentConfigFrontmatterSchema = z.object({
 	name: z.string().trim().min(1),
 	description: z.string().trim().min(1),
-	modelId: z.string().trim().min(1).optional(),
+	modelId: z.string().trim().min(1),
 	tools: z.union([z.string(), z.array(z.string())]).optional(),
-	skills: z.union([z.string(), z.array(z.string())]).optional(),
 })
 
 export type AgentBaseConfig = z.infer<typeof AgentBaseConfigSchema>
@@ -60,23 +58,6 @@ function parseTools(tools: string | string[] | undefined): ClineDefaultTool[] {
 	return Array.from(new Set(rawTools.map(normalizeToolName)))
 }
 
-function normalizeSkillName(skillName: string): string {
-	const trimmed = skillName.trim()
-	if (!trimmed) {
-		throw new Error("Skill name cannot be empty.")
-	}
-	return trimmed
-}
-
-function parseSkills(skills: string | string[] | undefined): string[] | undefined {
-	if (skills === undefined) {
-		return undefined
-	}
-
-	const rawSkills = Array.isArray(skills) ? skills : skills.split(",")
-	return Array.from(new Set(rawSkills.map(normalizeSkillName)))
-}
-
 export function parseAgentConfigFromYaml(content: string): AgentBaseConfig {
 	const { data, body, hadFrontmatter, parseError } = parseYamlFrontmatter(content)
 	if (parseError) {
@@ -97,7 +78,6 @@ export function parseAgentConfigFromYaml(content: string): AgentBaseConfig {
 		description: parsedFrontmatter.description,
 		modelId: parsedFrontmatter.modelId,
 		tools: parseTools(parsedFrontmatter.tools),
-		skills: parseSkills(parsedFrontmatter.skills),
 		systemPrompt,
 	}) as AgentBaseConfig
 }
