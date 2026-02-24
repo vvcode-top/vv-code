@@ -65,6 +65,18 @@
 
 - Restore reasoning trace visibility in chat and improve the thinking row UX so reasoning is visible, then collapsible after completion.
 
+## [3.67.1]
+
+### Added
+
+- Added Cline SDK API interface for programmatic access to Cline features and tools, enabling integration into custom applications.
+- Added Codex 5.3 model support
+
+### Fixed
+
+- Fix OpenAI Codex by setting `store` to `false`
+- Use `isLocatedInPath()` instead of string matching for path containment checks
+
 ## [3.67.0]
 
 ### Added
