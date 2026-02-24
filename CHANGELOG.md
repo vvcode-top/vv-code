@@ -1,4 +1,4 @@
-# Changelog
+# VVCode Changelog
 
 ## [3.63.0]
 

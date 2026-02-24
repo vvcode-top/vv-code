@@ -31,6 +31,7 @@ import { ExtensionRegistryInfo } from "@/registry"
 import { AuthService } from "@/services/auth/AuthService"
 import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
+import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
@@ -73,6 +74,7 @@ export class Controller {
 	accountService: ClineAccountService
 	authService: AuthService
 	ocaAuthService: OcaAuthService
+	vvAuthService: VvAuthService
 	readonly stateManager: StateManager
 
 	// NEW: Add workspace manager (optional initially)
@@ -134,6 +136,7 @@ export class Controller {
 		})
 		this.authService = AuthService.getInstance(this)
 		this.ocaAuthService = OcaAuthService.initialize(this)
+		this.vvAuthService = VvAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
 		BannerService.initialize(this)
 
@@ -721,6 +724,41 @@ export class Controller {
 		// Dont send settingsButtonClicked because its bad ux if user is on welcome
 	}
 
+	async handleVVAuthCallback(code: string, state: string) {
+		try {
+			await this.vvAuthService.handleAuthCallback(code, state)
+
+			this.stateManager.setGlobalState("welcomeViewCompleted", true)
+			await this.postStateToWebview()
+
+			const userInfo = this.vvAuthService.getUserInfo()
+			HostProvider.window.showMessage({
+				type: ShowMessageType.INFORMATION,
+				message: `Successfully logged in to VVCode! Welcome, ${userInfo?.username || "User"}`,
+			})
+		} catch (error) {
+			Logger.error("Failed to handle VVCode auth callback:", error)
+			HostProvider.window.showMessage({
+				type: ShowMessageType.ERROR,
+				message: `Failed to log in to VVCode: ${error instanceof Error ? error.message : String(error)}`,
+			})
+		}
+	}
+
+	async handleVVInitComplete() {
+		try {
+			await this.vvAuthService.refreshGroupConfig()
+			await this.postStateToWebview()
+
+			HostProvider.window.showMessage({
+				type: ShowMessageType.INFORMATION,
+				message: "VVCode configuration initialized successfully!",
+			})
+		} catch (error) {
+			Logger.error("Failed to handle VVCode init complete:", error)
+		}
+	}
+
 	// Requesty
 
 	async handleRequestyCallback(code: string) {
@@ -888,6 +926,7 @@ export class Controller {
 		const lastDismissedCliBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedCliBannerVersion") || 0
 		const dismissedBanners = this.stateManager.getGlobalStateKey("dismissedBanners")
 		const doubleCheckCompletionEnabled = this.stateManager.getGlobalSettingsKey("doubleCheckCompletionEnabled")
+		const availableSkills = await this.getAvailableSkillsMetadata()
 
 		const localClineRulesToggles = this.stateManager.getWorkspaceStateKey("localClineRulesToggles")
 		const localWindsurfRulesToggles = this.stateManager.getWorkspaceStateKey("localWindsurfRulesToggles")
@@ -897,6 +936,9 @@ export class Controller {
 		// Use default — the UI to adjust this is disabled and stored values may be corrupted.
 		// See: https://github.com/cline/cline/pull/9348
 		const autoCondenseThreshold = SETTINGS_DEFAULTS.autoCondenseThreshold
+		const vvGroupConfig = this.stateManager.getGlobalStateKey("vvGroupConfig")
+		const vvNeedsWebInit = this.stateManager.getGlobalStateKey("vvNeedsWebInit")
+		const vvSelectedGroupType = this.stateManager.getGlobalStateKey("vvSelectedGroupType")
 
 		const currentTaskItem = this.task?.taskId ? (taskHistory || []).find((item) => item.id === this.task?.taskId) : undefined
 		// Spread to create new array reference - React needs this to detect changes in useEffect dependencies
@@ -1006,6 +1048,10 @@ export class Controller {
 			nativeToolCallSetting: this.stateManager.getGlobalStateKey("nativeToolCallEnabled"),
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
+			availableSkills,
+			vvGroupConfig,
+			vvNeedsWebInit,
+			vvSelectedGroupType,
 			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
 			doubleCheckCompletionEnabled,
 			banners,
@@ -1020,6 +1066,26 @@ export class Controller {
 		}
 		await this.task?.abortTask()
 		this.task = undefined // removes reference to it, so once promises end it will be garbage collected
+	}
+
+	public async getAvailableSkillsMetadata(): Promise<import("@/shared/skills").SkillMetadata[]> {
+		try {
+			const { discoverSkills, getAvailableSkills } = await import("../context/instructions/user-instructions/skills")
+			const cwd = this.workspaceManager?.getPrimaryRoot()?.path || (await getCwd(getDesktopDir()))
+			const allSkills = await discoverSkills(cwd)
+			const resolvedSkills = getAvailableSkills(allSkills)
+
+			const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles") || {}
+			const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles") || {}
+
+			return resolvedSkills.filter((skill) => {
+				const toggles = skill.source === "global" ? globalSkillsToggles : localSkillsToggles
+				return toggles[skill.path] !== false
+			})
+		} catch (error) {
+			Logger.error("Failed to get skills metadata:", error)
+			return []
+		}
 	}
 
 	// Caching mechanism to keep track of webview messages + API conversation history per provider instance
