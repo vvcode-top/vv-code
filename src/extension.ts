@@ -21,6 +21,7 @@ import path from "node:path"
 import type { ExtensionContext } from "vscode"
 import { HostProvider } from "@/hosts/host-provider"
 import { vscodeHostBridgeClient } from "@/hosts/vscode/hostbridge/client/host-grpc-client"
+import { createStorageContext } from "@/shared/storage/storage-context"
 import { readTextFromClipboard, writeTextToClipboard } from "@/utils/env"
 import { initialize, tearDown } from "./common"
 import { addToCline } from "./core/controller/commands/addToCline"
@@ -50,6 +51,7 @@ import {
 import { VscodeTerminalManager } from "./hosts/vscode/terminal/VscodeTerminalManager"
 import { VscodeDiffViewProvider } from "./hosts/vscode/VscodeDiffViewProvider"
 import { VscodeWebviewProvider } from "./hosts/vscode/VscodeWebviewProvider"
+import { exportVSCodeStorageToSharedFiles } from "./hosts/vscode/vscode-to-file-migration"
 import { ExtensionRegistryInfo } from "./registry"
 import { AuthService } from "./services/auth/AuthService"
 import { LogoutReason } from "./services/auth/types"
@@ -70,15 +72,17 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// 2. Register services and perform common initialization
 	// IMPORTANT: Must be done after host provider is setup
-	const webview = (await initialize(context)) as VscodeWebviewProvider
+	await performStorageMigrations(context)
+	const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+	const storageContext = createStorageContext({ workspacePath })
+	await exportVSCodeStorageToSharedFiles(context, storageContext)
+	const webview = (await initialize(storageContext)) as VscodeWebviewProvider
 
 	// 3. Register services and commands specific to VS Code
 	// Initialize test mode and add disposables to context
 	const testModeWatchers = await initializeTestMode(webview)
 	context.subscriptions.push(...testModeWatchers)
 
-	// Perform storage migrations that does not block extension activation
-	performStorageMigrations(context)
 	registerSkillsStateRefreshWatchers(context, webview)
 
 	// Initialize hook discovery cache for performance optimization
@@ -781,7 +785,7 @@ if (IS_DEV) {
 // VSCode-specific storage migrations
 async function performStorageMigrations(context: ExtensionContext): Promise<void> {
 	try {
-		cleanupOldApiKey()
+		cleanupOldApiKey(context)
 		// Migrate is not done if the new storage does not have the lastShownAnnouncementId flag
 		const hasMigrated = StateManager.get().getGlobalStateKey("lastShownAnnouncementId")
 		if (hasMigrated !== undefined) {
