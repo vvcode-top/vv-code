@@ -10,6 +10,8 @@ import { sendChatButtonClickedEvent } from "./core/controller/ui/subscribeToChat
 import { sendHistoryButtonClickedEvent } from "./core/controller/ui/subscribeToHistoryButtonClicked"
 import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpButtonClicked"
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
+// VVCode Customization: Import VV settings button event
+import { sendVVSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToVvSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
 import { createClineAPI } from "./exports"
@@ -29,6 +31,7 @@ import { improveWithCline } from "./core/controller/commands/improveWithCline"
 import { sendAddToInputEvent } from "./core/controller/ui/subscribeToAddToInput"
 import { sendShowWebviewEvent } from "./core/controller/ui/subscribeToShowWebview"
 import { HookDiscoveryCache } from "./core/hooks/HookDiscoveryCache"
+import { StateManager } from "./core/storage/StateManager"
 import {
 	cleanupMcpMarketplaceCatalogFromGlobalState,
 	cleanupOldApiKey,
@@ -67,25 +70,20 @@ export async function activate(context: vscode.ExtensionContext) {
 	// IMPORTANT: This must be done before any service can be registered
 	setupHostProvider(context)
 
-	// 2. Clean up legacy data patterns within VSCode's native storage.
-	// Moves workspace→global keys, task history→file, custom instructions→rules, etc.
-	// Must run BEFORE the file export so we copy clean state.
-	await cleanupLegacyVSCodeStorage(context)
-
-	// 3. One-time export of VSCode's native storage to shared file-backed stores.
-	// After this, all platforms (VSCode, CLI, JetBrains) read from ~/.cline/data/.
+	// 2. Register services and perform common initialization
+	// IMPORTANT: Must be done after host provider is setup
+	await performStorageMigrations(context)
 	const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
 	const storageContext = createStorageContext({ workspacePath })
 	await exportVSCodeStorageToSharedFiles(context, storageContext)
-
-	// 4. Register services and perform common initialization
-	// IMPORTANT: Must be done after host provider is setup and migrations are complete
 	const webview = (await initialize(storageContext)) as VscodeWebviewProvider
 
-	// 5. Register services and commands specific to VS Code
+	// 3. Register services and commands specific to VS Code
 	// Initialize test mode and add disposables to context
 	const testModeWatchers = await initializeTestMode(webview)
 	context.subscriptions.push(...testModeWatchers)
+
+	registerSkillsStateRefreshWatchers(context, webview)
 
 	// Initialize hook discovery cache for performance optimization
 	HookDiscoveryCache.getInstance().initialize(
@@ -115,6 +113,33 @@ export async function activate(context: vscode.ExtensionContext) {
 		},
 	)
 
+	// VVCode Customization: Initialize balance status bar
+	const { VvBalanceStatusBar } = await import("./hosts/vscode/VvBalanceStatusBar")
+	const balanceStatusBar = VvBalanceStatusBar.getInstance()
+	balanceStatusBar.initialize(context)
+
+	// VVCode Customization: Initialize inline completion provider
+	const { VvCompletionProvider } = await import("./hosts/vscode/completion/VvCompletionProvider")
+	const completionProvider = new VvCompletionProvider(webview.controller)
+	context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider({ pattern: "**" }, completionProvider))
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeTextDocument((event) => {
+			completionProvider.onDidChangeTextDocument(event)
+		}),
+	)
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("vv.acceptCompletion", (completionId: string) => {
+			completionProvider.acceptCompletion(completionId)
+		}),
+	)
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("vvcode.refreshBalance", async () => {
+			await balanceStatusBar.refreshBalance()
+		}),
+	)
+
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(VscodeWebviewProvider.SIDEBAR_ID, webview, {
 			webviewOptions: { retainContextWhenHidden: true },
@@ -134,6 +159,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	)
 	context.subscriptions.push(vscode.commands.registerCommand(commands.McpButton, () => sendMcpButtonClickedEvent()))
 	context.subscriptions.push(vscode.commands.registerCommand(commands.SettingsButton, () => sendSettingsButtonClickedEvent()))
+	// VVCode Customization: Register VV settings button command
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.VVSettingsButton, () => sendVVSettingsButtonClickedEvent()),
+	)
 	context.subscriptions.push(vscode.commands.registerCommand(commands.HistoryButton, () => sendHistoryButtonClickedEvent()))
 	context.subscriptions.push(vscode.commands.registerCommand(commands.AccountButton, () => sendAccountButtonClickedEvent()))
 	context.subscriptions.push(vscode.commands.registerCommand(commands.WorktreesButton, () => sendWorktreesButtonClickedEvent()))
@@ -523,28 +552,67 @@ ${ctx.cellJson || "{}"}
 		}),
 	)
 
-	// Listen for secrets changes (e.g., cross-window login/logout sync)
-	const unsubSecrets = storageContext.secrets.onDidChange((event) => {
-		if (event.key === "cline:clineAccountId") {
-			const secretValue = storageContext.secrets.get<string>(event.key)
-			const activeWebview = WebviewProvider.getVisibleInstance()
-			const controller = activeWebview?.controller
+	context.subscriptions.push(
+		context.secrets.onDidChange(async (event) => {
+			if (event.key === "cline:clineAccountId") {
+				// Check if the secret was removed (logout) or added/updated (login)
+				const secretValue = await context.secrets.get(event.key)
+				const activeWebview = WebviewProvider.getVisibleInstance()
+				const controller = activeWebview?.controller
 
-			const authService = AuthService.getInstance(controller)
-			if (secretValue) {
-				// Secret was added or updated - restore auth info (login from another window)
-				authService?.restoreRefreshTokenAndRetrieveAuthInfo()
-			} else {
-				// Secret was removed - handle logout for all windows
-				authService?.handleDeauth(LogoutReason.CROSS_WINDOW_SYNC)
+				const authService = AuthService.getInstance(controller)
+				if (secretValue) {
+					// Secret was added or updated - restore auth info (login from another window)
+					authService?.restoreRefreshTokenAndRetrieveAuthInfo()
+				} else {
+					// Secret was removed - handle logout for all windows
+					authService?.handleDeauth(LogoutReason.CROSS_WINDOW_SYNC)
+				}
 			}
-		}
-	})
-	context.subscriptions.push({ dispose: unsubSecrets })
+		}),
+	)
 
 	Logger.log(`[Cline] extension activated in ${performance.now() - activationStartTime} ms`)
 
 	return createClineAPI(webview.controller)
+}
+
+function registerSkillsStateRefreshWatchers(context: vscode.ExtensionContext, webview: VscodeWebviewProvider) {
+	const skillPatterns = [
+		"**/.clinerules/skills/**/SKILL.md",
+		"**/.cline/skills/**/SKILL.md",
+		"**/.claude/skills/**/SKILL.md",
+		"**/.agents/skills/**/SKILL.md",
+	]
+
+	let refreshTimer: NodeJS.Timeout | undefined
+	const scheduleStateRefresh = () => {
+		if (refreshTimer) {
+			clearTimeout(refreshTimer)
+		}
+		refreshTimer = setTimeout(() => {
+			refreshTimer = undefined
+			webview.controller.postStateToWebview().catch((error) => {
+				Logger.error("[SkillsWatcher] Failed to refresh state after skill file change:", error)
+			})
+		}, 200)
+	}
+
+	for (const pattern of skillPatterns) {
+		const watcher = vscode.workspace.createFileSystemWatcher(pattern)
+		watcher.onDidCreate(scheduleStateRefresh, null, context.subscriptions)
+		watcher.onDidChange(scheduleStateRefresh, null, context.subscriptions)
+		watcher.onDidDelete(scheduleStateRefresh, null, context.subscriptions)
+		context.subscriptions.push(watcher)
+	}
+
+	context.subscriptions.push(
+		new vscode.Disposable(() => {
+			if (refreshTimer) {
+				clearTimeout(refreshTimer)
+			}
+		}),
+	)
 }
 
 async function showJupyterPromptInput(title: string, placeholder: string): Promise<string | undefined> {
@@ -595,7 +663,8 @@ async function showJupyterPromptInput(title: string, placeholder: string): Promi
 
 function setupHostProvider(context: ExtensionContext) {
 	const outputChannel = registerClineOutputChannel(context)
-	outputChannel.appendLine("[Cline] Setting up VS Code host...")
+	const startupTag = process.env.IS_DEV === "true" ? "[VVCode Dev]" : "[VVCode]"
+	outputChannel.appendLine(`${startupTag} Setting up VS Code host...`)
 
 	const createWebview = () => new VscodeWebviewProvider(context)
 	const createDiffView = () => new VscodeDiffViewProvider()
@@ -714,11 +783,11 @@ if (IS_DEV) {
 }
 
 // VSCode-specific storage migrations
-async function cleanupLegacyVSCodeStorage(context: ExtensionContext): Promise<void> {
+async function performStorageMigrations(context: ExtensionContext): Promise<void> {
 	try {
-		await cleanupOldApiKey(context)
+		cleanupOldApiKey(context)
 		// Migrate is not done if the new storage does not have the lastShownAnnouncementId flag
-		const hasMigrated = context.globalState.get("lastShownAnnouncementId")
+		const hasMigrated = StateManager.get().getGlobalStateKey("lastShownAnnouncementId")
 		if (hasMigrated !== undefined) {
 			return
 		}
