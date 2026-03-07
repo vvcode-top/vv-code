@@ -2,7 +2,7 @@ export interface SlashCommand {
 	name: string
 	description?: string
 	section?: "default" | "custom" | "mcp"
-	type?: "workflow" | "skill" | "mcp" | "command"
+	type?: "skill" | "workflow"
 	cliCompatible?: boolean
 }
 
@@ -82,6 +82,12 @@ export const CLI_ONLY_COMMANDS: SlashCommand[] = [
 	},
 	{
 		name: "exit",
+		description: "Alternative to Ctrl+C",
+		section: "default",
+		cliCompatible: true,
+	},
+	{
+		name: "q",
 		description: "Alternative to Ctrl+C",
 		section: "default",
 		cliCompatible: true,

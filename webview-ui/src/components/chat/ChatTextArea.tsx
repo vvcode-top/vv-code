@@ -1,4 +1,3 @@
-import { PulsingBorder } from "@paper-design/shaders-react"
 import { mentionRegex, mentionRegexGlobal } from "@shared/context-mentions"
 import { StringRequest } from "@shared/proto/cline/common"
 import { FileSearchRequest, FileSearchType, RelativePathsRequest } from "@shared/proto/cline/file"
@@ -16,7 +15,6 @@ import { CHAT_CONSTANTS } from "@/components/chat/chat-view/constants"
 import SlashCommandMenu from "@/components/chat/SlashCommandMenu"
 import Thumbnails from "@/components/common/Thumbnails"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useClineAuth } from "@/context/ClineAuthContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { usePlatform } from "@/context/PlatformContext"
 import { cn } from "@/lib/utils"
@@ -44,7 +42,6 @@ import {
 } from "@/utils/slash-commands"
 import ClineRulesToggleModal from "../cline-rules/ClineRulesToggleModal"
 import ServersToggleModal from "./ServersToggleModal"
-import VoiceRecorder from "./VoiceRecorder"
 import { VvGroupSelector } from "./VvGroupSelector"
 
 const { MAX_IMAGES_AND_FILES_PER_MESSAGE } = CHAT_CONSTANTS
@@ -160,23 +157,20 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		},
 		ref,
 	) => {
-		const {
-			mode,
-			platform,
-			localWorkflowToggles,
-			globalWorkflowToggles,
-			remoteWorkflowToggles,
-			remoteConfigSettings,
-			dictationSettings,
-			availableSkills,
-			mcpServers,
-		} = useExtensionState()
-		const { clineUser } = useClineAuth()
-		const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
+			const {
+				mode,
+				platform,
+				localWorkflowToggles,
+				globalWorkflowToggles,
+				remoteWorkflowToggles,
+				remoteConfigSettings,
+				availableSkills,
+				mcpServers,
+			} = useExtensionState()
+			const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
 		const [isDraggingOver, setIsDraggingOver] = useState(false)
 		const [gitCommits, setGitCommits] = useState<GitCommit[]>([])
-		const [isVoiceRecording, setIsVoiceRecording] = useState(false)
-		const [showSlashCommandsMenu, setShowSlashCommandsMenu] = useState(false)
+			const [showSlashCommandsMenu, setShowSlashCommandsMenu] = useState(false)
 		const [selectedSlashCommandsIndex, setSelectedSlashCommandsIndex] = useState(0)
 		const [slashCommandsQuery, setSlashCommandsQuery] = useState("")
 		const slashCommandsMenuContainerRef = useRef<HTMLDivElement>(null)
@@ -397,6 +391,17 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		)
 		const handleKeyDown = useCallback(
 			(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+				const isSelectAllShortcut =
+					(event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "a"
+				if (isSelectAllShortcut) {
+					event.preventDefault()
+					event.stopPropagation()
+					const textArea = event.currentTarget
+					textArea.setSelectionRange(0, textArea.value.length)
+					setCursorPosition(0)
+					return
+				}
+
 				if (showSlashCommandsMenu) {
 					if (event.key === "Escape") {
 						setShowSlashCommandsMenu(false)
@@ -1273,36 +1278,6 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					onDragLeave={handleDragLeave}
 					onDragOver={onDragOver}
 					onDrop={onDrop}>
-					{isVoiceRecording && (
-						<div
-							className={cn(
-								"absolute pointer-events-none z-10 overflow-hidden rounded-xs transition-all ease-in-out duration-300 left-3.5 right-3.5 top-2.5 bottom-2.5",
-							)}>
-							<PulsingBorder
-								bloom={1}
-								className="w-full h-full"
-								colorBack={"rgba(0,0,0,0)"}
-								colors={[
-									"#9d57fa", // purple
-									"#57c7fa", // cyan
-									"#fa57a8", // pink
-									"#9d57fa", // purple again for smooth loop
-								]}
-								intensity={0.4}
-								pulse={0.3}
-								roundness={0} // Match textarea border radius
-								scale={1.0}
-								smoke={0.25}
-								smokeSize={0.8}
-								softness={0.8}
-								speed={1.5}
-								spotSize={0.5}
-								spots={4}
-								thickness={0.1}
-							/>
-						</div>
-					)}
-
 					{showDimensionError && (
 						<div className="absolute inset-2.5 bg-[rgba(var(--vscode-errorForeground-rgb),0.1)] border-2 border-error rounded-xs flex items-center justify-center z-10 pointer-events-none">
 							<span className="text-error font-bold text-xs text-center">Image dimensions exceed 7500px</span>
@@ -1346,32 +1321,30 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							/>
 						</div>
 					)}
-					<div
-						className={cn(
-							"absolute bottom-2.5 top-2.5 whitespace-pre-wrap break-words rounded-xs overflow-hidden bg-input-background",
-							isTextAreaFocused || isVoiceRecording
-								? "left-3.5 right-3.5"
-								: "left-3.5 right-3.5 border border-input-border",
-						)}
-						ref={highlightLayerRef}
-						style={{
+						<div
+							className={cn(
+								"absolute bottom-2.5 top-2.5 whitespace-pre-wrap break-words rounded-xs overflow-hidden bg-input-background",
+								isTextAreaFocused ? "left-3.5 right-3.5" : "left-3.5 right-3.5 border border-input-border",
+							)}
+							ref={highlightLayerRef}
+							style={{
 							position: "absolute",
 							pointerEvents: "none",
 							whiteSpace: "pre-wrap",
 							wordWrap: "break-word",
 							color: "transparent",
 							overflow: "hidden",
-							fontFamily: "var(--vscode-font-family)",
-							fontSize: "var(--vscode-editor-font-size)",
-							lineHeight: "var(--vscode-editor-line-height)",
-							borderRadius: 2,
-							borderLeft: isTextAreaFocused || isVoiceRecording ? 0 : undefined,
-							borderRight: isTextAreaFocused || isVoiceRecording ? 0 : undefined,
-							borderTop: isTextAreaFocused || isVoiceRecording ? 0 : undefined,
-							borderBottom: isTextAreaFocused || isVoiceRecording ? 0 : undefined,
-							padding: `9px ${dictationSettings?.dictationEnabled ? "48" : "28"}px ${9 + thumbnailsHeight}px 9px`,
-						}}
-					/>
+								fontFamily: "var(--vscode-font-family)",
+								fontSize: "var(--vscode-editor-font-size)",
+								lineHeight: "var(--vscode-editor-line-height)",
+								borderRadius: 2,
+								borderLeft: isTextAreaFocused ? 0 : undefined,
+								borderRight: isTextAreaFocused ? 0 : undefined,
+								borderTop: isTextAreaFocused ? 0 : undefined,
+								borderBottom: isTextAreaFocused ? 0 : undefined,
+								padding: `9px 28px ${9 + thumbnailsHeight}px 9px`,
+							}}
+						/>
 					<DynamicTextArea
 						autoFocus={true}
 						data-testid="chat-input"
@@ -1430,12 +1403,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							borderColor: "transparent",
 							// borderRight: "54px solid transparent",
 							// borderLeft: "9px solid transparent", // NOTE: react-textarea-autosize doesn't calculate correct height when using borderLeft/borderRight so we need to use horizontal padding instead
-							// Instead of using boxShadow, we use a div with a border to better replicate the behavior when the textarea is focused
-							// boxShadow: "0px 0px 0px 1px var(--vscode-input-border)",
-							padding: `9px ${dictationSettings?.dictationEnabled ? "48" : "28"}px 9px 9px`,
-							cursor: "text",
-							flex: 1,
-							zIndex: 1,
+								// Instead of using boxShadow, we use a div with a border to better replicate the behavior when the textarea is focused
+								// boxShadow: "0px 0px 0px 1px var(--vscode-input-border)",
+								padding: "9px 28px 9px 9px",
+								cursor: "text",
+								flex: 1,
+								zIndex: 1,
 							outline:
 								isDraggingOver && !showUnsupportedFileError // Only show drag outline if not showing error
 									? "2px dashed var(--vscode-focusBorder)"
@@ -1468,54 +1441,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							}}
 						/>
 					)}
-					<div
-						className="absolute flex items-end bottom-4.5 right-5 z-10 h-8 text-xs"
-						style={{ height: textAreaBaseHeight }}>
-						<div className="flex flex-row items-center">
-							{dictationSettings?.dictationEnabled === true && dictationSettings?.featureEnabled && (
-								<VoiceRecorder
-									disabled={sendingDisabled}
-									isAuthenticated={!!clineUser?.uid}
-									language={dictationSettings?.dictationLanguage || "en"}
-									onProcessingStateChange={(isProcessing, message) => {
-										if (isProcessing && message) {
-											// Show processing message in input
-											setInputValue(`${inputValue} [${message}]`.trim())
-										}
-										// When processing is done, the onTranscription callback will handle the final text
-									}}
-									onRecordingStateChange={setIsVoiceRecording}
-									onTranscription={(text) => {
-										// Remove any processing text first
-										const processingPattern = /\s*\[Transcribing\.\.\.\]$/
-										const cleanedValue = inputValue.replace(processingPattern, "")
-
-										if (!text) {
-											setInputValue(cleanedValue)
-											return
-										}
-
-										// Append the transcribed text to the cleaned input
-										const newValue = cleanedValue + (cleanedValue ? " " : "") + text
-										setInputValue(newValue)
-										// Focus the textarea and move cursor to end
-										setTimeout(() => {
-											if (textAreaRef.current) {
-												textAreaRef.current.focus()
-												const length = newValue.length
-												textAreaRef.current.setSelectionRange(length, length)
-											}
-										}, 0)
-									}}
-								/>
-							)}
-							{!isVoiceRecording && (
+						<div
+							className="absolute flex items-end bottom-4.5 right-5 z-10 h-8 text-xs"
+							style={{ height: textAreaBaseHeight }}>
+							<div className="flex flex-row items-center">
 								<div
-									className={cn(
-										"input-icon-button",
-										{ disabled: sendingDisabled },
-										"codicon codicon-send text-sm",
-									)}
+									className={cn("input-icon-button", { disabled: sendingDisabled }, "codicon codicon-send text-sm")}
 									data-testid="send-button"
 									onClick={() => {
 										if (!sendingDisabled) {
@@ -1524,9 +1455,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										}
 									}}
 								/>
-							)}
+							</div>
 						</div>
-					</div>
 				</div>
 				<div className="flex justify-between items-center -mt-[2px] px-3 pb-2">
 					{/* Always render both components, but control visibility with CSS */}

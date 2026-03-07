@@ -1,7 +1,95 @@
 # cline
 
+## [2.6.0]
+
+### Added
+
+- Hook payloads now include `model.provider` and `model.slug` 
+- Token/cost updates now happen immediately as usage chunks arrive, not after tool execution
 
 ### Fixed
+
+- Improve subagent context compaction logic
+- Subagent stream retry delay increased to reduce noise from transient failures
+- State serialization errors are now caught and logged instead of crashing
+- Removed incorrect `max_tokens` from OpenRouter requests
+
+## [2.5.2]
+
+### Added
+
+- Added Windows PowerShell support for hooks (execution, resolution, and management), improving hook behavior on Windows for CLI and shared core workflows.
+
+### Fixed
+
+- Restored GPT-OSS native file editing for OpenAI-compatible models used through shared core tooling.
+- Improved OpenRouter context overflow error handling so auto-compaction triggers correctly for wrapped 400 errors.
+- Hardened checkpoint recovery by retrying nested git restore and preventing silent `.git_disabled` leftovers.
+- Added a User-Agent header for requests to the Cline back-end to improve request handling consistency.
+
+## [2.5.1]
+
+### Added
+
+- Expanded CLI markdown rendering support (headings, lists, blockquotes, fenced code blocks, links, and nested lists).
+
+### Fixed
+
+- Fixed CLI headless auth provider model metadata loading for Cline and Vercel AI Gateway by fetching model info from API with cache fallback.
+- Increased flaky CLI import test timeout on Windows CI to reduce intermittent test failures.
+
+## [2.5.0]
+
+### Added
+
+- Added Cline SDK API interface for programmatic access to Cline features and tools, enabling integration into custom applications.
+- Added Codex 5.3 model support
+
+### Fixed
+
+- Fix OpenAI Codex by setting `store` to `false`
+- Use `isLocatedInPath()` instead of string matching for path containment checks
+
+## [2.4.3]
+
+### Added
+
+- Add /q command to quit CLI
+- Fetch featured models from backend with local fallback
+
+### Fixed
+
+- Fix auth check for ACP mode
+- Fix Cline auth with ACP flag
+- Fix yolo mode to not persist yolo setting to disk
+
+## [2.4.2]
+
+### Added
+
+- Gemini-3.1 Pro Preview
+
+### Patch Changes
+
+- VSCode uses shared files for global, workspace and secret state.
+
+## [2.4.1]
+
+### Fixed
+
+- Fix infinite retry loop when write_to_file fails with missing content parameter. Provides progressive guidance to the model, escalating from suggestions to hard stops, with context window awareness to break the loop.
+
+## [2.4.0]
+
+### Added
+
+- Adding Anthropic Sonnet 4.6
+- Allows users to enter custom aws region when selecting bedrock as a provider in CLI
+- Keep reasoning rows visible when low-stakes tool groups start immediately after reasoning.
+- Restore reasoning trace visibility in chat and improve the thinking row UX so streamed reasoning is visible, then collapsible after completion.
+
+### Fixed
+
 - Banners now display immediately when opening the extension instead of requiring user interaction first
 - Resolved 17 security vulnerabilities including high-severity DoS issues in dependencies (body-parser, axios, qs, tar, and others)
 

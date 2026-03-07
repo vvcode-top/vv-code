@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk"
 import type { ToolUse } from "@core/assistant-message"
+import { getHookModelContext } from "@core/hooks/hook-model-context"
 import { getHooksEnabledSafe } from "@core/hooks/hooks-utils"
 import { formatResponse } from "@core/prompts/responses"
 import { processFilesIntoText } from "@integrations/misc/extract-text"
@@ -15,6 +16,7 @@ import { buildUserFeedbackContent } from "../../utils/buildUserFeedbackContent"
 import type { IPartialBlockHandler, IToolHandler } from "../ToolExecutorCoordinator"
 import type { TaskConfig } from "../types/TaskConfig"
 import type { StronglyTypedUIHelpers } from "../types/UIHelpers"
+import { getTaskCompletionTelemetry } from "../utils"
 import { ToolResultUtils } from "../utils/ToolResultUtils"
 
 const TASK_PREVIEW_MAX_CHARS = 8000
@@ -174,7 +176,7 @@ export class AttemptCompletionHandler implements IToolHandler, IPartialBlockHand
 				const completionMessageTs = await config.callbacks.say("completion_result", result, undefined, undefined, false)
 				await config.callbacks.saveCheckpoint(true, completionMessageTs)
 				await addNewChangesFlagToLastCompletionResultMessage()
-				telemetryService.captureTaskCompleted(config.ulid)
+				telemetryService.captureTaskCompleted(config.ulid, getTaskCompletionTelemetry(config))
 			} else {
 				// we already sent a command message, meaning the complete completion message has also been sent
 				await config.callbacks.saveCheckpoint(true)
@@ -221,7 +223,7 @@ export class AttemptCompletionHandler implements IToolHandler, IPartialBlockHand
 			const completionMessageTs = await config.callbacks.say("completion_result", result, undefined, undefined, false)
 			await config.callbacks.saveCheckpoint(true, completionMessageTs)
 			await addNewChangesFlagToLastCompletionResultMessage()
-			telemetryService.captureTaskCompleted(config.ulid)
+			telemetryService.captureTaskCompleted(config.ulid, getTaskCompletionTelemetry(config))
 		}
 
 		// we already sent completion_result says, an empty string asks relinquishes control over button and field
@@ -349,6 +351,7 @@ export class AttemptCompletionHandler implements IToolHandler, IPartialBlockHand
 				messageStateHandler: config.messageState,
 				taskId: config.taskId,
 				hooksEnabled,
+				model: getHookModelContext(config.api, config.services.stateManager),
 			})
 		} catch (error) {
 			// TaskComplete hook failed - non-fatal, just log

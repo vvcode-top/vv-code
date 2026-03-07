@@ -170,15 +170,6 @@ export async function updateSettings(controller: Controller, request: UpdateSett
 			}
 		}
 
-		if (request.dictationSettings !== undefined) {
-			// Convert from protobuf format (snake_case) to TypeScript format (camelCase)
-			const dictationSettings = {
-				featureEnabled: request.dictationSettings.featureEnabled ?? true,
-				dictationEnabled: request.dictationSettings.dictationEnabled ?? true,
-				dictationLanguage: request.dictationSettings.dictationLanguage ?? "en",
-			}
-			controller.stateManager.setGlobalState("dictationSettings", dictationSettings)
-		}
 		// Update auto-condense setting
 		if (request.useAutoCondense !== undefined) {
 			if (controller.task) {
@@ -299,11 +290,6 @@ export async function updateSettings(controller: Controller, request: UpdateSett
 
 		if (request.backgroundEditEnabled !== undefined) {
 			controller.stateManager.setGlobalState("backgroundEditEnabled", !!request.backgroundEditEnabled)
-		}
-
-		if (request.autoCondenseThreshold !== undefined) {
-			const threshold = Math.min(1, Math.max(0, request.autoCondenseThreshold)) // Clamp to 0-1 range
-			controller.stateManager.setGlobalState("autoCondenseThreshold", threshold)
 		}
 
 		if (request.multiRootEnabled !== undefined) {

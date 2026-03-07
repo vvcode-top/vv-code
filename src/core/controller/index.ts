@@ -13,7 +13,7 @@ import type { ChatContent } from "@shared/ChatContent"
 import type { ExtensionState, Platform } from "@shared/ExtensionMessage"
 import type { HistoryItem } from "@shared/HistoryItem"
 import type { McpMarketplaceCatalog, McpMarketplaceItem } from "@shared/mcp"
-import { SETTINGS_DEFAULTS, type Settings } from "@shared/storage/state-keys"
+import { type Settings } from "@shared/storage/state-keys"
 import type { Mode } from "@shared/storage/types"
 import type { TelemetrySetting } from "@shared/TelemetrySetting"
 import type { UserInfo } from "@shared/UserInfo"
@@ -23,7 +23,6 @@ import fs from "fs/promises"
 import open from "open"
 import pWaitFor from "p-wait-for"
 import * as path from "path"
-import type * as vscode from "vscode"
 import { ClineEnv } from "@/config"
 import type { FolderLockWithRetryResult } from "@/core/locks/types"
 import { HostProvider } from "@/hosts/host-provider"
@@ -31,12 +30,12 @@ import { ExtensionRegistryInfo } from "@/registry"
 import { AuthService } from "@/services/auth/AuthService"
 import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
-// VVCode Customization: 导入 VvAuthService
 import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
 import { telemetryService } from "@/services/telemetry"
+import { ClineExtensionContext } from "@/shared/cline"
 import { getAxiosSettings } from "@/shared/net"
 import { ShowMessageType } from "@/shared/proto/host/window"
 import { Logger } from "@/shared/services/Logger"
@@ -75,7 +74,6 @@ export class Controller {
 	accountService: ClineAccountService
 	authService: AuthService
 	ocaAuthService: OcaAuthService
-	// VVCode Customization: VVCode 认证服务
 	vvAuthService: VvAuthService
 	readonly stateManager: StateManager
 
@@ -121,7 +119,7 @@ export class Controller {
 		this.remoteConfigTimer = setInterval(() => fetchRemoteConfig(this), 3600000) // 1 hour
 	}
 
-	constructor(readonly context: vscode.ExtensionContext) {
+	constructor(readonly context: ClineExtensionContext) {
 		Session.reset() // Reset session on controller initialization
 		PromptRegistry.getInstance() // Ensure prompts and tools are registered
 		this.stateManager = StateManager.get()
@@ -138,9 +136,9 @@ export class Controller {
 		})
 		this.authService = AuthService.getInstance(this)
 		this.ocaAuthService = OcaAuthService.initialize(this)
-		// VVCode Customization: 初始化 VvAuthService
 		this.vvAuthService = VvAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
+		BannerService.initialize(this)
 
 		this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {
 			this.startRemoteConfigTimer()
@@ -726,14 +724,11 @@ export class Controller {
 		// Dont send settingsButtonClicked because its bad ux if user is on welcome
 	}
 
-	// VVCode Customization: VVCode 认证回调处理
 	async handleVVAuthCallback(code: string, state: string) {
 		try {
 			await this.vvAuthService.handleAuthCallback(code, state)
 
-			// Mark welcome view as completed since user has successfully logged in
 			this.stateManager.setGlobalState("welcomeViewCompleted", true)
-
 			await this.postStateToWebview()
 
 			const userInfo = this.vvAuthService.getUserInfo()
@@ -750,10 +745,8 @@ export class Controller {
 		}
 	}
 
-	// VVCode Customization: VVCode 初始化完成回调
 	async handleVVInitComplete() {
 		try {
-			// 刷新分组配置
 			await this.vvAuthService.refreshGroupConfig()
 			await this.postStateToWebview()
 
@@ -896,7 +889,6 @@ export class Controller {
 		const autoApprovalSettings = this.stateManager.getGlobalSettingsKey("autoApprovalSettings")
 		const browserSettings = this.stateManager.getGlobalSettingsKey("browserSettings")
 		const focusChainSettings = this.stateManager.getGlobalSettingsKey("focusChainSettings")
-		const dictationSettings = this.stateManager.getGlobalSettingsKey("dictationSettings")
 		const preferredLanguage = this.stateManager.getGlobalSettingsKey("preferredLanguage")
 		const mode = this.stateManager.getGlobalSettingsKey("mode")
 		const strictPlanModeEnabled = this.stateManager.getGlobalSettingsKey("strictPlanModeEnabled")
@@ -933,7 +925,6 @@ export class Controller {
 		const lastDismissedCliBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedCliBannerVersion") || 0
 		const dismissedBanners = this.stateManager.getGlobalStateKey("dismissedBanners")
 		const doubleCheckCompletionEnabled = this.stateManager.getGlobalSettingsKey("doubleCheckCompletionEnabled")
-
 		const availableSkills = await this.getAvailableSkillsMetadata()
 
 		const localClineRulesToggles = this.stateManager.getWorkspaceStateKey("localClineRulesToggles")
@@ -941,11 +932,6 @@ export class Controller {
 		const localCursorRulesToggles = this.stateManager.getWorkspaceStateKey("localCursorRulesToggles")
 		const localAgentsRulesToggles = this.stateManager.getWorkspaceStateKey("localAgentsRulesToggles")
 		const workflowToggles = this.stateManager.getWorkspaceStateKey("workflowToggles")
-		// Use default — the UI to adjust this is disabled and stored values may be corrupted.
-		// See: https://github.com/cline/cline/pull/9348
-		const autoCondenseThreshold = SETTINGS_DEFAULTS.autoCondenseThreshold
-
-		// VVCode Customization: 获取分组配置
 		const vvGroupConfig = this.stateManager.getGlobalStateKey("vvGroupConfig")
 		const vvNeedsWebInit = this.stateManager.getGlobalStateKey("vvNeedsWebInit")
 		const vvSelectedGroupType = this.stateManager.getGlobalStateKey("vvSelectedGroupType")
@@ -967,17 +953,12 @@ export class Controller {
 		const version = ExtensionRegistryInfo.version
 		const clineConfig = ClineEnv.config()
 		const environment = clineConfig.environment
-		const banners = BannerService.get()?.getActiveBanners() ?? []
+		const banners = BannerService.get().getActiveBanners() ?? []
+		const welcomeBanners = BannerService.get().getWelcomeBanners() ?? []
 
 		// Check OpenAI Codex authentication status
 		const { openAiCodexOAuthManager } = await import("@/integrations/openai-codex/oauth")
 		const openAiCodexIsAuthenticated = await openAiCodexOAuthManager.isAuthenticated()
-
-		// Set feature flag in dictation settings based on platform
-		const updatedDictationSettings = {
-			...dictationSettings,
-			featureEnabled: process.platform === "darwin" || process.platform === "linux", // Enable dictation on macOS and Linux
-		}
 
 		return {
 			version,
@@ -989,7 +970,6 @@ export class Controller {
 			autoApprovalSettings,
 			browserSettings,
 			focusChainSettings,
-			dictationSettings: updatedDictationSettings,
 			preferredLanguage,
 			mode,
 			strictPlanModeEnabled,
@@ -1030,7 +1010,6 @@ export class Controller {
 			taskHistory: processedTaskHistory,
 			shouldShowAnnouncement,
 			favoritedModelIds,
-			autoCondenseThreshold,
 			backgroundCommandRunning: this.backgroundCommandRunning,
 			backgroundCommandTaskId: this.backgroundCommandTaskId,
 			// NEW: Add workspace information
@@ -1059,13 +1038,13 @@ export class Controller {
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
 			availableSkills,
-			// VVCode Customization: 分组配置
 			vvGroupConfig,
 			vvNeedsWebInit,
 			vvSelectedGroupType,
 			optOutOfRemoteConfig: this.stateManager.getGlobalSettingsKey("optOutOfRemoteConfig"),
 			doubleCheckCompletionEnabled,
 			banners,
+			welcomeBanners,
 			openAiCodexIsAuthenticated,
 		}
 	}
@@ -1086,7 +1065,6 @@ export class Controller {
 			const allSkills = await discoverSkills(cwd)
 			const resolvedSkills = getAvailableSkills(allSkills)
 
-			// Filter by toggle state
 			const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles") || {}
 			const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles") || {}
 
