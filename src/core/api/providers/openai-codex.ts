@@ -111,7 +111,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 		this.pendingToolCallId = undefined
 		this.pendingToolCallName = undefined
 
-		// Auth: custom base URL uses API key directly; default Codex uses OAuth
+		// Custom endpoint uses API key directly; default endpoint uses OAuth.
 		let accessToken: string
 		if (hasCustomBaseUrl) {
 			if (!this.options.openAiApiKey) {
@@ -127,7 +127,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 			}
 			accessToken = token
 		}
-		const useWebsocketMode = this.useWebsocketMode(model.info.apiFormat)
+		const useWebsocketMode = !hasCustomBaseUrl && this.useWebsocketMode(model.info.apiFormat)
 		const { input, previousResponseId } = convertToOpenAIResponsesInput(messages, { usePreviousResponseId: useWebsocketMode })
 		const usePreviousResponseId = useWebsocketMode && !!previousResponseId
 
@@ -182,7 +182,7 @@ export class OpenAiCodexHandler implements ApiHandler {
 			model: model.id,
 			input: formattedInput,
 			stream: true,
-			store: false,
+			store: !previousResponseId,
 			instructions: systemPrompt,
 			...(previousResponseId ? { previous_response_id: previousResponseId } : {}),
 			...(includeReasoning ? { include: ["reasoning.encrypted_content"] } : {}),

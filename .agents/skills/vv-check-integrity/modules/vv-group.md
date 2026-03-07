@@ -83,9 +83,10 @@
 
 **必须支持 provider: openai-codex**:
 - `apiProvider` 归一化后为 `openai-codex` 时
+  - 可写入 `openAiApiKey`（来源 `group.apiKey`，供自定义端点使用）
   - 必须写入 `openAiBaseUrl`（来自 `group.apiBaseUrl`，并用 `normalizeVvBackendBaseUrl` 归一化）
   - 必须写入 `planModeApiModelId` / `actModeApiModelId`（来自 `group.defaultModelId`）
-  - 分组配置不下发 `openAiApiKey`（默认 Codex 走 OAuth；自定义端点由用户在设置中填 API key）
+  - 默认 Codex 端点仍走 OAuth；仅在配置了自定义 `openAiBaseUrl` 时使用 `openAiApiKey`
 
 ---
 

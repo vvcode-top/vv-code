@@ -205,7 +205,7 @@ export class OcaHandler implements ApiHandler {
 			})
 
 			if (response.ok) {
-				const data: { cost: number } = (await response.json()) as any
+				const data: { cost: number } = await response.json()
 				return data.cost
 			}
 			Logger.error("Error calculating spend:", response.statusText)
@@ -310,7 +310,7 @@ export class OcaHandler implements ApiHandler {
 		}
 
 		if (this.options.ocaModelInfo?.supportsReasoningEffort) {
-			chatCompletionsParams["reasoning_effort"] = this.options.ocaReasoningEffort || ("low" as any)
+			chatCompletionsParams["reasoning_effort"] = this.options.ocaReasoningEffort || ("medium" as any)
 		}
 
 		const stream = await client.chat.completions.create(chatCompletionsParams)

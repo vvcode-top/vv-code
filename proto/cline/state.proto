@@ -283,12 +283,12 @@ message Settings {
   optional OpenRouterModelInfo plan_mode_cline_model_info = 179;
   optional string act_mode_cline_model_id = 180;
   optional OpenRouterModelInfo act_mode_cline_model_info = 181;
-  map<string, string> open_ai_headers = 182;
   optional bool vv_inline_completion_enabled = 183;
   optional string vv_inline_completion_provider = 184;
   optional string vv_inline_completion_model_id = 185;
   optional int32 vv_inline_completion_debounce_ms = 186;
   optional bool vv_inline_completion_use_group_api_key = 187;
+  map<string, string> open_ai_headers = 188;
 }
 
 message State {

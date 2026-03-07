@@ -38,9 +38,10 @@
 **必须支持 provider: openai-codex**:
 - `case "openai-codex"` 分支存在
 - 必须写入：
+  - `openAiApiKey`（来自分组 `apiKey`，用于自定义端点场景）
   - `openAiBaseUrl`（来自分组 `apiBaseUrl`，并归一化）
   - `planModeApiModelId` / `actModeApiModelId`（来自 `defaultModelId`）
-- 不应在该分支里写入 `openAiApiKey`（默认 Codex 使用 OAuth；自定义端点则由 UI/用户配置 API key）
+- 默认 Codex 端点仍使用 OAuth；仅在配置了自定义 `openAiBaseUrl` 时使用 `openAiApiKey`
 
 ### VvAuthProvider
 📁 `src/services/auth/vv/providers/VvAuthProvider.ts`
