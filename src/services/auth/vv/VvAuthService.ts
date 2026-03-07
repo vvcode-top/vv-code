@@ -231,13 +231,8 @@ export class VvAuthService {
 		this._processingAuthCallback = true
 
 		try {
-			// 1. 验证 state（优先从 StateManager 读取，fallback 到直接读取 context）
+			// 1. 验证 state（统一从 file-backed StateManager 读取）
 			let storedState = controller.stateManager.getGlobalStateKey("vv:authState")
-
-			// 如果 StateManager 缓存中没有，尝试直接从 context 读取
-			if (!storedState) {
-				storedState = controller.context.globalState.get<string>("vv:authState")
-			}
 
 			if (!storedState) {
 				throw new Error(
@@ -251,9 +246,6 @@ export class VvAuthService {
 
 			// 2. 获取 code_verifier
 			let codeVerifier = controller.stateManager.getGlobalStateKey("vv:codeVerifier")
-			if (!codeVerifier) {
-				codeVerifier = controller.context.globalState.get<string>("vv:codeVerifier")
-			}
 			if (!codeVerifier) {
 				throw new Error("Code verifier not found. Please try logging in again.")
 			}

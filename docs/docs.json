@@ -13,8 +13,8 @@
 		"dark": "/assets/Cline_Logo-complete_white.png"
 	},
 	"favicon": {
-		"light": "/assets/icons/icon_light.png",
-		"dark": "/assets/icons/icon_dark.png"
+		"light": "/assets/robot_panel_light.png",
+		"dark": "/assets/robot_panel_dark.png"
 	},
 	"background": {
 		"color": {
@@ -116,6 +116,7 @@
 							},
 							"cline-cli/configuration",
 							"cline-cli/acp-editor-integrations",
+							"cline-sdk/overview",
 							"cline-cli/cli-reference"
 						]
 					},
@@ -286,7 +287,8 @@
 							{
 								"group": "Control Other Cline Features",
 								"pages": [
-									"enterprise-solutions/configuration/infrastructure-configuration/control-other-cline-features/yolo-mode"
+									"enterprise-solutions/configuration/infrastructure-configuration/control-other-cline-features/yolo-mode",
+									"enterprise-solutions/configuration/infrastructure-configuration/control-other-cline-features/mcp-marketplace"
 								]
 							},
 							{
@@ -296,7 +298,36 @@
 									"enterprise-solutions/monitoring/telemetry",
 									"enterprise-solutions/monitoring/opentelemetry"
 								]
-							}
+							},
+							"enterprise-solutions/api-reference"
+						]
+					}
+				]
+			},
+			{
+				"tab": "API",
+				"icon": "code",
+				"groups": [
+					{
+						"group": "Cline API",
+						"pages": [
+							"api/overview",
+							"api/getting-started",
+							"api/authentication"
+						]
+					},
+					{
+						"group": "Endpoints",
+						"pages": [
+							"api/chat-completions"
+						]
+					},
+					{
+						"group": "Reference",
+						"pages": [
+							"api/models",
+							"api/errors",
+							"api/sdk-examples"
 						]
 					}
 				]
@@ -606,6 +637,10 @@
 		{
 			"source": "/features/skills",
 			"destination": "/customization/skills"
+		},
+		{
+			"source": "/api/reference",
+			"destination": "/api/overview"
 		}
 	],
 	"search": {

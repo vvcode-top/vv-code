@@ -8,12 +8,13 @@ import { Command } from "commander"
 import { render } from "ink"
 import React from "react"
 import { ClineEndpoint } from "@/config"
-import { Controller } from "@/core/controller"
+import type { Controller } from "@/core/controller"
+import { setRuntimeHooksDir } from "@/core/storage/disk"
+import { getHooksEnabledSafe } from "@/core/hooks/hooks-utils"
 import { StateManager } from "@/core/storage/StateManager"
 import { AuthHandler } from "@/hosts/external/AuthHandler"
 import { HostProvider } from "@/hosts/host-provider"
 import { FileEditProvider } from "@/integrations/editor/FileEditProvider"
-import { openAiCodexOAuthManager } from "@/integrations/openai-codex/oauth"
 import { StandaloneTerminalManager } from "@/integrations/terminal/standalone/StandaloneTerminalManager"
 import { ErrorService } from "@/services/error/ErrorService"
 import { telemetryService } from "@/services/telemetry"
@@ -21,7 +22,7 @@ import { PostHogClientProvider } from "@/services/telemetry/providers/posthog/Po
 import { HistoryItem } from "@/shared/HistoryItem"
 import { Logger } from "@/shared/services/Logger"
 import { Session } from "@/shared/services/Session"
-import { getProviderModelIdKey, ProviderToApiKeyMap } from "@/shared/storage"
+import { getProviderModelIdKey } from "@/shared/storage"
 import { isOpenaiReasoningEffort, OPENAI_REASONING_EFFORT_OPTIONS, type OpenaiReasoningEffort } from "@/shared/storage/types"
 import { version as CLI_VERSION } from "../package.json"
 import { runAcpMode } from "./acp/index.js"
@@ -30,7 +31,8 @@ import { checkRawModeSupport } from "./context/StdinContext"
 import { createCliHostBridgeProvider } from "./controllers"
 import { CliCommentReviewController } from "./controllers/CliCommentReviewController"
 import { CliWebviewProvider } from "./controllers/CliWebviewProvider"
-import { restoreConsole } from "./utils/console"
+import { isAuthConfigured } from "./utils/auth"
+import { restoreConsole, suppressConsoleUnlessVerbose } from "./utils/console"
 import { printInfo, printWarning } from "./utils/display"
 import { selectOutputMode } from "./utils/mode-selection"
 import { parseImagesFromInput, processImagePaths } from "./utils/parser"
@@ -42,6 +44,10 @@ import { getValidCliProviders, isValidCliProvider } from "./utils/providers"
 import { autoUpdateOnStartup, checkForUpdates } from "./utils/update"
 import { initializeCliContext } from "./vscode-context"
 import { CLI_LOG_FILE, shutdownEvent, window } from "./vscode-shim"
+
+// CLI-only behavior: suppress console output unless verbose mode is enabled.
+// Kept explicit here so importing the library bundle does not mutate global console methods.
+suppressConsoleUnlessVerbose()
 
 /**
  * Common options shared between runTask and resumeTask
@@ -57,10 +63,12 @@ interface TaskOptions {
 	reasoningEffort?: string
 	maxConsecutiveMistakes?: string
 	yolo?: boolean
+	autoApproveAll?: boolean
 	doubleCheckCompletion?: boolean
 	timeout?: string
 	json?: boolean
 	stdinWasPiped?: boolean
+	hooksDir?: string
 }
 
 let telemetryDisposed = false
@@ -74,24 +82,7 @@ async function disposeTelemetryServices(): Promise<void> {
 	await Promise.allSettled([telemetryService.dispose(), PostHogClientProvider.getInstance().dispose()])
 }
 
-/**
- * Restore yoloModeToggled to its original value from before this CLI session.
- * This ensures the --yolo flag is session-only and doesn't leak into future runs.
- * Must be called before flushPendingState so the restored value gets persisted.
- */
-function restoreYoloState(): void {
-	if (savedYoloModeToggled !== null) {
-		try {
-			StateManager.get().setGlobalState("yoloModeToggled", savedYoloModeToggled)
-			savedYoloModeToggled = null
-		} catch {
-			// StateManager may not be initialized (e.g., early exit before init)
-		}
-	}
-}
-
 async function disposeCliContext(ctx: CliContext): Promise<void> {
-	restoreYoloState()
 	await ctx.controller.stateManager.flushPendingState()
 	await ctx.controller.dispose()
 	await ErrorService.get().dispose()
@@ -204,13 +195,18 @@ function applyTaskOptions(options: TaskOptions): void {
 		telemetryService.captureHostEvent("max_consecutive_mistakes_flag", String(maxConsecutiveMistakes))
 	}
 
-	// Override yolo mode only if --yolo flag is explicitly passed.
-	// The original value is saved in initializeCli and restored on exit.
+	// Set yolo mode as a session-scoped override so AutoApprove picks it up,
+	// but it is never persisted to disk (setSessionOverride never touches pendingGlobalState).
 	if (options.yolo) {
-		const state = StateManager.get()
-		savedYoloModeToggled = state.getGlobalSettingsKey("yoloModeToggled") ?? false
-		state.setGlobalState("yoloModeToggled", true)
+		StateManager.get().setSessionOverride("yoloModeToggled", true)
 		telemetryService.captureHostEvent("yolo_flag", "true")
+	}
+
+	// Set auto-approve-all as a session-scoped override so CLI flag does not
+	// persist user settings to disk.
+	if (options.autoApproveAll) {
+		StateManager.get().setSessionOverride("autoApproveAllToggled", true)
+		telemetryService.captureHostEvent("auto_approve_all_flag", "true")
 	}
 
 	// Set double-check completion based on flag
@@ -314,9 +310,6 @@ let activeContext: CliContext | null = null
 let isShuttingDown = false
 // Track if we're in plain text mode (no Ink UI) - set by runTask when piped stdin detected
 let isPlainTextMode = false
-// Track the original yoloModeToggled value from before this CLI session so we can restore it on exit.
-// The --yolo flag should only affect the current invocation, not persist across runs.
-let savedYoloModeToggled: boolean | null = null
 
 /**
  * Wait for stdout to fully drain before exiting.
@@ -331,6 +324,33 @@ async function drainStdout(): Promise<void> {
 			// Give a small delay to ensure any pending writes complete
 			setImmediate(resolve)
 		}
+	})
+}
+
+export async function captureUnhandledException(reason: Error, context: string) {
+	try {
+		const errorService = ErrorService.get()
+		await errorService.captureException(reason, { context })
+		// dispose flushes any pending error captures to ensure they're sent before the process exits
+		return errorService.dispose()
+	} catch {
+		// Ignore errors during shutdown to avoid an infinite loop
+		Logger.info("Error capturing unhandled exception. Proceeding with shutdown.")
+	}
+}
+
+const EXIT_TIMEOUT_MS = 3000
+function onUnhandledException(reason: unknown, context: string) {
+	Logger.error("Unhandled exception:", reason)
+	const finalError = reason instanceof Error ? reason : new Error(String(reason))
+
+	restoreConsole()
+	console.error(finalError)
+
+	setTimeout(() => process.exit(1), EXIT_TIMEOUT_MS)
+
+	captureUnhandledException(finalError, context).finally(() => {
+		process.exit(1)
 	})
 }
 
@@ -358,10 +378,6 @@ function setupSignalHandlers() {
 		printWarning(`${signal} received, shutting down...`)
 
 		try {
-			// Restore yolo state before any cleanup - this is idempotent and safe
-			// even if disposeCliContext also calls it (restoreYoloState checks savedYoloModeToggled !== null)
-			restoreYoloState()
-
 			if (activeContext) {
 				const task = activeContext.controller.task
 				if (task) {
@@ -397,9 +413,14 @@ function setupSignalHandlers() {
 			Logger.info("Suppressed unhandled rejection due to abort:", message)
 			return
 		}
-		// For other unhandled rejections, log to file via Logger (if available)
+
+		// For other unhandled rejections, capture the exception and log to file via Logger (if available)
 		// This won't show in terminal but will be in log files for debugging
-		Logger.error("Unhandled rejection:", reason)
+		onUnhandledException(reason, "unhandledRejection")
+	})
+
+	process.on("uncaughtException", (reason: unknown) => {
+		onUnhandledException(reason, "uncaughtException")
 	})
 }
 
@@ -416,6 +437,7 @@ interface CliContext {
 interface InitOptions {
 	config?: string
 	cwd?: string
+	hooksDir?: string
 	verbose?: boolean
 	enableAuth?: boolean
 }
@@ -425,7 +447,8 @@ interface InitOptions {
  */
 async function initializeCli(options: InitOptions): Promise<CliContext> {
 	const workspacePath = options.cwd || process.cwd()
-	const { extensionContext, DATA_DIR, EXTENSION_DIR } = initializeCliContext({
+	setRuntimeHooksDir(options.hooksDir)
+	const { extensionContext, storageContext, DATA_DIR, EXTENSION_DIR } = initializeCliContext({
 		clineDir: options.config,
 		workspaceDir: workspacePath,
 	})
@@ -466,12 +489,8 @@ async function initializeCli(options: InitOptions): Promise<CliContext> {
 		DATA_DIR,
 	)
 
-	await StateManager.initialize(extensionContext as any)
-
+	await StateManager.initialize(storageContext)
 	await ErrorService.initialize()
-
-	// Initialize OpenAI Codex OAuth manager with extension context for secrets storage
-	openAiCodexOAuthManager.initialize(extensionContext)
 
 	const webview = HostProvider.get().createWebviewProvider() as CliWebviewProvider
 	const controller = webview.controller
@@ -622,7 +641,7 @@ async function showConfig(options: { config?: string }) {
 			dataDir: ctx.dataDir,
 			globalState: stateManager.getAllGlobalStateEntries(),
 			workspaceState: stateManager.getAllWorkspaceStateEntries(),
-			hooksEnabled: true,
+			hooksEnabled: getHooksEnabledSafe(stateManager.getGlobalSettingsKey("hooksEnabled")),
 			skillsEnabled: true,
 			isRawModeSupported: checkRawModeSupport(),
 		}),
@@ -754,7 +773,8 @@ program
 	.option("-a, --act", "Run in act mode")
 	.option("-p, --plan", "Run in plan mode")
 	.option("-y, --yolo", "Enable yes/yolo mode (auto-approve actions)")
-	.option("-t, --timeout <seconds>", "Timeout in seconds for yes/yolo mode (default: 600)")
+	.option("--auto-approve-all", "Enable auto-approve all actions while keeping interactive mode")
+	.option("-t, --timeout <seconds>", "Optional timeout in seconds (applies only when provided)")
 	.option("-m, --model <model>", "Model to use for the task")
 	.option("-v, --verbose", "Show verbose output")
 	.option("-c, --cwd <path>", "Working directory for the task")
@@ -764,6 +784,7 @@ program
 	.option("--max-consecutive-mistakes <count>", "Maximum consecutive mistakes before halting in yolo mode")
 	.option("--json", "Output messages as JSON instead of styled text")
 	.option("--double-check-completion", "Reject first completion attempt to force re-verification")
+	.option("--hooks-dir <path>", "Path to additional hooks directory for runtime hook injection")
 	.option("-T, --taskId <id>", "Resume an existing task by ID")
 	.action((prompt, options) => {
 		if (options.taskId) {
@@ -820,68 +841,6 @@ devCommand
 		const { openExternal } = await import("@/utils/env")
 		await openExternal(CLI_LOG_FILE)
 	})
-
-/**
- * Check if the user has completed onboarding (has any provider configured).
- *
- * Uses `welcomeViewCompleted` as the single source of truth, matching the VS Code extension's approach.
- * If `welcomeViewCompleted` is undefined (first run), checks if ANY provider has credentials
- * and sets the flag accordingly.
- */
-async function isAuthConfigured(): Promise<boolean> {
-	const stateManager = StateManager.get()
-
-	// Check welcomeViewCompleted first - this is the single source of truth
-	const welcomeViewCompleted = stateManager.getGlobalStateKey("welcomeViewCompleted")
-	if (welcomeViewCompleted !== undefined) {
-		return welcomeViewCompleted
-	}
-
-	// welcomeViewCompleted is undefined - run migration logic to check if ANY provider has credentials
-	// This mirrors the extension's migrateWelcomeViewCompleted behavior
-	const hasAnyAuth = await checkAnyProviderConfigured()
-
-	// Set welcomeViewCompleted based on what we found
-	stateManager.setGlobalState("welcomeViewCompleted", hasAnyAuth)
-	await stateManager.flushPendingState()
-
-	return hasAnyAuth
-}
-
-/**
- * Check if ANY provider has valid credentials configured.
- * Used for migration when welcomeViewCompleted is undefined.
- */
-async function checkAnyProviderConfigured(): Promise<boolean> {
-	const stateManager = StateManager.get()
-	const config = stateManager.getApiConfiguration() as Record<string, unknown>
-
-	// Check Cline account (stored as "cline:clineAccountId" in secrets, loaded into config)
-	if (config["clineApiKey"] || config["cline:clineAccountId"]) return true
-
-	// Check OpenAI Codex OAuth (stored in SECRETS_KEYS, loaded into config)
-	if (config["openai-codex-oauth-credentials"]) return true
-
-	// Check all BYO provider API keys (loaded into config from secrets)
-	for (const [provider, keyField] of Object.entries(ProviderToApiKeyMap)) {
-		// Skip cline - already checked above with the correct key
-		if (provider === "cline") continue
-
-		const fields = Array.isArray(keyField) ? keyField : [keyField]
-		for (const field of fields) {
-			if (config[field]) return true
-		}
-	}
-
-	// Check provider-specific settings that indicate configuration
-	// (for providers that don't require API keys like Bedrock with IAM, Ollama, LM Studio)
-	if (config.awsRegion) return true
-	if (config.vertexProjectId) return true
-	if (config.ollamaBaseUrl) return true
-	if (config.lmStudioBaseUrl) return true
-
-	return false
-}
 
 /**
  * Validate that a task exists in history
@@ -983,7 +942,8 @@ program
 	.option("-a, --act", "Run in act mode")
 	.option("-p, --plan", "Run in plan mode")
 	.option("-y, --yolo", "Enable yolo mode (auto-approve actions)")
-	.option("-t, --timeout <seconds>", "Timeout in seconds for yolo mode (default: 600)")
+	.option("--auto-approve-all", "Enable auto-approve all actions while keeping interactive mode")
+	.option("-t, --timeout <seconds>", "Optional timeout in seconds (applies only when provided)")
 	.option("-m, --model <model>", "Model to use for the task")
 	.option("-v, --verbose", "Show verbose output")
 	.option("-c, --cwd <path>", "Working directory")
@@ -993,6 +953,7 @@ program
 	.option("--max-consecutive-mistakes <count>", "Maximum consecutive mistakes before halting in yolo mode")
 	.option("--json", "Output messages as JSON instead of styled text")
 	.option("--double-check-completion", "Reject first completion attempt to force re-verification")
+	.option("--hooks-dir <path>", "Path to additional hooks directory for runtime hook injection")
 	.option("--acp", "Run in ACP (Agent Client Protocol) mode for editor integration")
 	.option("-T, --taskId <id>", "Resume an existing task by ID")
 	.action(async (prompt, options) => {
@@ -1001,6 +962,7 @@ program
 			await runAcpMode({
 				config: options.config,
 				cwd: options.cwd,
+				hooksDir: options.hooksDir,
 				verbose: options.verbose,
 			})
 			return
