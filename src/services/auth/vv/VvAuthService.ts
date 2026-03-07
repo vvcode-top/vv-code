@@ -231,7 +231,7 @@ export class VvAuthService {
 		this._processingAuthCallback = true
 
 		try {
-			// 1. 验证 state（优先从 StateManager 读取，fallback 到直接读取 context）
+			// 1. 验证 state（统一从 file-backed StateManager 读取）
 			let storedState = controller.stateManager.getGlobalStateKey("vv:authState")
 
 			if (!storedState) {

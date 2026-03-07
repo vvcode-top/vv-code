@@ -30,6 +30,7 @@ import { ExtensionRegistryInfo } from "@/registry"
 import { AuthService } from "@/services/auth/AuthService"
 import { OcaAuthService } from "@/services/auth/oca/OcaAuthService"
 import { LogoutReason } from "@/services/auth/types"
+// VVCode Customization: 导入 VvAuthService
 import { VvAuthService } from "@/services/auth/vv/VvAuthService"
 import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
@@ -74,6 +75,7 @@ export class Controller {
 	accountService: ClineAccountService
 	authService: AuthService
 	ocaAuthService: OcaAuthService
+	// VVCode Customization: VVCode 认证服务
 	vvAuthService: VvAuthService
 	readonly stateManager: StateManager
 
@@ -136,9 +138,9 @@ export class Controller {
 		})
 		this.authService = AuthService.getInstance(this)
 		this.ocaAuthService = OcaAuthService.initialize(this)
+		// VVCode Customization: 初始化 VvAuthService
 		this.vvAuthService = VvAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
-		BannerService.initialize(this)
 
 		this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {
 			this.startRemoteConfigTimer()
@@ -724,11 +726,14 @@ export class Controller {
 		// Dont send settingsButtonClicked because its bad ux if user is on welcome
 	}
 
+	// VVCode Customization: VVCode 认证回调处理
 	async handleVVAuthCallback(code: string, state: string) {
 		try {
 			await this.vvAuthService.handleAuthCallback(code, state)
 
+			// Mark welcome view as completed since user has successfully logged in
 			this.stateManager.setGlobalState("welcomeViewCompleted", true)
+
 			await this.postStateToWebview()
 
 			const userInfo = this.vvAuthService.getUserInfo()
@@ -745,8 +750,10 @@ export class Controller {
 		}
 	}
 
+	// VVCode Customization: VVCode 初始化完成回调
 	async handleVVInitComplete() {
 		try {
+			// 刷新分组配置
 			await this.vvAuthService.refreshGroupConfig()
 			await this.postStateToWebview()
 
@@ -925,6 +932,7 @@ export class Controller {
 		const lastDismissedCliBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedCliBannerVersion") || 0
 		const dismissedBanners = this.stateManager.getGlobalStateKey("dismissedBanners")
 		const doubleCheckCompletionEnabled = this.stateManager.getGlobalSettingsKey("doubleCheckCompletionEnabled")
+
 		const availableSkills = await this.getAvailableSkillsMetadata()
 
 		const localClineRulesToggles = this.stateManager.getWorkspaceStateKey("localClineRulesToggles")
@@ -932,6 +940,7 @@ export class Controller {
 		const localCursorRulesToggles = this.stateManager.getWorkspaceStateKey("localCursorRulesToggles")
 		const localAgentsRulesToggles = this.stateManager.getWorkspaceStateKey("localAgentsRulesToggles")
 		const workflowToggles = this.stateManager.getWorkspaceStateKey("workflowToggles")
+		// VVCode Customization: 获取分组配置
 		const vvGroupConfig = this.stateManager.getGlobalStateKey("vvGroupConfig")
 		const vvNeedsWebInit = this.stateManager.getGlobalStateKey("vvNeedsWebInit")
 		const vvSelectedGroupType = this.stateManager.getGlobalStateKey("vvSelectedGroupType")
@@ -953,8 +962,8 @@ export class Controller {
 		const version = ExtensionRegistryInfo.version
 		const clineConfig = ClineEnv.config()
 		const environment = clineConfig.environment
-		const banners = BannerService.get().getActiveBanners() ?? []
-		const welcomeBanners = BannerService.get().getWelcomeBanners() ?? []
+		const banners = BannerService.get()?.getActiveBanners() ?? []
+		const welcomeBanners = BannerService.get()?.getWelcomeBanners() ?? []
 
 		// Check OpenAI Codex authentication status
 		const { openAiCodexOAuthManager } = await import("@/integrations/openai-codex/oauth")
@@ -1028,7 +1037,7 @@ export class Controller {
 				user: this.stateManager.getGlobalSettingsKey("worktreesEnabled"),
 				featureFlag: featureFlagsService.getWorktreesEnabled(),
 			},
-			hooksEnabled: getHooksEnabledSafe(),
+			hooksEnabled: getHooksEnabledSafe(this.stateManager.getGlobalSettingsKey("hooksEnabled")),
 			lastDismissedInfoBannerVersion,
 			lastDismissedModelBannerVersion,
 			remoteConfigSettings: this.stateManager.getRemoteConfigSettings(),
@@ -1038,6 +1047,7 @@ export class Controller {
 			enableParallelToolCalling: this.stateManager.getGlobalSettingsKey("enableParallelToolCalling"),
 			backgroundEditEnabled: this.stateManager.getGlobalSettingsKey("backgroundEditEnabled"),
 			availableSkills,
+			// VVCode Customization: 分组配置
 			vvGroupConfig,
 			vvNeedsWebInit,
 			vvSelectedGroupType,
@@ -1065,6 +1075,7 @@ export class Controller {
 			const allSkills = await discoverSkills(cwd)
 			const resolvedSkills = getAvailableSkills(allSkills)
 
+			// Filter by toggle state
 			const globalSkillsToggles = this.stateManager.getGlobalSettingsKey("globalSkillsToggles") || {}
 			const localSkillsToggles = this.stateManager.getWorkspaceStateKey("localSkillsToggles") || {}
 

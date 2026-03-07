@@ -157,20 +157,20 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		},
 		ref,
 	) => {
-			const {
-				mode,
-				platform,
-				localWorkflowToggles,
-				globalWorkflowToggles,
-				remoteWorkflowToggles,
-				remoteConfigSettings,
-				availableSkills,
-				mcpServers,
-			} = useExtensionState()
-			const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
+		const {
+			mode,
+			platform,
+			localWorkflowToggles,
+			globalWorkflowToggles,
+			remoteWorkflowToggles,
+			remoteConfigSettings,
+			availableSkills,
+			mcpServers,
+		} = useExtensionState()
+		const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
 		const [isDraggingOver, setIsDraggingOver] = useState(false)
 		const [gitCommits, setGitCommits] = useState<GitCommit[]>([])
-			const [showSlashCommandsMenu, setShowSlashCommandsMenu] = useState(false)
+		const [showSlashCommandsMenu, setShowSlashCommandsMenu] = useState(false)
 		const [selectedSlashCommandsIndex, setSelectedSlashCommandsIndex] = useState(0)
 		const [slashCommandsQuery, setSlashCommandsQuery] = useState("")
 		const slashCommandsMenuContainerRef = useRef<HTMLDivElement>(null)
@@ -1321,30 +1321,30 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							/>
 						</div>
 					)}
-						<div
-							className={cn(
-								"absolute bottom-2.5 top-2.5 whitespace-pre-wrap break-words rounded-xs overflow-hidden bg-input-background",
-								isTextAreaFocused ? "left-3.5 right-3.5" : "left-3.5 right-3.5 border border-input-border",
-							)}
-							ref={highlightLayerRef}
-							style={{
+					<div
+						className={cn(
+							"absolute bottom-2.5 top-2.5 whitespace-pre-wrap break-words rounded-xs overflow-hidden bg-input-background",
+							isTextAreaFocused ? "left-3.5 right-3.5" : "left-3.5 right-3.5 border border-input-border",
+						)}
+						ref={highlightLayerRef}
+						style={{
 							position: "absolute",
 							pointerEvents: "none",
 							whiteSpace: "pre-wrap",
 							wordWrap: "break-word",
 							color: "transparent",
 							overflow: "hidden",
-								fontFamily: "var(--vscode-font-family)",
-								fontSize: "var(--vscode-editor-font-size)",
-								lineHeight: "var(--vscode-editor-line-height)",
-								borderRadius: 2,
-								borderLeft: isTextAreaFocused ? 0 : undefined,
-								borderRight: isTextAreaFocused ? 0 : undefined,
-								borderTop: isTextAreaFocused ? 0 : undefined,
-								borderBottom: isTextAreaFocused ? 0 : undefined,
-								padding: `9px 28px ${9 + thumbnailsHeight}px 9px`,
-							}}
-						/>
+							fontFamily: "var(--vscode-font-family)",
+							fontSize: "var(--vscode-editor-font-size)",
+							lineHeight: "var(--vscode-editor-line-height)",
+							borderRadius: 2,
+							borderLeft: isTextAreaFocused ? 0 : undefined,
+							borderRight: isTextAreaFocused ? 0 : undefined,
+							borderTop: isTextAreaFocused ? 0 : undefined,
+							borderBottom: isTextAreaFocused ? 0 : undefined,
+							padding: `9px 28px ${9 + thumbnailsHeight}px 9px`,
+						}}
+					/>
 					<DynamicTextArea
 						autoFocus={true}
 						data-testid="chat-input"
@@ -1403,12 +1403,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							borderColor: "transparent",
 							// borderRight: "54px solid transparent",
 							// borderLeft: "9px solid transparent", // NOTE: react-textarea-autosize doesn't calculate correct height when using borderLeft/borderRight so we need to use horizontal padding instead
-								// Instead of using boxShadow, we use a div with a border to better replicate the behavior when the textarea is focused
-								// boxShadow: "0px 0px 0px 1px var(--vscode-input-border)",
-								padding: "9px 28px 9px 9px",
-								cursor: "text",
-								flex: 1,
-								zIndex: 1,
+							// Instead of using boxShadow, we use a div with a border to better replicate the behavior when the textarea is focused
+							// boxShadow: "0px 0px 0px 1px var(--vscode-input-border)",
+							padding: "9px 28px 9px 9px",
+							cursor: "text",
+							flex: 1,
+							zIndex: 1,
 							outline:
 								isDraggingOver && !showUnsupportedFileError // Only show drag outline if not showing error
 									? "2px dashed var(--vscode-focusBorder)"
@@ -1441,22 +1441,22 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							}}
 						/>
 					)}
-						<div
-							className="absolute flex items-end bottom-4.5 right-5 z-10 h-8 text-xs"
-							style={{ height: textAreaBaseHeight }}>
-							<div className="flex flex-row items-center">
-								<div
-									className={cn("input-icon-button", { disabled: sendingDisabled }, "codicon codicon-send text-sm")}
-									data-testid="send-button"
-									onClick={() => {
-										if (!sendingDisabled) {
-											setIsTextAreaFocused(false)
-											onSend()
-										}
-									}}
-								/>
-							</div>
+					<div
+						className="absolute flex items-end bottom-4.5 right-5 z-10 h-8 text-xs"
+						style={{ height: textAreaBaseHeight }}>
+						<div className="flex flex-row items-center">
+							<div
+								className={cn("input-icon-button", { disabled: sendingDisabled }, "codicon codicon-send text-sm")}
+								data-testid="send-button"
+								onClick={() => {
+									if (!sendingDisabled) {
+										setIsTextAreaFocused(false)
+										onSend()
+									}
+								}}
+							/>
 						</div>
+					</div>
 				</div>
 				<div className="flex justify-between items-center -mt-[2px] px-3 pb-2">
 					{/* Always render both components, but control visibility with CSS */}
