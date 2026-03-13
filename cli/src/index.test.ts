@@ -35,6 +35,8 @@ describe("CLI Commands", () => {
 			.option("--thinking [tokens]", "Enable extended thinking")
 			.option("--reasoning-effort <effort>", "Reasoning effort")
 			.option("--max-consecutive-mistakes <count>", "Maximum consecutive mistakes")
+			.option("--double-check-completion", "Reject first completion attempt to force re-verification")
+			.option("--auto-condense", "Enable AI-powered context compaction instead of mechanical truncation")
 			.option("--hooks-dir <path>", "Additional hooks directory")
 			.action(() => {})
 
@@ -65,6 +67,22 @@ describe("CLI Commands", () => {
 			.option("--config <path>", "Configuration directory")
 			.action(() => {})
 
+		const mcpCommand = program.command("mcp").description("Manage MCP servers")
+		mcpCommand
+			.command("add")
+			.description("Add an MCP server shortcut")
+			.argument("<name>", "MCP server name")
+			.argument("[targetOrCommand...]", "Command args for stdio, or URL for remote")
+			.option("--type <type>", "Transport type", "stdio")
+			.option("-c, --cwd <path>", "Working directory")
+			.option("--config <path>", "Configuration directory")
+			.action(() => {})
+
+		program
+			.command("kanban")
+			.description("Run npx kanban --agent cline")
+			.action(() => {})
+
 		// Default command for interactive mode
 		program
 			.argument("[prompt]", "Task prompt")
@@ -75,8 +93,11 @@ describe("CLI Commands", () => {
 			.option("--thinking [tokens]", "Enable extended thinking")
 			.option("--reasoning-effort <effort>", "Reasoning effort")
 			.option("--max-consecutive-mistakes <count>", "Maximum consecutive mistakes")
+			.option("--double-check-completion", "Reject first completion attempt to force re-verification")
+			.option("--auto-condense", "Enable AI-powered context compaction instead of mechanical truncation")
 			.option("--hooks-dir <path>", "Additional hooks directory")
 			.option("--auto-approve-all", "Enable auto-approve all")
+			.option("--kanban", "Run npx kanban --agent cline")
 			.action(() => {})
 	})
 
@@ -190,6 +211,20 @@ describe("CLI Commands", () => {
 			expect(taskCmd.opts().hooksDir).toBe("/tmp/hooks")
 		})
 
+		it("should parse --double-check-completion flag", () => {
+			const taskCmd = program.commands.find((c) => c.name() === "task")!
+			const args = ["test prompt", "--double-check-completion"]
+			taskCmd.parse(args, { from: "user" })
+			expect(taskCmd.opts().doubleCheckCompletion).toBe(true)
+		})
+
+		it("should parse --auto-condense flag", () => {
+			const taskCmd = program.commands.find((c) => c.name() === "task")!
+			const args = ["test prompt", "--auto-condense"]
+			taskCmd.parse(args, { from: "user" })
+			expect(taskCmd.opts().autoCondense).toBe(true)
+		})
+
 		it("should parse short flags", () => {
 			const taskCmd = program.commands.find((c) => c.name() === "task")!
 			const args = ["test prompt", "-a", "-v", "-m", "gpt-4"]
@@ -256,6 +291,13 @@ describe("CLI Commands", () => {
 		})
 	})
 
+	describe("kanban command", () => {
+		it("should parse kanban command", () => {
+			const args = ["node", "cli", "kanban"]
+			program.parse(args)
+		})
+	})
+
 	describe("auth command", () => {
 		it("should parse auth command", () => {
 			const args = ["node", "cli", "auth"]
@@ -297,6 +339,32 @@ describe("CLI Commands", () => {
 			expect(authCmd.opts().provider).toBe("anthropic")
 			expect(authCmd.opts().apikey).toBe("key123")
 			expect(authCmd.opts().modelid).toBe("claude-sonnet-4-20250514")
+		})
+	})
+
+	describe("mcp command", () => {
+		it("should parse mcp add stdio syntax", () => {
+			const args = ["node", "cli", "mcp", "add", "kanban", "--", "kanban", "mcp"]
+			program.parse(args)
+		})
+
+		it("should parse mcp add remote http syntax", () => {
+			const args = ["node", "cli", "mcp", "add", "linear", "https://mcp.linear.app/mcp", "--type", "http"]
+			program.parse(args)
+		})
+
+		it("should default mcp add type to stdio", () => {
+			const mcpCmd = program.commands.find((c) => c.name() === "mcp")!
+			const addCmd = mcpCmd.commands.find((c) => c.name() === "add")!
+			addCmd.parse(["kanban", "--", "kanban", "mcp"], { from: "user" })
+			expect(addCmd.opts().type).toBe("stdio")
+		})
+
+		it("should parse mcp add type option", () => {
+			const mcpCmd = program.commands.find((c) => c.name() === "mcp")!
+			const addCmd = mcpCmd.commands.find((c) => c.name() === "add")!
+			addCmd.parse(["linear", "https://mcp.linear.app/mcp", "--type", "http"], { from: "user" })
+			expect(addCmd.opts().type).toBe("http")
 		})
 	})
 
@@ -350,6 +418,11 @@ describe("CLI Commands", () => {
 			program.parse(["node", "cli", "--auto-approve-all"])
 			expect(program.opts().autoApproveAll).toBe(true)
 		})
+
+		it("should parse --kanban flag", () => {
+			program.parse(["node", "cli", "--kanban"])
+			expect(program.opts().kanban).toBe(true)
+		})
 	})
 
 	describe("command structure", () => {
@@ -359,6 +432,8 @@ describe("CLI Commands", () => {
 			expect(commandNames).toContain("history")
 			expect(commandNames).toContain("config")
 			expect(commandNames).toContain("auth")
+			expect(commandNames).toContain("mcp")
+			expect(commandNames).toContain("kanban")
 		})
 
 		it("should have correct aliases", () => {

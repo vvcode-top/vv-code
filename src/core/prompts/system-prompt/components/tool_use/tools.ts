@@ -1,3 +1,4 @@
+import { MULTI_ROOT_HINT } from "../../constants"
 import { PromptBuilder } from "../../registry/PromptBuilder"
 import { TemplateEngine } from "../../templates/TemplateEngine"
 import type { PromptVariant, SystemPromptContext } from "../../types"
@@ -38,4 +39,3 @@ const FOCUS_CHAIN_USAGE = `<task_progress>
 Checklist here (optional)
 </task_progress>
 `
-const MULTI_ROOT_HINT = " Use @workspace:path syntax (e.g., @frontend:src/index.ts) to specify a workspace."
